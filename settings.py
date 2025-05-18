@@ -62,4 +62,6 @@ RUTA_ASSETS = os.path.join(RUTA_BASE_PROYECTO, "assets")
 # --- Configuraciones de Depuración ---
 DEBUG_VER_HITBOXES = True # Poner a False para ocultar hitboxes/rects de depuración
 INCREMENTO_AJUSTE_DEBUG = 2 # Píxeles o unidades a cambiar con cada pulsación para debug
+INCREMENTO_DURACION_DEBUG = 10 # Milisegundos a cambiar para la duración del ataque
 ARCHIVO_CONFIG_ATAQUE = "config_ataque.json" # Archivo para guardar/cargar config de ataque
+NOMBRE_PERFIL_ATAQUE_INICIAL = "espada_predeterminada"

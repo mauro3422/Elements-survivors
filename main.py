@@ -116,130 +116,100 @@ reloj = pygame.time.Clock()
 fuente_hud = pygame.font.SysFont("Arial", 18) # O "Consolas", "Courier New"
 
 # --- Bucle Principal del Juego --- 
-ejecutando = True # Variable que controla si el bucle sigue o el juego termina.
+ejecutando = True 
+perfiles_disponibles_nombres = list(jugador.perfiles_de_ataque.keys()) # Obtener nombres para selección
+
 while ejecutando:
-    zoom_cambio = False # Flag para saber si el zoom cambió en este fotograma
-    # --- 1. Manejo de Eventos ---
-    # pygame.event.get() obtiene una lista de todos los eventos que han ocurrido.
+    zoom_cambio = False
     for evento in pygame.event.get():
-        if evento.type == pygame.QUIT: # Si el usuario cerró la ventana...
-            ejecutando = False       # ...se pone `ejecutando` a False para salir del bucle.
-        if evento.type == pygame.MOUSEWHEEL: # Evento de la rueda del mouse
-            # evento.y es positivo si la rueda va "hacia arriba/adelante" (zoom in)
-            # y negativo si va "hacia abajo/atrás" (zoom out)
-            if evento.y > 0: # Zoom in
-                factor_zoom_actual += settings.FACTOR_ZOOM_PASO
-            elif evento.y < 0: # Zoom out
-                factor_zoom_actual -= settings.FACTOR_ZOOM_PASO
-            
-            # Aplicar límites al zoom
-            factor_zoom_actual = max(settings.FACTOR_ZOOM_MIN, factor_zoom_actual)
-            factor_zoom_actual = min(settings.FACTOR_ZOOM_MAX, factor_zoom_actual)
+        if evento.type == pygame.QUIT:
+            ejecutando = False
+        if evento.type == pygame.MOUSEWHEEL: 
+            if evento.y > 0: factor_zoom_actual += settings.FACTOR_ZOOM_PASO
+            elif evento.y < 0: factor_zoom_actual -= settings.FACTOR_ZOOM_PASO
+            factor_zoom_actual = max(settings.FACTOR_ZOOM_MIN, min(settings.FACTOR_ZOOM_MAX, factor_zoom_actual))
             zoom_cambio = True
         
-        # Evento para el ataque del jugador
         if evento.type == pygame.KEYDOWN:
             if evento.key == pygame.K_SPACE:
-                jugador.atacar(enemigos_sprites)
+                jugador.atacar(enemigos_sprites) # El argumento enemigos_sprites ya no se usa en atacar directamente
             
-            # Teclas para ajustar parámetros del ataque del jugador (HUD)
-            if settings.DEBUG_VER_HITBOXES: # Solo si estamos en modo debug
-                incremento = settings.INCREMENTO_AJUSTE_DEBUG
-                if evento.key == pygame.K_F1:
-                    jugador.modificar_ataque_offset(-incremento)
-                if evento.key == pygame.K_F2:
-                    jugador.modificar_ataque_offset(incremento)
-                if evento.key == pygame.K_F3:
-                    jugador.modificar_ataque_extension(-incremento)
-                if evento.key == pygame.K_F4:
-                    jugador.modificar_ataque_extension(incremento)
-                if evento.key == pygame.K_F5:
-                    jugador.modificar_ataque_grosor(-incremento)
-                if evento.key == pygame.K_F6:
-                    jugador.modificar_ataque_grosor(incremento)
-                if evento.key == pygame.K_F12: # Tecla para guardar configuración de ataque
-                    jugador.guardar_config_ataque_actual()
+            # Teclas para cambiar perfil de ataque activo
+            if evento.key == pygame.K_PAGEUP:
+                if perfiles_disponibles_nombres:
+                    indice_actual = perfiles_disponibles_nombres.index(jugador.nombre_perfil_ataque_activo)
+                    nuevo_indice = (indice_actual - 1 + len(perfiles_disponibles_nombres)) % len(perfiles_disponibles_nombres)
+                    jugador.seleccionar_perfil_ataque(perfiles_disponibles_nombres[nuevo_indice])
+            if evento.key == pygame.K_PAGEDOWN:
+                if perfiles_disponibles_nombres:
+                    indice_actual = perfiles_disponibles_nombres.index(jugador.nombre_perfil_ataque_activo)
+                    nuevo_indice = (indice_actual + 1) % len(perfiles_disponibles_nombres)
+                    jugador.seleccionar_perfil_ataque(perfiles_disponibles_nombres[nuevo_indice])
+            
+            # Teclas para ajustar parámetros del perfil de ataque ACTIVO (HUD)
+            if settings.DEBUG_VER_HITBOXES: 
+                if evento.key == pygame.K_F1: jugador.modificar_ataque_offset(-settings.INCREMENTO_AJUSTE_DEBUG)
+                if evento.key == pygame.K_F2: jugador.modificar_ataque_offset(settings.INCREMENTO_AJUSTE_DEBUG)
+                if evento.key == pygame.K_F3: jugador.modificar_ataque_extension(-settings.INCREMENTO_AJUSTE_DEBUG)
+                if evento.key == pygame.K_F4: jugador.modificar_ataque_extension(settings.INCREMENTO_AJUSTE_DEBUG)
+                if evento.key == pygame.K_F5: jugador.modificar_ataque_grosor(-settings.INCREMENTO_AJUSTE_DEBUG)
+                if evento.key == pygame.K_F6: jugador.modificar_ataque_grosor(settings.INCREMENTO_AJUSTE_DEBUG)
+                if evento.key == pygame.K_F7: jugador.modificar_duracion_ataque_total(-settings.INCREMENTO_DURACION_DEBUG)
+                if evento.key == pygame.K_F8: jugador.modificar_duracion_ataque_total(settings.INCREMENTO_DURACION_DEBUG)
+                if evento.key == pygame.K_F12: 
+                    jugador.guardar_todos_perfiles_ataque()
+                    # Actualizar la lista de perfiles disponibles por si se creó uno nuevo (aunque no se hace ahora)
+                    perfiles_disponibles_nombres = list(jugador.perfiles_de_ataque.keys())
 
     if zoom_cambio:
-        # Recalcular las dimensiones de la vista de la cámara basadas en el nuevo zoom
         nuevo_camara_ancho_vista = settings.ANCHO_PANTALLA / factor_zoom_actual
         nuevo_camara_alto_vista = settings.ALTO_PANTALLA / factor_zoom_actual
-        # Actualizar la cámara con las nuevas dimensiones
         camara.actualizar_dimensiones_vista(nuevo_camara_ancho_vista, nuevo_camara_alto_vista)
-        # print(f"Zoom: {factor_zoom_actual:.2f}, Vista Cámara: {nuevo_camara_ancho_vista:.0f}x{nuevo_camara_alto_vista:.0f}") # Para depuración
 
-    # --- 2. Actualizaciones de Lógica del Juego ---
-    # Obtener el estado de todas las teclas del teclado.
     teclas = pygame.key.get_pressed()
-    
-    # Actualizar al jugador
     jugador.actualizar_movimiento(teclas, arboles_sprites)
     jugador.actualizar_animacion()
+    jugador.actualizar_ataque(enemigos_sprites) # Nombre de método actualizado
     
-    # Actualizar todos los sprites en el grupo `arboles_sprites`.
-    # Esto llamará al método `update()` de cada `Arbol`.
     arboles_sprites.update()
-
-    # Actualizar enemigos
-    enemigos_sprites.update(jugador.rect) # Llama al método update() de cada Enemigo, pasando el rect del jugador
-
-    # Actualizar estado del ataque con espada del jugador
-    jugador.actualizar_ataque_espada(enemigos_sprites)
-
-    # --- COLISIONES JUGADOR vs ENEMIGOS ---
-    # Iteramos manualmente para usar el hitbox del jugador y el rect del enemigo.
-    # Esto permite que el hitbox del jugador sea más preciso que su rect general.
-    # ahora = pygame.time.get_ticks() # Ya no es necesario aquí si el jugador ataca explícitamente
+    enemigos_sprites.update(jugador.rect)
 
     for enemigo in enemigos_sprites:
         if jugador.hitbox.colliderect(enemigo.rect):
-            # El enemigo intenta atacar al jugador (daño por contacto)
-            # El jugador ya tiene un cooldown interno en su método recibir_dano()
             jugador.recibir_dano(enemigo.dano_ataque)
-            
-            # Ya no hacemos que el jugador dañe automáticamente al enemigo aquí.
-            # El daño del jugador se maneja a través del método jugador.atacar()
-            
-            # Consideraciones adicionales:
-            # - Empuje: Podríamos mover ligeramente al jugador o al enemigo.
-            # - Efectos visuales: Chispas, sonido de golpe.
-            # - Si el enemigo muere por este golpe, se eliminará en su próximo enemigo.update().
-            # - Si el jugador muere, su método morir() se llamará.
 
-    # Actualizar la posición de la cámara para que siga al jugador.
     camara.actualizar_posicion(jugador.rect)
-
-    # --- 3. Renderizado / Dibujado ---
-    camara.dibujar_escena(pantalla,             
-                          textura_fondo_original, 
-                          ANCHO_TEXTURA_FONDO, ALTO_TEXTURA_FONDO,
-                          jugador,                
-                          arboles_sprites,
-                          enemigos_sprites)
+    camara.dibujar_escena(pantalla, textura_fondo_original, ANCHO_TEXTURA_FONDO, ALTO_TEXTURA_FONDO,
+                          jugador, arboles_sprites, enemigos_sprites)
     
     # --- Dibujar HUD de Depuración (si está activado) ---
     if settings.DEBUG_VER_HITBOXES:
         y_offset_hud = 10
+        # Obtener parámetros del perfil activo para el HUD
+        offset_hud = jugador.get_parametro_ataque_activo("offset_distancia", "N/A")
+        extension_hud = jugador.get_parametro_ataque_activo("extension", "N/A")
+        grosor_hud = jugador.get_parametro_ataque_activo("grosor", "N/A")
+        duracion_total_hud = jugador.get_parametro_ataque_activo("duracion_total_ms", "N/A")
+        dano_mod_hud = jugador.get_parametro_ataque_activo("dano_modificador", "N/A")
+        cd_mod_hud = jugador.get_parametro_ataque_activo("cooldown_modificador", "N/A")
+
         textos_hud = [
-            f"Offset Ataque (F1/F2): {jugador.ataque_offset_distancia}",
-            f"Extension Ataque (F3/F4): {jugador.ataque_extension}",
-            f"Grosor Ataque (F5/F6): {jugador.ataque_grosor}",
+            f"Perfil Activo (PgUp/PgDn): {jugador.nombre_perfil_ataque_activo}",
+            f"Offset (F1/F2): {offset_hud}",
+            f"Extension (F3/F4): {extension_hud}",
+            f"Grosor (F5/F6): {grosor_hud}",
+            f"Duracion Total (F7/F8): {duracion_total_hud}ms",
+            f"  Dur Segmento: {jugador.duracion_segmento_barrido_activo:.2f}ms",
+            f"  Dano Mod: {dano_mod_hud:.2f}",
+            f"  CD Mod: {cd_mod_hud:.2f}",
             f"Zoom (Rueda): {factor_zoom_actual:.2f}",
-            f"Guardar config: F12"
+            f"Guardar Perfiles: F12"
         ]
         for i, texto_str in enumerate(textos_hud):
             texto_surface = fuente_hud.render(texto_str, True, settings.COLOR_HUD_TEXTO)
             pantalla.blit(texto_surface, (10, y_offset_hud + i * 20))
 
     pygame.display.flip()
-
-    # --- 4. Control de FPS ---
-    # `reloj.tick(settings.FPS)` hace una pausa para que el juego no corra
-    # a más de los FPS definidos.
     reloj.tick(settings.FPS)
 
-# --- Finalización de Pygame ---
-# Cuando el bucle `while ejecutando:` termina.
-pygame.quit() # Desinicializa todos los módulos de Pygame.
-# import sys # Opcional: forzar salida del programa
-# sys.exit()
+pygame.quit()

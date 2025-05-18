@@ -119,14 +119,14 @@ class Camara:
 
         # --- Dibujar Hitboxes para Depuración (si está activado) ---
         if settings.DEBUG_VER_HITBOXES:
-            # Hitbox del jugador
+            # Hitbox del cuerpo del jugador
             if hasattr(jugador, 'hitbox'):
                 self.dibujar_rect_debug(jugador.hitbox, settings.ROJO, self.offset_camara)
             
-            # Hitbox del ataque de espada del jugador (si está atacando y el rect tiene tamaño)
-            if hasattr(jugador, 'esta_atacando_espada') and jugador.esta_atacando_espada:
-                if hasattr(jugador, 'hitbox_ataque_espada_rect') and jugador.hitbox_ataque_espada_rect.width > 0 and jugador.hitbox_ataque_espada_rect.height > 0:
-                    self.dibujar_rect_debug(jugador.hitbox_ataque_espada_rect, settings.VERDE_DEBUG, self.offset_camara)
+            # Hitbox del ataque ACTIVO del jugador
+            if hasattr(jugador, 'esta_atacando') and jugador.esta_atacando:
+                if hasattr(jugador, 'hitbox_ataque_actual_rect') and jugador.hitbox_ataque_actual_rect.width > 0 and jugador.hitbox_ataque_actual_rect.height > 0:
+                    self.dibujar_rect_debug(jugador.hitbox_ataque_actual_rect, settings.VERDE_DEBUG, self.offset_camara)
             
             # Hitbox de los enemigos (usando su rect por ahora)
             for enemigo in grupo_enemigos:
