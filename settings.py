@@ -31,6 +31,13 @@ FACTOR_ZOOM_PASO = 0.1
 CAMARA_ANCHO_INICIAL = ANCHO_PANTALLA / FACTOR_ZOOM_INICIAL
 CAMARA_ALTO_INICIAL = ALTO_PANTALLA / FACTOR_ZOOM_INICIAL
 
+# --- Dimensiones del Mundo del Juego ---
+# Estas definen los límites del área jugable total.
+# El jugador no podrá moverse más allá de estos límites.
+# Por ejemplo, 3 veces el tamaño de la pantalla.
+ANCHO_MUNDO_JUEGO = ANCHO_PANTALLA * 3
+ALTO_MUNDO_JUEGO = ALTO_PANTALLA * 3
+
 # --- Definiciones de Colores (formato RGB) ---
 # Los colores se definen como tuplas de (Rojo, Verde, Azul), donde cada valor va de 0 a 255.
 NEGRO = (0, 0, 0)

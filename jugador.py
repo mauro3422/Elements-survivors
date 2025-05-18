@@ -1,5 +1,6 @@
 import pygame
 import os
+import settings
 
 class Jugador(pygame.sprite.Sprite):
     def __init__(self, x, y, ruta_assets):
@@ -83,27 +84,58 @@ class Jugador(pygame.sprite.Sprite):
         self.hitbox.topleft = (self.rect.x + self.hitbox_offset_x, self.rect.y + self.hitbox_offset_y)
 
     def _mover_y_colisionar(self, dx, dy, obstaculos):
+        # Guardar la posición original por si necesitamos revertir completamente un movimiento
+        # (aunque con la corrección por ejes, esto es menos crucial aquí que en colisiones más simples)
+        # pos_original_x = self.rect.x
+        # pos_original_y = self.rect.y
+
+        # --- Movimiento y colisiones en Eje X ---
         self.rect.x += dx
-        self._actualizar_posicion_hitbox()
+        self._actualizar_posicion_hitbox() # Actualizar hitbox a la nueva posición tentativa X
 
+        # Comprobar límites del mundo en X
+        if self.hitbox.left < 0:
+            # El hitbox ha cruzado el borde izquierdo del mundo (0)
+            # Ajustamos self.rect.x para que self.hitbox.left sea 0
+            self.rect.x = 0 - self.hitbox_offset_x 
+        elif self.hitbox.right > settings.ANCHO_MUNDO_JUEGO:
+            # El hitbox ha cruzado el borde derecho del mundo
+            # Ajustamos self.rect.x para que self.hitbox.right sea ANCHO_MUNDO_JUEGO
+            self.rect.x = settings.ANCHO_MUNDO_JUEGO - self.hitbox_offset_x - self.hitbox.width
+        self._actualizar_posicion_hitbox() # Re-sincronizar hitbox después de corrección de límites en X
+
+        # Comprobar colisiones con obstáculos en X
         for obstaculo in obstaculos:
             if self.hitbox.colliderect(obstaculo.rect):
-                if dx > 0:
+                if dx > 0: # Moviéndose a la derecha, choca con el lado izquierdo del obstáculo
                     self.rect.x = obstaculo.rect.left - self.hitbox_offset_x - self.hitbox.width
-                elif dx < 0:
+                elif dx < 0: # Moviéndose a la izquierda, choca con el lado derecho del obstáculo
                     self.rect.x = obstaculo.rect.right - self.hitbox_offset_x
-                self._actualizar_posicion_hitbox()
+                self._actualizar_posicion_hitbox() # Re-sincronizar hitbox después de la corrección por colisión en X
         
+        # --- Movimiento y colisiones en Eje Y ---
         self.rect.y += dy
-        self._actualizar_posicion_hitbox()
+        self._actualizar_posicion_hitbox() # Actualizar hitbox a la nueva posición tentativa Y
 
+        # Comprobar límites del mundo en Y
+        if self.hitbox.top < 0:
+            # El hitbox ha cruzado el borde superior del mundo (0)
+            # Ajustamos self.rect.y para que self.hitbox.top sea 0
+            self.rect.y = 0 - self.hitbox_offset_y
+        elif self.hitbox.bottom > settings.ALTO_MUNDO_JUEGO:
+            # El hitbox ha cruzado el borde inferior del mundo
+            # Ajustamos self.rect.y para que self.hitbox.bottom sea ALTO_MUNDO_JUEGO
+            self.rect.y = settings.ALTO_MUNDO_JUEGO - self.hitbox_offset_y - self.hitbox.height
+        self._actualizar_posicion_hitbox() # Re-sincronizar hitbox después de corrección de límites en Y
+
+        # Comprobar colisiones con obstáculos en Y
         for obstaculo in obstaculos:
             if self.hitbox.colliderect(obstaculo.rect):
-                if dy > 0:
+                if dy > 0: # Moviéndose hacia abajo, choca con la parte superior del obstáculo
                     self.rect.y = obstaculo.rect.top - self.hitbox_offset_y - self.hitbox.height
-                elif dy < 0:
+                elif dy < 0: # Moviéndose hacia arriba, choca con la parte inferior del obstáculo
                     self.rect.y = obstaculo.rect.bottom - self.hitbox_offset_y
-                self._actualizar_posicion_hitbox()
+                self._actualizar_posicion_hitbox() # Re-sincronizar hitbox después de la corrección por colisión en Y
 
     def actualizar_movimiento(self, teclas_presionadas, obstaculos):
         """Actualiza la posición del jugador basándose en las teclas presionadas.
