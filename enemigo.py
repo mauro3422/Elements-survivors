@@ -2,8 +2,14 @@ import pygame
 import os
 import settings # Para RUTA_ASSETS
 import math # Para cálculos de distancia y vectores
+import logging # <--- AÑADIR IMPORT
+
+# Obtener el mismo logger que usa el jugador para que todo vaya al mismo archivo
+logger = logging.getLogger('movimiento_jugador') # <--- OBTENER LOGGER
 
 class Enemigo(pygame.sprite.Sprite):
+    id_counter = 0 # <--- CONTADOR DE CLASE PARA ID ÚNICO
+
     def __init__(self, x, y, nombre_archivo_imagen="chicken.png"):
         """Constructor de la clase Enemigo.
 
@@ -15,24 +21,38 @@ class Enemigo(pygame.sprite.Sprite):
         """
         super().__init__()
 
+        self.id_enemigo = Enemigo.id_counter # <--- ASIGNAR ID ÚNICO
+        Enemigo.id_counter += 1
+        logger.debug(f"[Enemigo_{self.id_enemigo}] Creado en ({x}, {y})") # <--- LOG CREACIÓN
+
         self.ruta_base_enemigos = os.path.join(settings.RUTA_ASSETS, "character", "animaciones", "Enemy")
         
         try:
-            # Construir la ruta completa a la imagen del enemigo
             ruta_imagen = os.path.join(self.ruta_base_enemigos, nombre_archivo_imagen)
             self.image = pygame.image.load(ruta_imagen).convert_alpha()
-            # Podríamos añadir escalado aquí si es necesario, ej:
-            # self.image = pygame.transform.scale(self.image, (NUEVO_ANCHO, NUEVO_ALTO))
         except pygame.error as e:
-            print(f"Error al cargar la imagen del enemigo {ruta_imagen}: {e}")
-            # Fallback a una superficie simple si la imagen no carga
-            self.image = pygame.Surface((30, 30)) # Tamaño de fallback
-            self.image.fill(settings.ROJO) # Color de fallback (rojo)
-            pygame.draw.circle(self.image, settings.NEGRO, (15,15), 10) # Un círculo negro para distinguirlo
+            logger.error(f"[Enemigo_{self.id_enemigo}] Error al cargar imagen {ruta_imagen}: {e}") # <--- LOG ERROR
+            self.image = pygame.Surface((30, 30))
+            self.image.fill(settings.ROJO)
+            pygame.draw.circle(self.image, settings.NEGRO, (15,15), 10)
 
         self.rect = self.image.get_rect()
         self.rect.x = x
         self.rect.y = y
+
+        # --- Definición del Hitbox del Enemigo (similar al jugador) ---
+        # Estos valores pueden necesitar ajuste según el sprite del enemigo.
+        self.hitbox_offset_x = 3 
+        self.hitbox_offset_y = 3
+        hb_ancho = self.rect.width - (2 * self.hitbox_offset_x)
+        hb_alto = self.rect.height - (2 * self.hitbox_offset_y)
+        
+        # Asegurarse de que el hitbox tenga al menos 1x1 de tamaño
+        hb_ancho = max(1, hb_ancho) 
+        hb_alto = max(1, hb_alto)
+
+        self.hitbox = pygame.Rect(0, 0, hb_ancho, hb_alto)
+        self._actualizar_posicion_hitbox() # Posicionar hitbox inicial
 
         # Atributos de combate
         self.vida_maxima = 5
@@ -45,44 +65,63 @@ class Enemigo(pygame.sprite.Sprite):
         # Atributos de movimiento y aggro
         self.velocidad_movimiento = 1.5 # Más lento que el jugador
         self.rango_agro = 200 # Píxeles de distancia para empezar a seguir
-        self.distancia_minima_al_jugador = 20 # Para evitar que se solape temblando
+        self.distancia_minima_al_jugador = 22 # Reducido desde 35, basado en análisis de hitboxes
 
-    def update(self, jugador_rect):
-        """Actualiza la lógica del enemigo.
-        Por ahora, los enemigos estáticos no hacen nada en su update.
-        Se podría añadir movimiento, IA, etc. aquí en el futuro.
+    def _actualizar_posicion_hitbox(self):
+        """Actualiza la posición del hitbox basándose en la posición del rect principal."""
+        self.hitbox.centerx = self.rect.centerx
+        self.hitbox.centery = self.rect.centery
+        # O si prefieres basarlo en topleft con offsets:
+        # self.hitbox.topleft = (self.rect.x + self.hitbox_offset_x, self.rect.y + self.hitbox_offset_y)
+
+    def update(self, objetivo_rect, grupo_obstaculos):
+        """Actualiza la lógica del enemigo, incluyendo movimiento y IA básica.
+
+        Args:
+            objetivo_rect (pygame.Rect): El rect del objetivo (ej. hitbox del jugador) para seguir.
+            grupo_obstaculos (pygame.sprite.Group): Grupo de sprites de obstáculos para evitar (no implementado aun).
         """
+        logger.debug(f"--- Inicio Update Enemigo_{self.id_enemigo} ---") # <--- LOG INICIO UPDATE
+        logger.debug(f"[Enemigo_{self.id_enemigo}] Pos ANTES update: Rect: {self.rect.topleft}, Hitbox: {self.hitbox.topleft}")
+
         if self.vida_actual <= 0:
             self.morir()
-            return # No hacer más lógica si está muerto
+            return
 
-        # Lógica de seguimiento (aggro)
-        dx_al_jugador = jugador_rect.centerx - self.rect.centerx
-        dy_al_jugador = jugador_rect.centery - self.rect.centery
+        dx_al_objetivo = objetivo_rect.centerx - self.hitbox.centerx # Usar hitbox para el cálculo de IA
+        dy_al_objetivo = objetivo_rect.centery - self.hitbox.centery
         
-        distancia_al_jugador = math.sqrt(dx_al_jugador**2 + dy_al_jugador**2)
-
-        if distancia_al_jugador < self.rango_agro and distancia_al_jugador > self.distancia_minima_al_jugador:
-            # Normalizar el vector de dirección
-            if distancia_al_jugador > 0: # Evitar división por cero si está exactamente en el mismo punto
-                dir_x = dx_al_jugador / distancia_al_jugador
-                dir_y = dy_al_jugador / distancia_al_jugador
-            else:
-                dir_x, dir_y = 0, 0 # No moverse si ya está encima
-
-            # Mover enemigo
-            self.rect.x += dir_x * self.velocidad_movimiento
-            self.rect.y += dir_y * self.velocidad_movimiento
+        distancia_al_objetivo = math.sqrt(dx_al_objetivo**2 + dy_al_objetivo**2)
         
-        # (Aquí iría la lógica de ataque si el enemigo está lo suficientemente cerca después de moverse)
+        logger.debug(f"[Enemigo_{self.id_enemigo}] Target (Jugador): {objetivo_rect.center}, Dist: {distancia_al_objetivo:.2f}, dx_obj: {dx_al_objetivo:.2f}, dy_obj: {dy_al_objetivo:.2f}")
+
+        mov_x = 0
+        mov_y = 0
+
+        if distancia_al_objetivo < self.rango_agro and distancia_al_objetivo > self.distancia_minima_al_jugador:
+            if distancia_al_objetivo > 0:
+                dir_x = dx_al_objetivo / distancia_al_objetivo
+                dir_y = dy_al_objetivo / distancia_al_objetivo
+                mov_x = dir_x * self.velocidad_movimiento
+                mov_y = dir_y * self.velocidad_movimiento
+        
+        logger.debug(f"[Enemigo_{self.id_enemigo}] Movimiento calculado: mov_x={mov_x:.2f}, mov_y={mov_y:.2f}")
+        
+        # Mover enemigo (aquí se podría añadir colisión con obstáculos en el futuro)
+        self.rect.x += mov_x
+        self.rect.y += mov_y
+        self._actualizar_posicion_hitbox() # Actualizar hitbox después de mover
+        
+        logger.debug(f"[Enemigo_{self.id_enemigo}] Pos DESPUÉS update: Rect: {self.rect.topleft}, Hitbox: {self.hitbox.topleft}")
+        logger.debug(f"--- Fin Update Enemigo_{self.id_enemigo} ---") # <--- LOG FIN UPDATE
 
     def recibir_dano(self, cantidad):
         self.vida_actual -= cantidad
-        print(f"Enemigo ({self.rect.center}) recibe {cantidad} de daño. Vida restante: {self.vida_actual}")
+        logger.info(f"[Enemigo_{self.id_enemigo}] ({self.rect.center}) recibe {cantidad} de daño. Vida restante: {self.vida_actual}")
         # No necesita cooldown de recibir daño si el jugador tiene cooldown de atacar.
 
     def morir(self):
-        print(f"Enemigo en ({self.rect.centerx},{self.rect.centery}) ha muerto!")
+        logger.info(f"[Enemigo_{self.id_enemigo}] en ({self.rect.centerx},{self.rect.centery}) ha muerto!")
         self.kill() # Elimina el sprite de todos los grupos a los que pertenece.
 
     # def puede_atacar_al_jugador(self):

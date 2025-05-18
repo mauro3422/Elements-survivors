@@ -3,6 +3,39 @@ import os
 import settings
 import json
 import math # <--- Importar math
+import logging # <--- Añadir import
+
+# --- Configuración del Logger ---
+# Crear un logger específico para este módulo o para la depuración del movimiento
+logger = logging.getLogger('movimiento_jugador')
+logger.setLevel(logging.DEBUG) # Capturar todos los niveles desde DEBUG hacia arriba
+
+# Evitar añadir múltiples handlers si el módulo se recarga o la función se llama varias veces
+if not logger.handlers:
+    # Handler para escribir en archivo
+    try:
+        # Usar RUTA_BASE_PROYECTO de settings si está disponible y es correcta
+        log_file_path = os.path.join(settings.RUTA_BASE_PROYECTO, 'movimiento_debug.log')
+    except AttributeError: # Si RUTA_BASE_PROYECTO no existe en settings
+        log_file_path = 'movimiento_debug.log' # Guardar en el directorio actual
+
+    file_handler = logging.FileHandler(log_file_path, mode='w') # 'w' para sobrescribir el log cada vez
+    file_handler.setLevel(logging.DEBUG)
+
+    # Handler para mostrar en consola
+    stream_handler = logging.StreamHandler()
+    stream_handler.setLevel(logging.DEBUG) # También mostrar DEBUG en consola
+
+    # Formato para los logs
+    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+    file_handler.setFormatter(formatter)
+    stream_handler.setFormatter(formatter)
+
+    logger.addHandler(file_handler)
+    logger.addHandler(stream_handler)
+
+logger.info("Logger para Jugador configurado. Los logs de movimiento se guardarán y mostrarán.")
+# --- Fin Configuración del Logger ---
 
 class Jugador(pygame.sprite.Sprite):
     def __init__(self, x, y, ruta_assets):
@@ -295,59 +328,202 @@ class Jugador(pygame.sprite.Sprite):
     def _actualizar_posicion_hitbox(self):
         self.hitbox.topleft = (self.rect.x + self.hitbox_offset_x, self.rect.y + self.hitbox_offset_y)
 
+    def _resolver_solapamientos_estaticos_eje(self, obstaculos, eje, id_enemigos_corregidos_este_frame_eje_actual):
+        logger.debug(f"    --- Inicio _resolver_solapamientos_estaticos_eje ({eje}) ---")
+        MAX_PASADAS_RESOLUCION_ESTATICA = 1 # Evitar bucles infinitos si está muy atrapado
+        for pasada in range(MAX_PASADAS_RESOLUCION_ESTATICA):
+            colision_resuelta_en_pasada = False
+            logger.debug(f"      Pasada {pasada + 1} de resolución estática eje {eje}")
+            for i, obstaculo in enumerate(obstaculos):
+                rect_colision_obstaculo = obstaculo.hitbox if hasattr(obstaculo, 'hitbox') else obstaculo.rect
+                obst_id_log = f"{obstaculo.__class__.__name__}_{i}"
+                if hasattr(obstaculo, 'id_enemigo'): obst_id_log = f"Enemigo_{obstaculo.id_enemigo}"
+
+                # Evitar corregir múltiples veces contra el mismo enemigo si su ID es único
+                # y ya fue corregido en una interacción anterior del bucle de pasadas (aunque esto es más para entre ejes)
+                # Para el mismo eje, el problema es si una corrección causa otra.
+                # Por ahora, simple iteración; podría mejorarse con más estado.
+
+                if self.hitbox.colliderect(rect_colision_obstaculo):
+                    logger.debug(f"        SOLAPAMIENTO ESTÁTICO EJE {eje} DETECTADO con {obst_id_log}")
+                    logger.debug(f"          Jugador Hitbox: {self.hitbox.topleft}, Obstáculo {obst_id_log} Hitbox: rect={rect_colision_obstaculo.topleft}, size={rect_colision_obstaculo.size}")
+                    
+                    if eje == 'x':
+                        original_x = self.hitbox.x
+                        if rect_colision_obstaculo.centerx > self.hitbox.centerx: 
+                            logger.debug(f"          Pre-Corrección X (estática): Obstáculo a la DERECHA. Mover JUGADOR a la IZQUIERDA.")
+                            self.hitbox.right = rect_colision_obstaculo.left
+                        else: 
+                            logger.debug(f"          Pre-Corrección X (estática): Obstáculo a la IZQUIERDA. Mover JUGADOR a la DERECHA.")
+                            self.hitbox.left = rect_colision_obstaculo.right
+                        self.rect.x = self.hitbox.left - self.hitbox_offset_x
+                        self._actualizar_posicion_hitbox() # Esencial después de cambiar rect
+                        if self.hitbox.x != original_x:
+                            colision_resuelta_en_pasada = True
+                            logger.debug(f"          Post-Pre-Corrección X (estática): Jugador Hitbox: {self.hitbox.topleft}, rect: {self.rect.topleft}")
+                    
+                    elif eje == 'y':
+                        original_y = self.hitbox.y
+                        if rect_colision_obstaculo.centery > self.hitbox.centery: 
+                            logger.debug(f"          Pre-Corrección Y (estática): Obstáculo ABAJO. Mover JUGADOR ARRIBA.")
+                            self.hitbox.bottom = rect_colision_obstaculo.top
+                        else: 
+                            logger.debug(f"          Pre-Corrección Y (estática): Obstáculo ARRIBA. Mover JUGADOR ABAJO.")
+                            self.hitbox.top = rect_colision_obstaculo.bottom
+                        self.rect.y = self.hitbox.top - self.hitbox_offset_y
+                        self._actualizar_posicion_hitbox() # Esencial después de cambiar rect
+                        if self.hitbox.y != original_y:
+                            colision_resuelta_en_pasada = True
+                            logger.debug(f"          Post-Pre-Corrección Y (estática): Jugador Hitbox: {self.hitbox.topleft}, rect: {self.rect.topleft}")
+            
+            if not colision_resuelta_en_pasada:
+                logger.debug(f"      No más solapamientos estáticos detectados/resueltos en eje {eje} en pasada {pasada + 1}.")
+                break # Salir del bucle de pasadas si no se hizo ninguna corrección
+        logger.debug(f"    --- Fin _resolver_solapamientos_estaticos_eje ({eje}) ---")
+
     def _mover_y_colisionar(self, dx, dy, obstaculos):
-        # Guardar la posición original por si necesitamos revertir completamente un movimiento
-        # (aunque con la corrección por ejes, esto es menos crucial aquí que en colisiones más simples)
-        # pos_original_x = self.rect.x
-        # pos_original_y = self.rect.y
+        logger.debug(f"--- Inicio _mover_y_colisionar ---")
+        logger.debug(f"Input: dx={dx}, dy={dy}")
+        logger.debug(f"Posición ANTES de aplicar input y pre-correción: Jugador Rect: {self.rect.topleft}, Jugador Hitbox: {self.hitbox.topleft}")
+
+        # Usar un set para rastrear enemigos ya corregidos en la fase estática para evitar doble conteo si es necesario.
+        # Por ahora, la lógica interna de _resolver_solapamientos_estaticos_eje itera varias veces.
+        id_enemigos_corregidos_fase_estatica = set()
+
+        # --- Fase 1: Resolver solapamientos estáticos existentes ANTES del movimiento del jugador ---
+        logger.debug(f"Inicio Fase Pre-Corrección Estática")
+        self._resolver_solapamientos_estaticos_eje(obstaculos, 'x', id_enemigos_corregidos_fase_estatica)
+        self._resolver_solapamientos_estaticos_eje(obstaculos, 'y', id_enemigos_corregidos_fase_estatica)
+        logger.debug(f"Fin Fase Pre-Corrección Estática. Posición Jugador: Rect: {self.rect.topleft}, Hitbox: {self.hitbox.topleft}")
+
+        # --- Fase 2: Movimiento del jugador y correcciones post-movimiento (lógica principal anterior) ---
+        logger.debug(f"Inicio Fase Movimiento y Corrección Principal")
 
         # --- Movimiento y colisiones en Eje X ---
         self.rect.x += dx
-        self._actualizar_posicion_hitbox() # Actualizar hitbox a la nueva posición tentativa X
+        self._actualizar_posicion_hitbox()
+        # No hay log inmediato aquí, se registrará el estado después de la corrección de bordes.
 
-        # Comprobar límites del mundo en X
+        # Colisiones con bordes del mundo en X
+        pos_antes_borde_x_rect = self.rect.topleft
+        pos_antes_borde_x_hitbox = self.hitbox.topleft
+        borde_x_corregido = False
         if self.hitbox.left < 0:
-            # El hitbox ha cruzado el borde izquierdo del mundo (0)
-            # Ajustamos self.rect.x para que self.hitbox.left sea 0
-            self.rect.x = 0 - self.hitbox_offset_x 
+            self.hitbox.left = 0
+            self.rect.x = self.hitbox.left - self.hitbox_offset_x
+            logger.debug(f"Corregido borde IZQ mundo. Pre-borde Rect: {pos_antes_borde_x_rect}, Hitbox: {pos_antes_borde_x_hitbox}. Post-borde Rect: {self.rect.topleft}, Hitbox: {self.hitbox.topleft}")
+            borde_x_corregido = True
         elif self.hitbox.right > settings.ANCHO_MUNDO_JUEGO:
-            # El hitbox ha cruzado el borde derecho del mundo
-            # Ajustamos self.rect.x para que self.hitbox.right sea ANCHO_MUNDO_JUEGO
-            self.rect.x = settings.ANCHO_MUNDO_JUEGO - self.hitbox_offset_x - self.hitbox.width
-        self._actualizar_posicion_hitbox() # Re-sincronizar hitbox después de corrección de límites en X
-
-        # Comprobar colisiones con obstáculos en X
-        for obstaculo in obstaculos:
-            if self.hitbox.colliderect(obstaculo.rect):
-                if dx > 0: # Moviéndose a la derecha, choca con el lado izquierdo del obstáculo
-                    self.rect.x = obstaculo.rect.left - self.hitbox_offset_x - self.hitbox.width
-                elif dx < 0: # Moviéndose a la izquierda, choca con el lado derecho del obstáculo
-                    self.rect.x = obstaculo.rect.right - self.hitbox_offset_x
-                self._actualizar_posicion_hitbox() # Re-sincronizar hitbox después de la corrección por colisión en X
+            self.hitbox.right = settings.ANCHO_MUNDO_JUEGO
+            self.rect.x = self.hitbox.right - self.hitbox.width - self.hitbox_offset_x
+            logger.debug(f"Corregido borde DER mundo. Pre-borde Rect: {pos_antes_borde_x_rect}, Hitbox: {pos_antes_borde_x_hitbox}. Post-borde Rect: {self.rect.topleft}, Hitbox: {self.hitbox.topleft}")
+            borde_x_corregido = True
         
+        if borde_x_corregido:
+             self._actualizar_posicion_hitbox() # Sincronizar si hubo corrección de borde
+
+        logger.debug(f"Estado ANTES de colisiones X con OBSTÁCULOS (post-dx y post-bordeX): Jugador Rect: {self.rect.topleft}, Hitbox: {self.hitbox.topleft}")
+
+        # logger.debug(f"Antes loop colisiones X con obstáculos: Jugador Hitbox: {self.hitbox.topleft}") # ELIMINADO - Cubierto por el log de arriba
+        for i, obstaculo in enumerate(obstaculos):
+            rect_colision_obstaculo = obstaculo.hitbox if hasattr(obstaculo, 'hitbox') else obstaculo.rect
+            obst_id = f"{obstaculo.__class__.__name__}_{i}"
+            if hasattr(obstaculo, 'id_enemigo'): obst_id = f"Enemigo_{obstaculo.id_enemigo}"
+
+            if self.hitbox.colliderect(rect_colision_obstaculo):
+                logger.debug(f"  COLISIÓN X DETECTADA con {obst_id} (input dx={dx})")
+                logger.debug(f"    Obstáculo {obst_id} Hitbox: rect={rect_colision_obstaculo.topleft}, size={rect_colision_obstaculo.size}")
+                
+                if dx > 0: # Jugador intentó moverse a la DERECHA y colisionó
+                    # Siempre se posiciona a la izquierda del obstáculo
+                    logger.debug(f"    Corrección X (mov DER): Posicionar JUGADOR a la IZQUIERDA del obstáculo")
+                    self.hitbox.right = rect_colision_obstaculo.left
+                    self.rect.x = self.hitbox.left - self.hitbox_offset_x 
+                elif dx < 0: # Jugador intentó moverse a la IZQUIERDA y colisionó
+                    # Siempre se posiciona a la derecha del obstáculo
+                    logger.debug(f"    Corrección X (mov IZQ): Posicionar JUGADOR a la DERECHA del obstáculo")
+                    self.hitbox.left = rect_colision_obstaculo.right
+                    self.rect.x = self.hitbox.left - self.hitbox_offset_x
+                else: # dx == 0, pero hay colisión (enemigo se movió hacia el jugador o ya estaba solapado)
+                    logger.debug(f"    Corrección X (dx=0): Colisión con jugador quieto en X. Determinar lado.")
+                    if rect_colision_obstaculo.centerx > self.hitbox.centerx: 
+                        logger.debug(f"      Obstáculo a la DERECHA. Mover JUGADOR a la IZQUIERDA.")
+                        self.hitbox.right = rect_colision_obstaculo.left
+                    else: 
+                        logger.debug(f"      Obstáculo a la IZQUIERDA. Mover JUGADOR a la DERECHA.")
+                        self.hitbox.left = rect_colision_obstaculo.right
+                    self.rect.x = self.hitbox.left - self.hitbox_offset_x
+                
+                self._actualizar_posicion_hitbox() 
+                logger.debug(f"    Post-corrección X: Jugador Hitbox: {self.hitbox.topleft}, rect: {self.rect.topleft}")
+                break 
+        # logger.debug(f"Después loop colisiones X: Jugador Rect: {self.rect.topleft}, Jugador Hitbox: {self.hitbox.topleft}") # ELIMINADO - Implícito en el siguiente estado Y o final
+        
+        # Guardar estado X final para referencia en log Y
+        estado_x_final_rect = self.rect.topleft
+        estado_x_final_hitbox = self.hitbox.topleft
+
         # --- Movimiento y colisiones en Eje Y ---
         self.rect.y += dy
-        self._actualizar_posicion_hitbox() # Actualizar hitbox a la nueva posición tentativa Y
+        self._actualizar_posicion_hitbox()
+        # No hay log inmediato aquí, se registrará el estado después de la corrección de bordes.
 
-        # Comprobar límites del mundo en Y
+        # Colisiones con bordes del mundo en Y
+        pos_antes_borde_y_rect = self.rect.topleft
+        pos_antes_borde_y_hitbox = self.hitbox.topleft
+        borde_y_corregido = False
         if self.hitbox.top < 0:
-            # El hitbox ha cruzado el borde superior del mundo (0)
-            # Ajustamos self.rect.y para que self.hitbox.top sea 0
-            self.rect.y = 0 - self.hitbox_offset_y
+            self.hitbox.top = 0
+            self.rect.y = self.hitbox.top - self.hitbox_offset_y
+            logger.debug(f"Corregido borde SUP mundo. Pre-borde Rect: {pos_antes_borde_y_rect}, Hitbox: {pos_antes_borde_y_hitbox}. Post-borde Rect: {self.rect.topleft}, Hitbox: {self.hitbox.topleft}")
+            borde_y_corregido = True
         elif self.hitbox.bottom > settings.ALTO_MUNDO_JUEGO:
-            # El hitbox ha cruzado el borde inferior del mundo
-            # Ajustamos self.rect.y para que self.hitbox.bottom sea ALTO_MUNDO_JUEGO
-            self.rect.y = settings.ALTO_MUNDO_JUEGO - self.hitbox_offset_y - self.hitbox.height
-        self._actualizar_posicion_hitbox() # Re-sincronizar hitbox después de corrección de límites en Y
+            self.hitbox.bottom = settings.ALTO_MUNDO_JUEGO
+            self.rect.y = self.hitbox.bottom - self.hitbox.height - self.hitbox_offset_y
+            logger.debug(f"Corregido borde INF mundo. Pre-borde Rect: {pos_antes_borde_y_rect}, Hitbox: {pos_antes_borde_y_hitbox}. Post-borde Rect: {self.rect.topleft}, Hitbox: {self.hitbox.topleft}")
+            borde_y_corregido = True
 
-        # Comprobar colisiones con obstáculos en Y
-        for obstaculo in obstaculos:
-            if self.hitbox.colliderect(obstaculo.rect):
-                if dy > 0: # Moviéndose hacia abajo, choca con la parte superior del obstáculo
-                    self.rect.y = obstaculo.rect.top - self.hitbox_offset_y - self.hitbox.height
-                elif dy < 0: # Moviéndose hacia arriba, choca con la parte inferior del obstáculo
-                    self.rect.y = obstaculo.rect.bottom - self.hitbox_offset_y
-                self._actualizar_posicion_hitbox() # Re-sincronizar hitbox después de la corrección por colisión en Y
+        if borde_y_corregido:
+            self._actualizar_posicion_hitbox() # Sincronizar si hubo corrección de borde
+
+        logger.debug(f"Estado ANTES de colisiones Y con OBSTÁCULOS (post-dy y post-bordeY): Jugador Rect: {self.rect.topleft}, Hitbox: {self.hitbox.topleft}. (X-coords eran Rect: {estado_x_final_rect}, Hitbox: {estado_x_final_hitbox})")
+        
+        # logger.debug(f"Antes loop colisiones Y con obstáculos: Jugador Hitbox: {self.hitbox.topleft}") # ELIMINADO - Cubierto por el log de arriba
+        for i, obstaculo in enumerate(obstaculos):
+            rect_colision_obstaculo = obstaculo.hitbox if hasattr(obstaculo, 'hitbox') else obstaculo.rect
+            obst_id = f"{obstaculo.__class__.__name__}_{i}"
+            if hasattr(obstaculo, 'id_enemigo'): obst_id = f"Enemigo_{obstaculo.id_enemigo}"
+
+            if self.hitbox.colliderect(rect_colision_obstaculo):
+                logger.debug(f"  COLISIÓN Y DETECTADA con {obst_id} (input dy={dy})")
+                logger.debug(f"    Obstáculo {obst_id} Hitbox: rect={rect_colision_obstaculo.topleft}, size={rect_colision_obstaculo.size}")
+
+                if dy > 0: # Jugador intentó moverse ABAJO y colisionó
+                    # Siempre se posiciona arriba del obstáculo
+                    logger.debug(f"    Corrección Y (mov ABAJO): Posicionar JUGADOR ARRIBA del obstáculo")
+                    self.hitbox.bottom = rect_colision_obstaculo.top
+                    self.rect.y = self.hitbox.top - self.hitbox_offset_y 
+                elif dy < 0: # Jugador intentó moverse ARRIBA y colisionó
+                    # Siempre se posiciona abajo del obstáculo
+                    logger.debug(f"    Corrección Y (mov ARRIBA): Posicionar JUGADOR ABAJO del obstáculo")
+                    self.hitbox.top = rect_colision_obstaculo.bottom
+                    self.rect.y = self.hitbox.top - self.hitbox_offset_y
+                else: # dy == 0, pero hay colisión
+                    logger.debug(f"    Corrección Y (dy=0): Colisión con jugador quieto en Y. Determinar lado.")
+                    if rect_colision_obstaculo.centery > self.hitbox.centery: 
+                        logger.debug(f"      Obstáculo ABAJO. Mover JUGADOR ARRIBA.")
+                        self.hitbox.bottom = rect_colision_obstaculo.top
+                    else: 
+                        logger.debug(f"      Obstáculo ARRIBA. Mover JUGADOR ABAJO.")
+                        self.hitbox.top = rect_colision_obstaculo.bottom
+                    self.rect.y = self.hitbox.top - self.hitbox_offset_y
+                
+                self._actualizar_posicion_hitbox() 
+                logger.debug(f"    Post-corrección Y: Jugador Hitbox: {self.hitbox.topleft}, rect: {self.rect.topleft}")
+                break 
+        
+        logger.debug(f"Posición FINAL en _mover_y_colisionar: Jugador Rect: {self.rect.topleft}, Hitbox: {self.hitbox.topleft}")
+        logger.debug(f"--- Fin _mover_y_colisionar ---")
 
     def actualizar_movimiento(self, teclas_presionadas, obstaculos):
         """Actualiza la posición del jugador basándose en las teclas presionadas.
@@ -507,8 +683,9 @@ class Jugador(pygame.sprite.Sprite):
 
             for enemigo in enemigos:
                 if enemigo not in self.enemigos_golpeados_este_ataque:
-                    if self.hitbox_ataque_actual_rect.colliderect(enemigo.rect):
-                        print(f"ATAQUE '{self.nombre_perfil_ataque_activo}' (seg {segmento_actual_indice}) golpea enemigo")
+                    # Usar enemigo.hitbox para la detección de colisión del ataque del jugador
+                    if self.hitbox_ataque_actual_rect.colliderect(enemigo.hitbox):
+                        print(f"ATAQUE '{self.nombre_perfil_ataque_activo}' (seg {segmento_actual_indice}) golpea enemigo (hitbox)")
                         enemigo.recibir_dano(dano_actual)
                         self.enemigos_golpeados_este_ataque.add(enemigo)
         else:

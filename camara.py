@@ -128,9 +128,13 @@ class Camara:
                 if hasattr(jugador, 'hitbox_ataque_actual_rect') and jugador.hitbox_ataque_actual_rect.width > 0 and jugador.hitbox_ataque_actual_rect.height > 0:
                     self.dibujar_rect_debug(jugador.hitbox_ataque_actual_rect, settings.VERDE_DEBUG, self.offset_camara)
             
-            # Hitbox de los enemigos (usando su rect por ahora)
+            # Hitboxes de los enemigos
             for enemigo in grupo_enemigos:
-                self.dibujar_rect_debug(enemigo.rect, settings.ROJO, self.offset_camara)
+                # Dibujar el "hitbox de cuerpo" (enemigo.rect) en AZUL
+                self.dibujar_rect_debug(enemigo.rect, settings.AZUL, self.offset_camara)
+                # Dibujar el "hitbox lógico/de combate" (enemigo.hitbox) en VERDE_DEBUG
+                if hasattr(enemigo, 'hitbox'):
+                     self.dibujar_rect_debug(enemigo.hitbox, settings.VERDE_DEBUG, self.offset_camara)
             
             # Hitbox de los árboles (usando su rect por ahora)
             # for arbol in grupo_arboles:
