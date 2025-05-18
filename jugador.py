@@ -328,13 +328,12 @@ class Jugador(pygame.sprite.Sprite):
     def _actualizar_posicion_hitbox(self):
         self.hitbox.topleft = (self.rect.x + self.hitbox_offset_x, self.rect.y + self.hitbox_offset_y)
 
-    def _resolver_solapamientos_estaticos_eje(self, obstaculos, eje, id_enemigos_corregidos_este_frame_eje_actual, movimiento_input_en_eje):
+    def _resolver_solapamientos_estaticos_eje(self, obstaculos, eje, movimiento_input_en_eje):
         logger.debug(f"    --- Inicio _resolver_solapamientos_estaticos_eje ({eje}) --- Input en eje: {movimiento_input_en_eje}")
         MAX_PASADAS_RESOLUCION_ESTATICA = 5
         for pasada in range(MAX_PASADAS_RESOLUCION_ESTATICA):
             colision_resuelta_en_pasada = False
             logger.debug(f"      Pasada {pasada + 1} de resolución estática eje {eje}")
-            pos_original_hitbox_eje = self.hitbox.x if eje == 'x' else self.hitbox.y
 
             for i, obstaculo in enumerate(obstaculos):
                 rect_colision_obstaculo = obstaculo.hitbox if hasattr(obstaculo, 'hitbox') else obstaculo.rect
@@ -348,19 +347,15 @@ class Jugador(pygame.sprite.Sprite):
                     if eje == 'x':
                         x_antes_de_ajuste_actual = self.hitbox.x
                         obstaculo_a_la_derecha = rect_colision_obstaculo.centerx > self.hitbox.centerx
-                        # Determinar si el jugador se está moviendo activamente HACIA el obstáculo
-                        jugador_mueve_hacia_obstaculo = (obstaculo_a_la_derecha and movimiento_input_en_eje > 0) or \
-                                                        (not obstaculo_a_la_derecha and movimiento_input_en_eje < 0)
-
-                        if jugador_mueve_hacia_obstaculo:
-                            logger.debug(f"          Pre-Corrección X (estática): Jugador ({self.hitbox.topleft}) se mueve (dx={movimiento_input_en_eje}) HACIA {obst_id_log} ({rect_colision_obstaculo.topleft}). Fase 1 no empuja.")
-                        else: # Jugador está quieto o se mueve en dirección que no es hacia el obstáculo
-                            if obstaculo_a_la_derecha:
-                                logger.debug(f"          Pre-Corrección X (estática): Obstáculo a la DERECHA. Jugador quieto/aleja. Mover JUGADOR 1px IZQUIERDA.")
-                                self.hitbox.x -= 1
-                            else: # Obstáculo a la IZQUIERDA
-                                logger.debug(f"          Pre-Corrección X (estática): Obstáculo a la IZQUIERDA. Jugador quieto/aleja. Mover JUGADOR 1px DERECHA.")
-                                self.hitbox.x += 1
+                        # La condición jugador_mueve_hacia_obstaculo y el if/else asociado se eliminan.
+                        # Siempre se aplica el empujón si hay solapamiento.
+                        
+                        if obstaculo_a_la_derecha:
+                            self.hitbox.x -= 1
+                            logger.debug(f"          Pre-Corrección X (estática) FORZADA: Obstáculo a la DERECHA. Mover JUGADOR 1px IZQUIERDA. Input dx={movimiento_input_en_eje}")
+                        else: 
+                            self.hitbox.x += 1
+                            logger.debug(f"          Pre-Corrección X (estática) FORZADA: Obstáculo a la IZQUIERDA. Mover JUGADOR 1px DERECHA. Input dx={movimiento_input_en_eje}")
                         
                         if self.hitbox.x != x_antes_de_ajuste_actual:
                             hitbox_modificado_este_obstaculo = True
@@ -368,19 +363,15 @@ class Jugador(pygame.sprite.Sprite):
                     elif eje == 'y':
                         y_antes_de_ajuste_actual = self.hitbox.y
                         obstaculo_abajo = rect_colision_obstaculo.centery > self.hitbox.centery
-                        # Determinar si el jugador se está moviendo activamente HACIA el obstáculo
-                        jugador_mueve_hacia_obstaculo = (obstaculo_abajo and movimiento_input_en_eje > 0) or \
-                                                        (not obstaculo_abajo and movimiento_input_en_eje < 0)
+                        # La condición jugador_mueve_hacia_obstaculo y el if/else asociado se eliminan.
+                        # Siempre se aplica el empujón si hay solapamiento.
 
-                        if jugador_mueve_hacia_obstaculo:
-                            logger.debug(f"          Pre-Corrección Y (estática): Jugador ({self.hitbox.topleft}) se mueve (dy={movimiento_input_en_eje}) HACIA {obst_id_log} ({rect_colision_obstaculo.topleft}). Fase 1 no empuja.")
-                        else: # Jugador está quieto o se mueve en dirección que no es hacia el obstáculo
-                            if obstaculo_abajo:
-                                logger.debug(f"          Pre-Corrección Y (estática): Obstáculo ABAJO. Jugador quieto/aleja. Mover JUGADOR 1px ARRIBA.")
-                                self.hitbox.y -= 1
-                            else: # Obstáculo ARRIBA
-                                logger.debug(f"          Pre-Corrección Y (estática): Obstáculo ARRIBA. Jugador quieto/aleja. Mover JUGADOR 1px ABAJO.")
-                                self.hitbox.y += 1
+                        if obstaculo_abajo:
+                            self.hitbox.y -= 1
+                            logger.debug(f"          Pre-Corrección Y (estática) FORZADA: Obstáculo ABAJO. Mover JUGADOR 1px ARRIBA. Input dy={movimiento_input_en_eje}")
+                        else: 
+                            self.hitbox.y += 1
+                            logger.debug(f"          Pre-Corrección Y (estática) FORZADA: Obstáculo ARRIBA. Mover JUGADOR 1px ABAJO. Input dy={movimiento_input_en_eje}")
 
                         if self.hitbox.y != y_antes_de_ajuste_actual:
                             hitbox_modificado_este_obstaculo = True
@@ -388,16 +379,13 @@ class Jugador(pygame.sprite.Sprite):
                     if hitbox_modificado_este_obstaculo:
                         colision_resuelta_en_pasada = True
                         logger.debug(f"            Post-Pre-Corrección EJE {eje} (estática) contra {obst_id_log}: Jugador Hitbox: {self.hitbox.topleft}, rect: {self.rect.topleft}")
-           
-            if not colision_resuelta_en_pasada:
-                logger.debug(f"      No más solapamientos estáticos detectados/resueltos en eje {eje} en pasada {pasada + 1}. Saliendo de bucle de pasadas.")
+            
+            if not colision_resuelta_en_pasada: 
+                logger.debug(f"      No más solapamientos estáticos detectados/resueltos en eje {eje} en pasada {pasada + 1} (bucle interno completado sin cambios). Saliendo de bucle de pasadas.")
                 break 
-            else:
+            else: 
                 logger.debug(f"      Fin de pasada {pasada + 1} de resolución estática eje {eje}. Hubo correcciones. Hitbox actual: {self.hitbox.topleft}")
-                # Si queremos ser extra cautelosos y el hitbox cambió mucho en una sola pasada de 1px nudges, podría indicar un problema.
-                # if abs((self.hitbox.x if eje == 'x' else self.hitbox.y) - pos_original_hitbox_eje) > self.velocidad * 2: # Un umbral arbitrario
-                #    logger.warning(f"ALERTA: Hitbox en eje {eje} se movió significativamente ({abs((self.hitbox.x if eje == 'x' else self.hitbox.y) - pos_original_hitbox_eje)}px) en una sola pasada de resolución estática!")
-
+        
         logger.debug(f"    --- Fin _resolver_solapamientos_estaticos_eje ({eje}) --- Hitbox final: {self.hitbox.topleft}")
 
     def _mover_y_colisionar(self, dx, dy, obstaculos):
@@ -414,11 +402,9 @@ class Jugador(pygame.sprite.Sprite):
         dx_aplicado = dx
         dy_aplicado = dy
 
-        id_enemigos_corregidos_fase_estatica = set()
-
         logger.debug("******************** PRINT CHECK: Inicio Fase 1: Pre-Correccion Estatica ********************")
-        self._resolver_solapamientos_estaticos_eje(obstaculos, 'x', id_enemigos_corregidos_fase_estatica, dx)
-        self._resolver_solapamientos_estaticos_eje(obstaculos, 'y', id_enemigos_corregidos_fase_estatica, dy)
+        self._resolver_solapamientos_estaticos_eje(obstaculos, 'x', dx)
+        self._resolver_solapamientos_estaticos_eje(obstaculos, 'y', dy)
         
         # Actualizar rect principal DESPUÉS de que la Fase 1 haya modificado el hitbox
         self.rect.x = self.hitbox.x - self.hitbox_offset_x
@@ -430,7 +416,7 @@ class Jugador(pygame.sprite.Sprite):
         pos_segura_hitbox_y_tras_fase1 = self.hitbox.y
 
         logger.debug("DEBUG CON PRINT: --- Inicio Fase 2: Movimiento y Colision --- ")
-        MAX_CORRECCIONES_POR_EJE = 5
+        # MAX_CORRECCIONES_POR_EJE = 5 # Ya no se usa con la nueva lógica más agresiva
         
         # Movimiento y colisión en el eje X
         if dx_aplicado != 0:
@@ -438,44 +424,45 @@ class Jugador(pygame.sprite.Sprite):
             self.hitbox.x += dx_aplicado
             logger.debug(f"PRINT CHECK Fase 2: Intento mov X a {self.hitbox.x} (dx: {dx_aplicado})")
 
-            for pasada_x in range(MAX_CORRECCIONES_POR_EJE):
-                colision_corregida_en_pasada_x = False
-                for i, obstaculo in enumerate(obstaculos):
-                    rect_colision_obstaculo = obstaculo.hitbox if hasattr(obstaculo, 'hitbox') else obstaculo.rect
-                    if self.hitbox.colliderect(rect_colision_obstaculo):
-                        logger.debug(f"PRINT CHECK Fase 2: Colisión X detectada con obstaculo {i} ({type(obstaculo).__name__}) en pasada {pasada_x}")
-                        
-                        # --- Lógica de corrección Fase 2 X MODIFICADA ---
-                        if dx_aplicado > 0: # Intentó moverse a la derecha, colisionó.
-                            self.hitbox.right = rect_colision_obstaculo.left
-                            logger.debug(f"  PRINT CHECK Fase 2: Corrección X (mov_der): J.right={self.hitbox.right} (Obs.left={rect_colision_obstaculo.left})")
-                        elif dx_aplicado < 0: # Intentó moverse a la izquierda, colisionó.
-                            self.hitbox.left = rect_colision_obstaculo.right
-                            logger.debug(f"  PRINT CHECK Fase 2: Corrección X (mov_izq): J.left={self.hitbox.left} (Obs.right={rect_colision_obstaculo.right})")
-                        # --- Fin Lógica de corrección Fase 2 X MODIFICADA ---
-                        
-                        colision_corregida_en_pasada_x = True
-                        break # Salir del bucle de obstáculos, volver a comprobar desde el principio de la lista en la siguiente pasada_x
-                
-                if not colision_corregida_en_pasada_x:
-                    logger.debug(f"PRINT CHECK Fase 2: No más colisiones en X en pasada {pasada_x}. Saliendo de correcciones X.")
-                    break
+            # Lógica de Fase 2 X Simplificada y Más Agresiva
+            colision_inicial_x_detectada = False
+            for i, obstaculo in enumerate(obstaculos):
+                rect_colision_obstaculo = obstaculo.hitbox if hasattr(obstaculo, 'hitbox') else obstaculo.rect
+                if self.hitbox.colliderect(rect_colision_obstaculo):
+                    colision_inicial_x_detectada = True
+                    logger.debug(f"PRINT CHECK Fase 2: Colisión X INMEDIATA tras mov con obstaculo {i} ({type(obstaculo).__name__})")
+                    
+                    # Aplicar empujón de 1px
+                    if dx_aplicado > 0: # Intentó moverse a la derecha
+                        self.hitbox.x -= 1
+                        logger.debug(f"  PRINT CHECK Fase 2: Empujón X (-1). J.hitbox.x={self.hitbox.x}")
+                    elif dx_aplicado < 0: # Intentó moverse a la izquierda
+                        self.hitbox.x += 1
+                        logger.debug(f"  PRINT CHECK Fase 2: Empujón X (+1). J.hitbox.x={self.hitbox.x}")
+                    
+                    # Verificar de nuevo si AÚN hay colisión con CUALQUIER obstáculo después del empujón
+                    colision_persiste_tras_empujon_x = False
+                    obstaculo_persistente_x = None
+                    for obst_check_x in obstaculos:
+                        rect_obst_check_x = obst_check_x.hitbox if hasattr(obst_check_x, 'hitbox') else obst_check_x.rect
+                        if self.hitbox.colliderect(rect_obst_check_x):
+                            colision_persiste_tras_empujon_x = True
+                            obstaculo_persistente_x = obst_check_x
+                            break 
+                    
+                    if colision_persiste_tras_empujon_x:
+                        logger.warning(f"  WARN Fase 2 X: Colisión persiste con {type(obstaculo_persistente_x).__name__} DESPUÉS de empujón de 1px. Revertiendo X.")
+                        self.hitbox.x = pos_original_hitbox_x_antes_de_mov_f2
+                        logger.warning(f"    WARN Fase 2 X: Movimiento en X CANCELADO TOTALMENTE. Hitbox X revertido a: {self.hitbox.x}")
+                    else:
+                        logger.debug(f"  PRINT CHECK Fase 2 X: Empujón de 1px resolvió la colisión inmediata en X.")
+                    
+                    break # Salir del bucle de obstáculos, ya se manejó la primera colisión y su consecuencia.
             
-            # VERIFICACIÓN FINAL EJE X: Si después de todas las correcciones aún hay colisión, revertir movimiento X.
-            colision_final_en_x = False
-            for obstaculo_check_x in obstaculos:
-                rect_colision_obst_check_x = obstaculo_check_x.hitbox if hasattr(obstaculo_check_x, 'hitbox') else obstaculo_check_x.rect
-                if self.hitbox.colliderect(rect_colision_obst_check_x):
-                    colision_final_en_x = True
-                    logger.warning(f"WARN Fase 2: Colisión en X persiste con {type(obstaculo_check_x).__name__} DESPUÉS de TODAS las correcciones. Revertiendo X.")
-                    break
-            
-            if colision_final_en_x:
-                self.hitbox.x = pos_original_hitbox_x_antes_de_mov_f2
-                logger.warning(f"  WARN Fase 2: Movimiento en X CANCELADO TOTALMENTE. Hitbox X revertido a: {self.hitbox.x}")
+            if not colision_inicial_x_detectada:
+                 logger.debug(f"PRINT CHECK Fase 2 X: No hubo colisión inmediata en X. Movimiento X aplicado final: {self.hitbox.x}")
 
             self.rect.x = self.hitbox.x - self.hitbox_offset_x
-            logger.debug(f"PRINT CHECK Fase 2: Posición X final tras correcciones (y posible reversión total): self.hitbox.x={self.hitbox.x}")
 
         # Movimiento y colisión en el eje Y
         if dy_aplicado != 0:
@@ -483,44 +470,45 @@ class Jugador(pygame.sprite.Sprite):
             self.hitbox.y += dy_aplicado
             logger.debug(f"PRINT CHECK Fase 2: Intento mov Y a {self.hitbox.y} (dy: {dy_aplicado})")
 
-            for pasada_y in range(MAX_CORRECCIONES_POR_EJE):
-                colision_corregida_en_pasada_y = False
-                for i, obstaculo in enumerate(obstaculos):
-                    rect_colision_obstaculo = obstaculo.hitbox if hasattr(obstaculo, 'hitbox') else obstaculo.rect
-                    if self.hitbox.colliderect(rect_colision_obstaculo):
-                        logger.debug(f"PRINT CHECK Fase 2: Colisión Y detectada con obstaculo {i} ({type(obstaculo).__name__}) en pasada {pasada_y}")
+            # Lógica de Fase 2 Y Simplificada y Más Agresiva
+            colision_inicial_y_detectada = False
+            for i, obstaculo in enumerate(obstaculos):
+                rect_colision_obstaculo = obstaculo.hitbox if hasattr(obstaculo, 'hitbox') else obstaculo.rect
+                if self.hitbox.colliderect(rect_colision_obstaculo):
+                    colision_inicial_y_detectada = True
+                    logger.debug(f"PRINT CHECK Fase 2: Colisión Y INMEDIATA tras mov con obstaculo {i} ({type(obstaculo).__name__})")
 
-                        # --- Lógica de corrección Fase 2 Y MODIFICADA ---
-                        if dy_aplicado > 0: # Intentó moverse hacia abajo, colisionó.
-                            self.hitbox.bottom = rect_colision_obstaculo.top
-                            logger.debug(f"  PRINT CHECK Fase 2: Corrección Y (mov_abajo): J.bottom={self.hitbox.bottom} (Obs.top={rect_colision_obstaculo.top})")
-                        elif dy_aplicado < 0: # Intentó moverse hacia arriba, colisionó.
-                            self.hitbox.top = rect_colision_obstaculo.bottom
-                            logger.debug(f"  PRINT CHECK Fase 2: Corrección Y (mov_arriba): J.top={self.hitbox.top} (Obs.bottom={rect_colision_obstaculo.bottom})")
-                        # --- Fin Lógica de corrección Fase 2 Y MODIFICADA ---
-                        
-                        colision_corregida_en_pasada_y = True
-                        break # Salir del bucle de obstáculos, volver a comprobar desde el principio de la lista en la siguiente pasada_y
+                    # Aplicar empujón de 1px
+                    if dy_aplicado > 0: # Intentó moverse hacia abajo
+                        self.hitbox.y -= 1
+                        logger.debug(f"  PRINT CHECK Fase 2: Empujón Y (-1). J.hitbox.y={self.hitbox.y}")
+                    elif dy_aplicado < 0: # Intentó moverse hacia arriba
+                        self.hitbox.y += 1
+                        logger.debug(f"  PRINT CHECK Fase 2: Empujón Y (+1). J.hitbox.y={self.hitbox.y}")
+                    
+                    # Verificar de nuevo si AÚN hay colisión con CUALQUIER obstáculo después del empujón
+                    colision_persiste_tras_empujon_y = False
+                    obstaculo_persistente_y = None
+                    for obst_check_y in obstaculos:
+                        rect_obst_check_y = obst_check_y.hitbox if hasattr(obst_check_y, 'hitbox') else obst_check_y.rect
+                        if self.hitbox.colliderect(rect_obst_check_y):
+                            colision_persiste_tras_empujon_y = True
+                            obstaculo_persistente_y = obst_check_y
+                            break
+                            
+                    if colision_persiste_tras_empujon_y:
+                        logger.warning(f"  WARN Fase 2 Y: Colisión persiste con {type(obstaculo_persistente_y).__name__} DESPUÉS de empujón de 1px. Revertiendo Y.")
+                        self.hitbox.y = pos_original_hitbox_y_antes_de_mov_f2
+                        logger.warning(f"    WARN Fase 2 Y: Movimiento en Y CANCELADO TOTALMENTE. Hitbox Y revertido a: {self.hitbox.y}")
+                    else:
+                        logger.debug(f"  PRINT CHECK Fase 2 Y: Empujón de 1px resolvió la colisión inmediata en Y.")
 
-                if not colision_corregida_en_pasada_y:
-                    logger.debug(f"PRINT CHECK Fase 2: No más colisiones en Y en pasada {pasada_y}. Saliendo de correcciones Y.")
-                    break 
+                    break # Salir del bucle de obstáculos, ya se manejó la primera colisión y su consecuencia.
             
-            # VERIFICACIÓN FINAL EJE Y: Si después de todas las correcciones aún hay colisión, revertir movimiento Y.
-            colision_final_en_y = False
-            for obstaculo_check_y in obstaculos:
-                rect_colision_obst_check_y = obstaculo_check_y.hitbox if hasattr(obstaculo_check_y, 'hitbox') else obstaculo_check_y.rect
-                if self.hitbox.colliderect(rect_colision_obst_check_y):
-                    colision_final_en_y = True
-                    logger.warning(f"WARN Fase 2: Colisión en Y persiste con {type(obstaculo_check_y).__name__} DESPUÉS de TODAS las correcciones. Revertiendo Y.")
-                    break
-
-            if colision_final_en_y:
-                self.hitbox.y = pos_original_hitbox_y_antes_de_mov_f2
-                logger.warning(f"  WARN Fase 2: Movimiento en Y CANCELADO TOTALMENTE. Hitbox Y revertido a: {self.hitbox.y}")
-
+            if not colision_inicial_y_detectada:
+                logger.debug(f"PRINT CHECK Fase 2 Y: No hubo colisión inmediata en Y. Movimiento Y aplicado final: {self.hitbox.y}")
+            
             self.rect.y = self.hitbox.y - self.hitbox_offset_y
-            logger.debug(f"PRINT CHECK Fase 2: Posición Y final tras correcciones (y posible reversión total): self.hitbox.y={self.hitbox.y}")
             
         # --- Medida de Seguridad Adicional: Verificación Post-Fase 2 COMPLETA ---
         colision_global_tras_fase2 = False
@@ -543,6 +531,29 @@ class Jugador(pygame.sprite.Sprite):
             self.rect.y = self.hitbox.y - self.hitbox_offset_y
             hubo_reversion_por_seguridad_global = True
             logger.warning(f"  WARN Global: Posición REVERTIDA A FASE 1. Hitbox: {self.hitbox.topleft}")
+
+            # NUEVO LOG DE VERIFICACIÓN
+            colision_aun_despues_de_reversion_global = False
+            obstaculo_final_final = None
+            rect_obst_check_final_info = "N/A" # Para loggear
+            for obst_check_final in obstaculos:
+                rect_obst_check_final = obst_check_final.hitbox if hasattr(obst_check_final, 'hitbox') else obst_check_final.rect
+                if self.hitbox.colliderect(rect_obst_check_final):
+                    colision_aun_despues_de_reversion_global = True
+                    obstaculo_final_final = obst_check_final
+                    # Guardar el rect para loggear, asegurándose de que es un rect
+                    rect_obst_check_final_info = rect_obst_check_final 
+                    break
+            if colision_aun_despues_de_reversion_global:
+                # Asegurarse de que obstaculo_final_final y rect_obst_check_final_info no son None y tienen los atributos esperados
+                nombre_obst_final = type(obstaculo_final_final).__name__ if obstaculo_final_final else "ObstaculoDesconocido"
+                pos_obst_final_info = "N/A"
+                if hasattr(rect_obst_check_final_info, 'topleft'):
+                     pos_obst_final_info = rect_obst_check_final_info.topleft
+                elif isinstance(rect_obst_check_final_info, pygame.Rect):
+                     pos_obst_final_info = rect_obst_check_final_info.topleft # Debería ser pygame.Rect
+                
+                logger.critical(f"CRITICAL POST-REVERSION: Jugador AÚN COLISIONA con {nombre_obst_final} DESPUÉS de revertir a pos_segura_fase1. Hitbox Jugador: {self.hitbox.topleft}, Rect Obst: {pos_obst_final_info}")
 
         # --- Cortafuegos Adicional Anti-Teletransportación (Última línea de defensa) ---
         distancia_movimiento_x_desde_segura = abs(self.hitbox.x - pos_segura_hitbox_x_tras_fase1)
@@ -594,7 +605,7 @@ class Jugador(pygame.sprite.Sprite):
         
         # NUEVO LOG AQUÍ
         logger.debug(f"[actualizar_movimiento] Input detectado: mov_x_final={mov_x_final}, mov_y_final={mov_y_final}. Teclas: L={teclas_presionadas[pygame.K_LEFT]}, A={teclas_presionadas[pygame.K_a]}, R={teclas_presionadas[pygame.K_RIGHT]}, D={teclas_presionadas[pygame.K_d]}, U={teclas_presionadas[pygame.K_UP]}, W={teclas_presionadas[pygame.K_w]}, Dw={teclas_presionadas[pygame.K_DOWN]}, S={teclas_presionadas[pygame.K_s]}")
-
+        
         # Actualizar la última dirección de movimiento solo si hay movimiento efectivo
         if mov_x_final != 0 or mov_y_final != 0:
             # Priorizar horizontal si hay movimiento en ambos ejes para la última dirección principal
