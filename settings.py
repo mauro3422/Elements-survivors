@@ -40,10 +40,15 @@ ALTO_MUNDO_JUEGO = ALTO_PANTALLA * 3
 
 # --- Definiciones de Colores (formato RGB) ---
 # Los colores se definen como tuplas de (Rojo, Verde, Azul), donde cada valor va de 0 a 255.
+AZUL = (0, 0, 255)
 NEGRO = (0, 0, 0)
-BLANCO = (255, 255, 255) # Definido aunque no se use actualmente en main, útil para futuro.
+BLANCO = (255, 255, 255)
 ROJO = (255, 0, 0)
-VERDE = (0, 255, 0)
+VERDE = (0, 255, 0) # Color verde normal
+VERDE_DEBUG = (0, 255, 0, 150) # Verde semitransparente para debug (RGBA)
+
+# Colores HUD
+COLOR_HUD_TEXTO = BLANCO # Usar el blanco ya definido
 
 # --- Rutas del Proyecto y Assets ---
 # `os.path.abspath(__file__)` obtiene la ruta absoluta completa del archivo actual (settings.py).
@@ -56,3 +61,5 @@ RUTA_ASSETS = os.path.join(RUTA_BASE_PROYECTO, "assets")
 
 # --- Configuraciones de Depuración ---
 DEBUG_VER_HITBOXES = True # Poner a False para ocultar hitboxes/rects de depuración
+INCREMENTO_AJUSTE_DEBUG = 2 # Píxeles o unidades a cambiar con cada pulsación para debug
+ARCHIVO_CONFIG_ATAQUE = "config_ataque.json" # Archivo para guardar/cargar config de ataque

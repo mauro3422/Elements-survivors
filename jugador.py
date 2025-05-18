@@ -1,6 +1,7 @@
 import pygame
 import os
 import settings
+import json
 
 class Jugador(pygame.sprite.Sprite):
     def __init__(self, x, y, ruta_assets):
@@ -45,12 +46,38 @@ class Jugador(pygame.sprite.Sprite):
         self.tiempo_ultimo_fotograma = pygame.time.get_ticks()
         self.retraso_animacion = 150 # Milisegundos entre fotogramas (ajustar según sea necesario)
 
+        # Dirección del último movimiento (para orientar ataques, etc.)
+        # (1, 0) -> Derecha; (-1, 0) -> Izquierda; (0, -1) -> Arriba; (0, 1) -> Abajo
+        self.ultima_direccion_mov_x = 1 # Por defecto, mirando a la derecha
+        self.ultima_direccion_mov_y = 0
+
         # Atributos de combate
         self.vida_maxima = 10
         self.vida_actual = self.vida_maxima
-        self.dano_ataque = 2
         self.ultimo_ataque_recibido = 0 # Tiempo del último golpe recibido (para cooldown)
         self.cooldown_dano = 1000 # 1 segundo de invencibilidad después de ser golpeado
+
+        # Atributos para el ataque con espada
+        self.dano_espada = 5
+        self.cooldown_ataque_espada = 700 # Milisegundos
+        self.duracion_hitbox_ataque_espada = 200 # Milisegundos que el hitbox está activo
+        self.tiempo_inicio_ataque_espada = 0
+        self.esta_atacando_espada = False
+        self.ultimo_ataque_realizado = 0 # Para el cooldown general de ataques
+        self.enemigos_golpeados_este_ataque = set()
+
+        # Valores por defecto para las dimensiones del hitbox de ataque
+        self.default_ataque_offset_distancia = 10
+        self.default_ataque_extension = 40
+        self.default_ataque_grosor = self.rect.height if self.rect else 32 # Usar altura del rect si está disponible
+
+        # Dimensiones y offset del hitbox de la espada (AJUSTABLES)
+        self.ataque_offset_distancia = self.default_ataque_offset_distancia
+        self.ataque_extension = self.default_ataque_extension
+        self.ataque_grosor = self.default_ataque_grosor
+        self._cargar_config_ataque() # Intentar cargar desde archivo, sobrescribe si tiene éxito
+        
+        self.hitbox_ataque_espada_rect = pygame.Rect(0, 0, 0, 0)
 
     def _cargar_animaciones(self):
         """Carga los fotogramas para las animaciones del jugador.
@@ -164,7 +191,32 @@ class Jugador(pygame.sprite.Sprite):
         if teclas_presionadas[pygame.K_DOWN] or teclas_presionadas[pygame.K_s]:
             mov_y_final = self.velocidad
         
+        # Actualizar la última dirección de movimiento solo si hay movimiento efectivo
         if mov_x_final != 0 or mov_y_final != 0:
+            # Priorizar horizontal si hay movimiento en ambos ejes para la última dirección principal
+            # Esto es una simplificación; podría ser más complejo para 8 direcciones si es necesario.
+            if mov_x_final != 0:
+                self.ultima_direccion_mov_x = int(mov_x_final / self.velocidad) # Normalizar a 1 o -1
+                self.ultima_direccion_mov_y = 0 # Si hay mov X, se considera la dirección principal
+            elif mov_y_final != 0: # Solo si no hay mov_x_final
+                self.ultima_direccion_mov_x = 0
+                self.ultima_direccion_mov_y = int(mov_y_final / self.velocidad) # Normalizar a 1 o -1
+            
+            # Si se permite movimiento diagonal y se quiere guardar la componente diagonal exacta:
+            # if mov_x_final != 0:
+            #     self.ultima_direccion_mov_x = int(mov_x_final / self.velocidad)
+            # else:
+            #     self.ultima_direccion_mov_x = 0 # Mantener en 0 si no hay input horizontal
+            # if mov_y_final != 0:
+            #     self.ultima_direccion_mov_y = int(mov_y_final / self.velocidad)
+            # else:
+            #     self.ultima_direccion_mov_y = 0 # Mantener en 0 si no hay input vertical
+            
+            # Corregir si ambos son cero por alguna razón (aunque la condición externa lo evita)
+            # if self.ultima_direccion_mov_x == 0 and self.ultima_direccion_mov_y == 0:
+                # Forzar una dirección por defecto si se queda en (0,0) después de moverse
+                # self.ultima_direccion_mov_x = 1 # Derecha por defecto
+
             self._mover_y_colisionar(mov_x_final, mov_y_final, obstaculos)
         
         # # --- AÑADIMOS MOVIMIENTO SIMPLE SIN COLISIÓN ---
@@ -200,3 +252,126 @@ class Jugador(pygame.sprite.Sprite):
         # self.kill() # Si quisiéramos que el sprite del jugador desaparezca (podría no ser deseable)
         # O cambiar su estado a "muerto" para una animación de muerte, etc.
         pass 
+
+    def atacar(self, grupo_enemigos):
+        ahora = pygame.time.get_ticks()
+        if ahora - self.ultimo_ataque_realizado > self.cooldown_ataque_espada:
+            if not self.esta_atacando_espada: # Solo iniciar si no está ya atacando
+                self.esta_atacando_espada = True
+                self.tiempo_inicio_ataque_espada = ahora
+                self.ultimo_ataque_realizado = ahora # Actualiza el cooldown general
+                self.enemigos_golpeados_este_ataque.clear()
+                print("Jugador inicia ataque con espada!") # Mensaje de depuración
+                # Aquí podríamos cambiar el estado de animación a "atacando_espada"
+                # self.estado_animacion = "atacando_espada"
+                # self.indice_fotograma = 0
+        # else:
+            # print("Ataque con espada en cooldown")
+
+    def actualizar_ataque_espada(self, enemigos):
+        if not self.esta_atacando_espada:
+            return
+
+        ahora = pygame.time.get_ticks()
+        
+        # Comprobar si la duración del hitbox activo ha pasado
+        if ahora - self.tiempo_inicio_ataque_espada <= self.duracion_hitbox_ataque_espada:
+            # Usar los nuevos atributos ajustables para dimensiones
+            current_hitbox_extension = self.ataque_extension
+            current_hitbox_grosor = self.ataque_grosor
+
+            # Lógica de posicionamiento y dimensionamiento basada en la última dirección
+            if self.ultima_direccion_mov_x > 0: # Derecha
+                pos_x_hitbox = self.rect.right + self.ataque_offset_distancia
+                pos_y_hitbox = self.rect.centery - current_hitbox_grosor // 2 # Centrar verticalmente
+                final_ancho = current_hitbox_extension
+                final_alto = current_hitbox_grosor
+            elif self.ultima_direccion_mov_x < 0: # Izquierda
+                pos_x_hitbox = self.rect.left - self.ataque_offset_distancia - current_hitbox_extension
+                pos_y_hitbox = self.rect.centery - current_hitbox_grosor // 2 # Centrar verticalmente
+                final_ancho = current_hitbox_extension
+                final_alto = current_hitbox_grosor
+            elif self.ultima_direccion_mov_y > 0: # Abajo
+                # Para ataques verticales, la "extensión" es vertical, el "grosor" es horizontal
+                pos_x_hitbox = self.rect.centerx - current_hitbox_grosor // 2 # Centrar horizontalmente
+                pos_y_hitbox = self.rect.bottom + self.ataque_offset_distancia
+                final_ancho = current_hitbox_grosor # Grosor se vuelve ancho
+                final_alto = current_hitbox_extension # Extensión se vuelve alto
+            elif self.ultima_direccion_mov_y < 0: # Arriba
+                pos_x_hitbox = self.rect.centerx - current_hitbox_grosor // 2 # Centrar horizontalmente
+                pos_y_hitbox = self.rect.top - self.ataque_offset_distancia - current_hitbox_extension
+                final_ancho = current_hitbox_grosor # Grosor se vuelve ancho
+                final_alto = current_hitbox_extension # Extensión se vuelve alto
+            else: # Por defecto (derecha)
+                pos_x_hitbox = self.rect.right + self.ataque_offset_distancia
+                pos_y_hitbox = self.rect.centery - current_hitbox_grosor // 2
+                final_ancho = current_hitbox_extension
+                final_alto = current_hitbox_grosor
+            
+            self.hitbox_ataque_espada_rect.x = pos_x_hitbox
+            self.hitbox_ataque_espada_rect.y = pos_y_hitbox
+            self.hitbox_ataque_espada_rect.width = final_ancho
+            self.hitbox_ataque_espada_rect.height = final_alto
+
+            # Comprobar colisiones con enemigos
+            for enemigo in enemigos:
+                if enemigo not in self.enemigos_golpeados_este_ataque: # Solo golpear una vez
+                    if self.hitbox_ataque_espada_rect.colliderect(enemigo.rect): # Usar enemigo.rect por ahora
+                        print(f"ESPADA golpea a enemigo en {enemigo.rect} con hitbox {self.hitbox_ataque_espada_rect}")
+                        enemigo.recibir_dano(self.dano_espada)
+                        self.enemigos_golpeados_este_ataque.add(enemigo)
+        else:
+            # El tiempo del hitbox activo ha terminado, pero la animación de ataque podría continuar.
+            # Por ahora, simplemente desactivamos el estado de ataque y el hitbox.
+            self.esta_atacando_espada = False
+            self.hitbox_ataque_espada_rect.size = (0,0) # Encoger para evitar colisiones accidentales
+            # print("Fin de la ventana activa del hitbox de espada.")
+            # Aquí se podría volver al estado de animación "descanso" si la animación de ataque ha terminado
+            # if self.estado_animacion == "atacando_espada":
+            # self.estado_animacion = "descanso"
+            # self.indice_fotograma = 0
+
+    def _cargar_config_ataque(self):
+        try:
+            ruta_completa_config = os.path.join(settings.RUTA_BASE_PROYECTO, settings.ARCHIVO_CONFIG_ATAQUE)
+            with open(ruta_completa_config, 'r') as f:
+                config = json.load(f)
+                self.ataque_offset_distancia = config.get('ataque_offset_distancia', self.default_ataque_offset_distancia)
+                self.ataque_extension = config.get('ataque_extension', self.default_ataque_extension)
+                self.ataque_grosor = config.get('ataque_grosor', self.default_ataque_grosor)
+                print(f"Configuración de ataque cargada desde {settings.ARCHIVO_CONFIG_ATAQUE}")
+        except FileNotFoundError:
+            print(f"Archivo de configuración de ataque '{settings.ARCHIVO_CONFIG_ATAQUE}' no encontrado. Usando valores por defecto.")
+        except json.JSONDecodeError:
+            print(f"Error al decodificar JSON en '{settings.ARCHIVO_CONFIG_ATAQUE}'. Usando valores por defecto.")
+        except Exception as e:
+            print(f"Error inesperado al cargar configuración de ataque: {e}. Usando valores por defecto.")
+
+    def guardar_config_ataque_actual(self):
+        config_data = {
+            'ataque_offset_distancia': self.ataque_offset_distancia,
+            'ataque_extension': self.ataque_extension,
+            'ataque_grosor': self.ataque_grosor
+        }
+        try:
+            ruta_completa_config = os.path.join(settings.RUTA_BASE_PROYECTO, settings.ARCHIVO_CONFIG_ATAQUE)
+            with open(ruta_completa_config, 'w') as f:
+                json.dump(config_data, f, indent=4)
+            print(f"Configuración de ataque guardada en {settings.ARCHIVO_CONFIG_ATAQUE}")
+        except Exception as e:
+            print(f"Error al guardar configuración de ataque: {e}")
+
+    # --- Métodos para ajustar parámetros de ataque en tiempo real ---
+    def modificar_ataque_offset(self, cantidad):
+        self.ataque_offset_distancia += cantidad
+        print(f"Nuevo ataque_offset_distancia: {self.ataque_offset_distancia}")
+
+    def modificar_ataque_extension(self, cantidad):
+        self.ataque_extension += cantidad
+        self.ataque_extension = max(1, self.ataque_extension) # Evitar tamaño cero o negativo
+        print(f"Nuevo ataque_extension: {self.ataque_extension}")
+
+    def modificar_ataque_grosor(self, cantidad):
+        self.ataque_grosor += cantidad
+        self.ataque_grosor = max(1, self.ataque_grosor) # Evitar tamaño cero o negativo
+        print(f"Nuevo ataque_grosor: {self.ataque_grosor}")

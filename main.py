@@ -6,10 +6,12 @@ from enemigo import Enemigo # <--- IMPORTAR ENEMIGO
 from camara import Camara   # Importa la clase Camara desde camara.py
 import os                   # Módulo del sistema operativo, usado aquí para os.path.join
 import random               # Para generar números aleatorios (posiciones de los árboles)
+import math                 # Para usar funciones matemáticas
 
 
 # --- Inicialización de Pygame ---
 pygame.init() # ¡Fundamental! Inicializa todos los módulos de Pygame (sonido, gráficos, etc.)
+pygame.font.init() # Inicializar explícitamente el módulo de fuentes
 
 # --- Configuración de la Pantalla Principal ---
 # Crea la ventana principal del juego con las dimensiones de settings.py
@@ -81,20 +83,37 @@ except Exception as e: # Captura una excepción más general por si algo más fa
 # Crear Enemigos
 enemigos_sprites = pygame.sprite.Group() # Grupo para manejar todos los enemigos
 
-# Crear una instancia de prueba del enemigo "chicken.png"
-# Lo posicionaremos cerca del jugador inicialmente para verlo.
-# Asegúrate de que el jugador ya esté inicializado para usar jugador.rect.x
-pos_enemigo_x = jugador.rect.centerx + 100 
-pos_enemigo_y = jugador.rect.centery
-try:
-    enemigo_prueba = Enemigo(pos_enemigo_x, pos_enemigo_y) # Usa el nombre de archivo por defecto "chicken.png"
-    enemigos_sprites.add(enemigo_prueba)
-except Exception as e:
-    print(f"Error al crear el enemigo de prueba: {e}")
+# Configuración para el spawn de enemigos
+NUMERO_ENEMIGOS_A_SPAWNEAR = 5
+RADIO_SPAWN_ENEMIGO_MIN = 50  # Píxeles mínimos desde el centro del jugador
+RADIO_SPAWN_ENEMIGO_MAX = 150 # Píxeles máximos desde el centro del jugador
+
+for _ in range(NUMERO_ENEMIGOS_A_SPAWNEAR):
+    # Elegir un ángulo aleatorio y una distancia aleatoria dentro del rango
+    angulo = random.uniform(0, 2 * math.pi) # Ángulo en radianes
+    radio = random.uniform(RADIO_SPAWN_ENEMIGO_MIN, RADIO_SPAWN_ENEMIGO_MAX)
+    
+    # Calcular la posición relativa al jugador
+    offset_x = radio * math.cos(angulo)
+    offset_y = radio * math.sin(angulo)
+    
+    # Posición absoluta del enemigo
+    # Asegúrate de que el jugador ya esté inicializado para usar jugador.rect.centerx/centery
+    pos_enemigo_x = jugador.rect.centerx + offset_x
+    pos_enemigo_y = jugador.rect.centery + offset_y
+
+    try:
+        nuevo_enemigo = Enemigo(pos_enemigo_x, pos_enemigo_y) # Usa el nombre de archivo por defecto "chicken.png"
+        enemigos_sprites.add(nuevo_enemigo)
+    except Exception as e:
+        print(f"Error al crear un enemigo: {e}")
 
 # --- Reloj del Juego ---
 # Se usa para controlar los FPS (fotogramas por segundo).
 reloj = pygame.time.Clock()
+
+# --- Configuración del HUD de Depuración ---
+fuente_hud = pygame.font.SysFont("Arial", 18) # O "Consolas", "Courier New"
 
 # --- Bucle Principal del Juego --- 
 ejecutando = True # Variable que controla si el bucle sigue o el juego termina.
@@ -117,6 +136,29 @@ while ejecutando:
             factor_zoom_actual = max(settings.FACTOR_ZOOM_MIN, factor_zoom_actual)
             factor_zoom_actual = min(settings.FACTOR_ZOOM_MAX, factor_zoom_actual)
             zoom_cambio = True
+        
+        # Evento para el ataque del jugador
+        if evento.type == pygame.KEYDOWN:
+            if evento.key == pygame.K_SPACE:
+                jugador.atacar(enemigos_sprites)
+            
+            # Teclas para ajustar parámetros del ataque del jugador (HUD)
+            if settings.DEBUG_VER_HITBOXES: # Solo si estamos en modo debug
+                incremento = settings.INCREMENTO_AJUSTE_DEBUG
+                if evento.key == pygame.K_F1:
+                    jugador.modificar_ataque_offset(-incremento)
+                if evento.key == pygame.K_F2:
+                    jugador.modificar_ataque_offset(incremento)
+                if evento.key == pygame.K_F3:
+                    jugador.modificar_ataque_extension(-incremento)
+                if evento.key == pygame.K_F4:
+                    jugador.modificar_ataque_extension(incremento)
+                if evento.key == pygame.K_F5:
+                    jugador.modificar_ataque_grosor(-incremento)
+                if evento.key == pygame.K_F6:
+                    jugador.modificar_ataque_grosor(incremento)
+                if evento.key == pygame.K_F12: # Tecla para guardar configuración de ataque
+                    jugador.guardar_config_ataque_actual()
 
     if zoom_cambio:
         # Recalcular las dimensiones de la vista de la cámara basadas en el nuevo zoom
@@ -141,21 +183,22 @@ while ejecutando:
     # Actualizar enemigos
     enemigos_sprites.update(jugador.rect) # Llama al método update() de cada Enemigo, pasando el rect del jugador
 
+    # Actualizar estado del ataque con espada del jugador
+    jugador.actualizar_ataque_espada(enemigos_sprites)
+
     # --- COLISIONES JUGADOR vs ENEMIGOS ---
     # Iteramos manualmente para usar el hitbox del jugador y el rect del enemigo.
     # Esto permite que el hitbox del jugador sea más preciso que su rect general.
-    ahora = pygame.time.get_ticks() # Para cooldowns si los implementamos aquí
+    # ahora = pygame.time.get_ticks() # Ya no es necesario aquí si el jugador ataca explícitamente
 
-    for enemigo in enemigos_sprites: # Iterar sobre una copia si los enemigos pueden eliminarse durante la iteración
-                                   # pero como se eliminan en su propio update(), debería estar bien.
+    for enemigo in enemigos_sprites:
         if jugador.hitbox.colliderect(enemigo.rect):
-            # El jugador intenta atacar al enemigo
-            # (Podríamos añadir un cooldown para el ataque del jugador si quisiéramos)
-            enemigo.recibir_dano(jugador.dano_ataque)
-
-            # El enemigo intenta atacar al jugador
+            # El enemigo intenta atacar al jugador (daño por contacto)
             # El jugador ya tiene un cooldown interno en su método recibir_dano()
             jugador.recibir_dano(enemigo.dano_ataque)
+            
+            # Ya no hacemos que el jugador dañe automáticamente al enemigo aquí.
+            # El daño del jugador se maneja a través del método jugador.atacar()
             
             # Consideraciones adicionales:
             # - Empuje: Podríamos mover ligeramente al jugador o al enemigo.
@@ -167,19 +210,27 @@ while ejecutando:
     camara.actualizar_posicion(jugador.rect)
 
     # --- 3. Renderizado / Dibujado ---
-    # La cámara se encarga de dibujar todo.
     camara.dibujar_escena(pantalla,             
                           textura_fondo_original, 
                           ANCHO_TEXTURA_FONDO, ALTO_TEXTURA_FONDO,
                           jugador,                
                           arboles_sprites,
-                          enemigos_sprites) # <--- PASAR ENEMIGOS A LA CAMARA       
+                          enemigos_sprites)
     
-    # # PRUEBA: Rellenar la pantalla de verde directamente
-    # VERDE_PRUEBA = (0, 255, 0) # Definimos un color verde brillante
-    # pantalla.fill(VERDE_PRUEBA)
+    # --- Dibujar HUD de Depuración (si está activado) ---
+    if settings.DEBUG_VER_HITBOXES:
+        y_offset_hud = 10
+        textos_hud = [
+            f"Offset Ataque (F1/F2): {jugador.ataque_offset_distancia}",
+            f"Extension Ataque (F3/F4): {jugador.ataque_extension}",
+            f"Grosor Ataque (F5/F6): {jugador.ataque_grosor}",
+            f"Zoom (Rueda): {factor_zoom_actual:.2f}",
+            f"Guardar config: F12"
+        ]
+        for i, texto_str in enumerate(textos_hud):
+            texto_surface = fuente_hud.render(texto_str, True, settings.COLOR_HUD_TEXTO)
+            pantalla.blit(texto_surface, (10, y_offset_hud + i * 20))
 
-    # `pygame.display.flip()` actualiza el contenido COMPLETO de la pantalla.
     pygame.display.flip()
 
     # --- 4. Control de FPS ---

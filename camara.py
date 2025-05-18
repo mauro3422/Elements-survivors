@@ -12,195 +12,131 @@ class Camara:
         self.ancho_vista_mundo = ancho_vista_inicial
         self.alto_vista_mundo = alto_vista_inicial
         
-        # Esta es la superficie donde se dibujará todo lo que la cámara "ve" en el mundo,
-        # antes de ser escalada a la pantalla principal.
-        self.surface = pygame.Surface((self.ancho_vista_mundo, self.alto_vista_mundo))
+        # La `camara_surface` es la superficie interna donde se dibuja la escena del tamaño del "mundo visible".
+        # Se crea con pygame.SRCALPHA para soportar transparencia si algún sprite la usa.
+        self.camara_surface = pygame.Surface((self.ancho_vista_mundo, self.alto_vista_mundo), pygame.SRCALPHA)
         
-        # Coordenadas (x,y) de la esquina superior izquierda de la vista de la cámara DENTRO del mundo del juego.
-        # Estas coordenadas cambian a medida que la cámara sigue al jugador.
+        # Coordenadas de la esquina superior izquierda de la cámara en el mundo del juego.
+        # Estas determinan qué parte del mundo se está viendo.
         self.cam_mundo_x = 0
         self.cam_mundo_y = 0
+        
+        # El offset es simplemente el negativo de cam_mundo_x y cam_mundo_y. Se usa para dibujar.
+        self.offset_camara = pygame.math.Vector2(0, 0)
 
     def actualizar_dimensiones_vista(self, nuevo_ancho_vista, nuevo_alto_vista):
-        """Actualiza las dimensiones de la vista de la cámara y redimensiona su superficie interna.
-        Llamado desde main.py cuando el FACTOR_ZOOM cambia.
-        """
+        """Actualiza las dimensiones de la vista de la cámara y recrea la superficie interna."""
         self.ancho_vista_mundo = nuevo_ancho_vista
         self.alto_vista_mundo = nuevo_alto_vista
-        try:
-            # Intenta crear la nueva superficie. Puede fallar si las dimensiones son demasiado pequeñas o inválidas.
-            self.surface = pygame.Surface((int(self.ancho_vista_mundo), int(self.alto_vista_mundo)))
-        except pygame.error as e:
-            print(f"Error al redimensionar la superficie de la cámara a ({self.ancho_vista_mundo}, {self.alto_vista_mundo}): {e}")
-            # Fallback: mantener las dimensiones anteriores o unas mínimas seguras.
-            # Por simplicidad, aquí no hacemos un fallback complejo, pero en un juego robusto lo considerarías.
-            # Si esto falla consistentemente, es un problema con los límites de zoom o el cálculo.
-            pass # Dejar que la superficie antigua persista si la nueva falla
+        self.camara_surface = pygame.Surface((self.ancho_vista_mundo, self.alto_vista_mundo), pygame.SRCALPHA)
+        # Es importante re-calcular la posición de la cámara para que no se "salte"
+        # o se salga de los límites al cambiar el zoom. Esto se maneja en actualizar_posicion.
 
-    def actualizar_posicion(self, target_rect_mundo):
-        """Centra la vista de la cámara en el target_rect_mundo (normalmente el rect del jugador).
-
-        Args:
-            target_rect_mundo (pygame.Rect): El rectángulo del objeto que la cámara debe seguir en el mundo.
+    def actualizar_posicion(self, rect_objetivo):
+        """Actualiza la posición de la cámara para que siga al rect_objetivo (normalmente el jugador).
+        El objetivo es mantener el centro del rect_objetivo en el centro de la vista de la cámara.
+        También se asegura de que la cámara no se mueva fuera de los límites del mundo del juego.
         """
-        # Calcula la posición X de la cámara para que el CENTRO del target_rect_mundo
-        # coincida con el CENTRO de la vista de la cámara (self.ancho_vista_mundo / 2).
-        self.cam_mundo_x = target_rect_mundo.centerx - (self.ancho_vista_mundo / 2)
+        # Posición X: Centra el objetivo en la cámara.
+        # La posición de la cámara (cam_mundo_x) es la esquina superior izquierda de su vista.
+        # Para centrar el objetivo (rect_objetivo.centerx) en la cámara (ancho_vista_mundo / 2),
+        # la fórmula es: cam_mundo_x = rect_objetivo.centerx - (ancho_vista_mundo / 2)
+        self.cam_mundo_x = rect_objetivo.centerx - (self.ancho_vista_mundo / 2)
         
-        # Calcula la posición Y de la cámara de forma similar.
-        self.cam_mundo_y = target_rect_mundo.centery - (self.alto_vista_mundo / 2)
-        
-        # --- Opcional: Limitar el scroll de la cámara --- 
-        # Si tu mundo tuviera límites definidos (ej: un mapa de 2000x2000 píxeles),
-        # podrías añadir lógica aquí para que la cámara no se "salga" de esos límites.
-        # Ejemplo (necesitarías ANCHO_MUNDO_JUEGO y ALTO_MUNDO_JUEGO definidos en settings):
-        # self.cam_mundo_x = max(0, self.cam_mundo_x) # No ir más a la izquierda que 0
-        # self.cam_mundo_y = max(0, self.cam_mundo_y) # No ir más arriba que 0
-        # self.cam_mundo_x = min(self.cam_mundo_x, settings.ANCHO_MUNDO_JUEGO - self.ancho_vista_mundo) # No ir más a la derecha del límite
-        # self.cam_mundo_y = min(self.cam_mundo_y, settings.ALTO_MUNDO_JUEGO - self.alto_vista_mundo)   # No ir más abajo del límite
+        # Posición Y: Similar para el eje Y.
+        self.cam_mundo_y = rect_objetivo.centery - (self.alto_vista_mundo / 2)
+
+        # Aplicar límites para que la cámara no se salga del mundo del juego.
+        # Límite izquierdo (la cámara no puede ir más a la izquierda que x=0 del mundo)
+        self.cam_mundo_x = max(0, self.cam_mundo_x)
+        # Límite superior (la cámara no puede ir más arriba que y=0 del mundo)
+        self.cam_mundo_y = max(0, self.cam_mundo_y)
+        # Límite derecho (la esquina derecha de la cámara no puede superar el ancho del mundo)
+        # Esquina derecha de la cámara = cam_mundo_x + ancho_vista_mundo
+        self.cam_mundo_x = min(self.cam_mundo_x, settings.ANCHO_MUNDO_JUEGO - self.ancho_vista_mundo)
+        # Límite inferior (la esquina inferior de la cámara no puede superar el alto del mundo)
+        self.cam_mundo_y = min(self.cam_mundo_y, settings.ALTO_MUNDO_JUEGO - self.alto_vista_mundo)
+
+        # El offset es el negativo de la posición de la cámara, se usa para dibujar los sprites.
+        self.offset_camara.x = self.cam_mundo_x
+        self.offset_camara.y = self.cam_mundo_y
+
+    def _dibujar_sprite_en_camara(self, sprite, offset_camara):
+        """Dibuja un sprite individual en la camara_surface, aplicando el offset de la cámara."""
+        # El rect del sprite está en coordenadas del mundo.
+        # Lo movemos por el negativo del offset de la cámara para obtener su posición en la camara_surface.
+        rect_en_camara = sprite.rect.move(-offset_camara.x, -offset_camara.y)
+        self.camara_surface.blit(sprite.image, rect_en_camara)
+
+    def dibujar_rect_debug(self, rect_mundo, color, offset_camara):
+        """Dibuja un rectángulo (dado en coordenadas del mundo) en la camara_surface.
+           El color puede ser RGBA para transparencia.
+        """
+        temp_surface = pygame.Surface((rect_mundo.width, rect_mundo.height), pygame.SRCALPHA)
+        pygame.draw.rect(temp_surface, color, (0,0, rect_mundo.width, rect_mundo.height), 2) # Grosor 2
+        rect_en_camara = rect_mundo.move(-offset_camara.x, -offset_camara.y)
+        self.camara_surface.blit(temp_surface, rect_en_camara.topleft)
 
     def dibujar_escena(self, pantalla_destino_final, 
-                       textura_fondo, ancho_textura_tile, alto_textura_tile, 
-                       jugador, grupo_otros_sprites, grupo_enemigos):
-        """Dibuja toda la escena (fondo, sprites, jugador) en la superficie interna de la cámara
-        y luego escala esa superficie a la pantalla_destino_final.
-
-        Args:
-            pantalla_destino_final (pygame.Surface): La pantalla principal del juego donde se mostrará el resultado.
-            textura_fondo (pygame.Surface): La imagen original de la textura del fondo (tile).
-            ancho_textura_tile (int): Ancho de la textura_fondo.
-            alto_textura_tile (int): Alto de la textura_fondo.
-            jugador (Jugador): La instancia del objeto jugador.
-            grupo_otros_sprites (pygame.sprite.Group): Grupo que contiene sprites como los árboles.
-            grupo_enemigos (pygame.sprite.Group): Grupo que contiene los sprites de los enemigos.
-        """
+                         textura_fondo, ancho_textura_tile, alto_textura_tile, 
+                         jugador, grupo_arboles, grupo_enemigos):
+        """Dibuja toda la escena (fondo, sprites) en la camara_surface y luego la escala a la pantalla_destino_final."""
         
-        # 1. Limpiar la superficie interna de la cámara (rellenar con un color base)
-        # AZUL_PRUEBA = (0, 0, 255) # Ya no es azul de prueba
-        try:
-            if self.surface: # Asegurarse que self.surface existe y no es None
-                self.surface.fill(settings.NEGRO) # Restaurado a NEGRO
-            else:
-                print("ERROR CAMARA: self.surface no existe en dibujar_escena")
-                # Como fallback, intentar dibujar NEGRO directamente en la pantalla final si self.surface falla
-                pantalla_destino_final.fill(settings.NEGRO) 
-                return 
-        except Exception as e:
-            print(f"ERROR CAMARA: Excepción al llenar self.surface: {e}")
-            pantalla_destino_final.fill(settings.NEGRO) # Fallback
-            return
+        # --- 1. Dibujar el Fondo Tileado en la camara_surface ---
+        # Optimización: solo dibujar los tiles visibles por la cámara.
+        # Calcular el rango de tiles que son (parcialmente) visibles.
+        start_col = int(self.cam_mundo_x // ancho_textura_tile)
+        end_col = int((self.cam_mundo_x + self.ancho_vista_mundo) // ancho_textura_tile) + 1
+        start_row = int(self.cam_mundo_y // alto_textura_tile)
+        end_row = int((self.cam_mundo_y + self.alto_vista_mundo) // alto_textura_tile) + 1
 
-        # 2. Dibujar el fondo tileado en la superficie de la cámara (RESTAURADO)
-        try: # Añadido try-except para el dibujado del fondo
-            if textura_fondo and self.surface:
-                # `offset_fondo_x/y` calcula cuánto se ha desplazado el fondo debido al movimiento de la cámara.
-                # El operador módulo (%) asegura que el offset siempre esté dentro del rango de una tile,
-                # creando un efecto de scroll infinito y correcto para el tileado.
-                offset_fondo_x = -self.cam_mundo_x % ancho_textura_tile
-                offset_fondo_y = -self.cam_mundo_y % alto_textura_tile
+        for row in range(start_row, end_row):
+            for col in range(start_col, end_col):
+                # Calcular la posición del tile en coordenadas del mundo.
+                x_mundo_tile = col * ancho_textura_tile
+                y_mundo_tile = row * alto_textura_tile
+                
+                # Convertir la posición del tile a coordenadas de la camara_surface.
+                # Esto es, restar el offset de la cámara (cam_mundo_x, cam_mundo_y).
+                x_cam_tile = x_mundo_tile - self.cam_mundo_x
+                y_cam_tile = y_mundo_tile - self.cam_mundo_y
+                
+                self.camara_surface.blit(textura_fondo, (x_cam_tile, y_cam_tile))
 
-                # Bucles para dibujar los tiles del fondo. Se dibuja un poco más allá de los bordes
-                # de self.ancho_vista_mundo y self.alto_vista_mundo para asegurar que no haya espacios vacíos
-                # al hacer el scroll, especialmente con el offset.
-                for x_tile in range(int(-ancho_textura_tile + offset_fondo_x), int(self.ancho_vista_mundo + ancho_textura_tile), ancho_textura_tile):
-                    for y_tile in range(int(-alto_textura_tile + offset_fondo_y), int(self.alto_vista_mundo + alto_textura_tile), alto_textura_tile):
-                        # Añadida comprobación para textura_fondo.get_width/height > 0 y existencia de textura_fondo
-                        if textura_fondo.get_width() > 0 and textura_fondo.get_height() > 0:
-                            self.surface.blit(textura_fondo, (x_tile, y_tile))
-                        # else: # Podríamos loguear un error si la textura del fondo tiene dimensiones 0
-                            # print("Advertencia CAMARA: Textura de fondo con dimensiones 0x0 no se dibujará.") 
-            elif not self.surface:
-                print("ERROR CAMARA: self.surface es None antes de dibujar fondo.")
-            elif not textura_fondo:
-                print("ERROR CAMARA: textura_fondo es None antes de dibujar fondo.")
-        except Exception as e:
-            print(f"ERROR CAMARA: Excepción al dibujar el fondo tileado: {e}")
+        # --- 2. Dibujar Sprites en la camara_surface ---
+        # El orden de dibujado importa (los últimos dibujados aparecen encima).
 
-        # 3. Dibujar todos los sprites del `grupo_otros_sprites` (ej: árboles) (RESTAURADO)
-        try: # Añadido try-except para el dibujado de los sprites
-            if grupo_otros_sprites and self.surface:
-                for sprite in grupo_otros_sprites:
-                    if sprite and hasattr(sprite, 'image') and hasattr(sprite, 'rect'):
-                        sprite_cam_x = sprite.rect.x - self.cam_mundo_x
-                        sprite_cam_y = sprite.rect.y - self.cam_mundo_y
-                        self.surface.blit(sprite.image, (sprite_cam_x, sprite_cam_y))
+        # Dibujar todos los árboles en la camara_surface, ajustados por el offset
+        for arbol in grupo_arboles:
+            self._dibujar_sprite_en_camara(arbol, self.offset_camara)
 
-                        # DEBUG: Dibujar rect/hitbox de los sprites (árboles)
-                        if settings.DEBUG_VER_HITBOXES:
-                            # Si el sprite tiene un hitbox personalizado, lo usamos. Si no, usamos su rect.
-                            debug_rect_a_dibujar = sprite.hitbox if hasattr(sprite, 'hitbox') else sprite.rect
-                            
-                            debug_rect_cam_x = debug_rect_a_dibujar.x - self.cam_mundo_x
-                            debug_rect_cam_y = debug_rect_a_dibujar.y - self.cam_mundo_y
-                            pygame.draw.rect(self.surface, settings.VERDE, # Color VERDE para estos
-                                             (debug_rect_cam_x, debug_rect_cam_y, debug_rect_a_dibujar.width, debug_rect_a_dibujar.height), 1)
-                    else:
-                        print("ERROR CAMARA: Sprite en grupo_otros_sprites o sus atributos (image/rect) es None.")
-            elif not self.surface:
-                 print("ERROR CAMARA: self.surface es None antes de dibujar grupo_otros_sprites.")
-        except Exception as e:
-            print(f"ERROR CAMARA: Excepción al dibujar grupo_otros_sprites: {e}")
+        # Dibujar todos los enemigos en la camara_surface, ajustados por el offset
+        for enemigo in grupo_enemigos:
+            self._dibujar_sprite_en_camara(enemigo, self.offset_camara)
 
-        # DIBUJAR ENEMIGOS (similar a grupo_otros_sprites)
-        try:
-            if grupo_enemigos and self.surface:
-                for enemigo_sprite in grupo_enemigos: # Iterar sobre el nuevo grupo
-                    if enemigo_sprite and hasattr(enemigo_sprite, 'image') and hasattr(enemigo_sprite, 'rect'):
-                        sprite_cam_x = enemigo_sprite.rect.x - self.cam_mundo_x
-                        sprite_cam_y = enemigo_sprite.rect.y - self.cam_mundo_y
-                        self.surface.blit(enemigo_sprite.image, (sprite_cam_x, sprite_cam_y))
+        # Dibujar al jugador en la camara_surface, ajustado por el offset
+        self._dibujar_sprite_en_camara(jugador, self.offset_camara)
 
-                        # DEBUG: Dibujar rect/hitbox de los enemigos
-                        if settings.DEBUG_VER_HITBOXES:
-                            debug_rect_a_dibujar = enemigo_sprite.hitbox if hasattr(enemigo_sprite, 'hitbox') else enemigo_sprite.rect
-                            
-                            debug_rect_cam_x = debug_rect_a_dibujar.x - self.cam_mundo_x
-                            debug_rect_cam_y = debug_rect_a_dibujar.y - self.cam_mundo_y
-                            pygame.draw.rect(self.surface, settings.VERDE, # Mismo color VERDE para debug de rects
-                                             (debug_rect_cam_x, debug_rect_cam_y, debug_rect_a_dibujar.width, debug_rect_a_dibujar.height), 1)
-                    else:
-                        print("ERROR CAMARA: Sprite en grupo_enemigos o sus atributos (image/rect) es None.")
-            elif not self.surface:
-                 print("ERROR CAMARA: self.surface es None antes de dibujar grupo_enemigos.")
-        except Exception as e:
-            print(f"ERROR CAMARA: Excepción al dibujar grupo_enemigos: {e}")
+        # --- Dibujar Hitboxes para Depuración (si está activado) ---
+        if settings.DEBUG_VER_HITBOXES:
+            # Hitbox del jugador
+            if hasattr(jugador, 'hitbox'):
+                self.dibujar_rect_debug(jugador.hitbox, settings.ROJO, self.offset_camara)
+            
+            # Hitbox del ataque de espada del jugador (si está atacando y el rect tiene tamaño)
+            if hasattr(jugador, 'esta_atacando_espada') and jugador.esta_atacando_espada:
+                if hasattr(jugador, 'hitbox_ataque_espada_rect') and jugador.hitbox_ataque_espada_rect.width > 0 and jugador.hitbox_ataque_espada_rect.height > 0:
+                    self.dibujar_rect_debug(jugador.hitbox_ataque_espada_rect, settings.VERDE_DEBUG, self.offset_camara)
+            
+            # Hitbox de los enemigos (usando su rect por ahora)
+            for enemigo in grupo_enemigos:
+                self.dibujar_rect_debug(enemigo.rect, settings.ROJO, self.offset_camara)
+            
+            # Hitbox de los árboles (usando su rect por ahora)
+            # for arbol in grupo_arboles:
+            #     self.dibujar_rect_debug(arbol.rect, settings.ROJO, self.offset_camara)
 
-        # 4. Dibujar al jugador (RESTAURADO)
-        try: # Añadido try-except para el dibujado del jugador
-            if jugador and hasattr(jugador, 'image') and hasattr(jugador, 'rect') and self.surface:
-                jugador_cam_x = jugador.rect.x - self.cam_mundo_x
-                jugador_cam_y = jugador.rect.y - self.cam_mundo_y
-                self.surface.blit(jugador.image, (jugador_cam_x, jugador_cam_y))
-            else:
-                print("ERROR CAMARA: Jugador o sus atributos (image/rect) o self.surface es None al intentar dibujar jugador.")
-        except Exception as e:
-            print(f"ERROR CAMARA: Excepción al dibujar al jugador: {e}")
-
-        # DEBUG: Dibujar hitbox del jugador (AHORA CONDICIONAL)
-        if settings.DEBUG_VER_HITBOXES: # Solo si la depuración está activa
-            try:
-                if hasattr(jugador, 'hitbox') and self.surface: # Comprobar si el jugador tiene hitbox y la superficie existe
-                    # Calcular la posición del hitbox RELATIVA a la vista de la cámara.
-                    hitbox_cam_x = jugador.hitbox.x - self.cam_mundo_x
-                    hitbox_cam_y = jugador.hitbox.y - self.cam_mundo_y
-                    
-                    # Dibuja un rectángulo rojo delgado (grosor 1) que representa el hitbox.
-                    pygame.draw.rect(self.surface, settings.ROJO, 
-                                     (hitbox_cam_x, hitbox_cam_y, jugador.hitbox.width, jugador.hitbox.height), 1)
-                # else: Podríamos añadir un print si no se dibuja el hitbox por no tener el atributo o self.surface
-                #   if not hasattr(jugador, 'hitbox'): print("DEBUG CAMARA: Jugador no tiene atributo 'hitbox'.")
-                #   if not self.surface: print("DEBUG CAMARA: self.surface es None, no se puede dibujar hitbox.")
-            except Exception as e:
-                print(f"ERROR CAMARA: Excepción al dibujar el hitbox del jugador: {e}")
-
-        # 5. Escalar la `self.surface` (la superficie de la cámara que contiene toda la escena dibujada)
-        # a las dimensiones de la pantalla_destino_final. Esto aplica el zoom.
-        try:
-            if self.surface: # Solo escalar si self.surface es válida
-                dimensiones_pantalla_final = pantalla_destino_final.get_size()
-                pygame.transform.scale(self.surface, dimensiones_pantalla_final, pantalla_destino_final)
-            # else: ya se manejó arriba, no es necesario hacer nada más aquí.
-        except Exception as e:
-            print(f"ERROR CAMARA: Excepción al escalar self.surface a pantalla_destino_final: {e}")
-            AZUL_PRUEBA = (0,0,255) # Re-definir por si acaso
-            pantalla_destino_final.fill(AZUL_PRUEBA)
+        # --- 3. Escalar la camara_surface a la Pantalla Principal ---
+        # La camara_surface (que contiene la vista del mundo) se escala al tamaño completo 
+        # de la pantalla_destino_final para lograr el efecto de zoom.
+        pygame.transform.scale(self.camara_surface, pantalla_destino_final.get_size(), pantalla_destino_final)
