@@ -5,35 +5,50 @@ from entorno import Arbol   # Importa la clase Arbol desde entorno.py
 from enemigo import Enemigo # <--- IMPORTAR ENEMIGO
 from camara import Camara   # Importa la clase Camara desde camara.py
 from hud import DebugHUD    # <--- IMPORTAR DebugHUD
+from asset_manager import AssetManager # <--- IMPORTAR AssetManager
 import os                   # Módulo del sistema operativo, usado aquí para os.path.join
 import random               # Para generar números aleatorios (posiciones de los árboles)
 import math                 # Para usar funciones matemáticas
+import logging # <--- Añadir import para configurar logger principal
 
-def inicializar_juego():
-    """Inicializa Pygame, la pantalla, y otros elementos básicos del juego."""
-    pygame.init()
-    pygame.font.init()
-    pantalla = pygame.display.set_mode((settings.ANCHO_PANTALLA, settings.ALTO_PANTALLA))
-    pygame.display.set_caption("Avatar Survivors")
-    reloj = pygame.time.Clock()
-    
-    try:
-        textura_fondo_original = pygame.image.load(os.path.join(settings.RUTA_ASSETS, "scenary", "texture", "T_Tierra32x32.png")).convert()
-        ancho_textura_fondo, alto_textura_fondo = textura_fondo_original.get_size()
-    except pygame.error as e:
-        print(f"Error al cargar la textura del fondo: {e}")
-        textura_fondo_original = pygame.Surface((32,32)); textura_fondo_original.fill(settings.NEGRO)
-        ancho_textura_fondo, alto_textura_fondo = 32,32
-        
-    fuente_hud_obj = pygame.font.SysFont("Arial", 18)
-    
-    return pantalla, reloj, textura_fondo_original, ancho_textura_fondo, alto_textura_fondo, fuente_hud_obj
+# --- Configuración del Logger Principal (opcional, pero bueno para AssetManager) ---
+# Esto asegura que los logs del AssetManager y otros módulos sean visibles
+# si no se ha configurado un logger raíz antes.
+if not logging.getLogger().hasHandlers():
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - [%(name)s] - %(message)s')
+logger = logging.getLogger(__name__) # Logger para main.py
+# --- Fin Configuración Logger ---
 
-def crear_entidades_juego():
+def inicializar_elementos_post_preload(asset_manager_instance):
+    """Carga assets específicos necesarios después del preload y obtiene algunas de sus propiedades."""
+    textura_fondo_original = asset_manager_instance.get_image("background_tierra")
+    
+    # Comprobar si la textura cargada es el placeholder rojo de 32x32
+    # El placeholder del AssetManager se llena con (255,0,0) si ROJO_ERROR_ASSET no está definido.
+    es_placeholder_rojo_32x32 = False
+    if textura_fondo_original.get_width() == 32 and textura_fondo_original.get_height() == 32:
+        try:
+            color_pixel_0_0 = textura_fondo_original.get_at((0,0))
+            if color_pixel_0_0 == (255, 0, 0, 255) or color_pixel_0_0 == (255, 0, 0): # Comprobar con y sin alfa
+                es_placeholder_rojo_32x32 = True
+        except pygame.error as e:
+            logger.warning(f"Error al intentar leer el color del pixel de la textura de fondo: {e}. Asumiendo que no es placeholder por color.")
+
+    if es_placeholder_rojo_32x32:
+        logger.info("Textura de fondo es el placeholder rojo de 32x32. Rellenando con negro.")
+        textura_fondo_original.fill(settings.NEGRO)
+    else:
+        logger.info("Textura de fondo cargada correctamente (o no es el placeholder rojo estándar).")
+
+    ancho_textura_fondo, alto_textura_fondo = textura_fondo_original.get_size()
+    fuente_hud_obj = asset_manager_instance.get_font("hud_font_arial_18")
+    return textura_fondo_original, ancho_textura_fondo, alto_textura_fondo, fuente_hud_obj
+
+def crear_entidades_juego(asset_manager_instance):
     """Crea y devuelve el jugador, los árboles y los enemigos."""
     jugador = Jugador(settings.ANCHO_PANTALLA // 2 - 16, 
                       settings.ALTO_PANTALLA // 2 - 16, 
-                      settings.RUTA_ASSETS)
+                      asset_manager_instance)
 
     arboles_sprites = pygame.sprite.Group()
     ANCHO_ARBOL_ESCALADO = 45 
@@ -45,7 +60,7 @@ def crear_entidades_juego():
             rect_arbol_propuesto = pygame.Rect(spawn_x, spawn_y, ANCHO_ARBOL_ESCALADO, ALTO_ARBOL_ESCALADO)
             # Sería mejor comprobar colisión con el hitbox del jugador si ya está definido
             if not rect_arbol_propuesto.colliderect(jugador.rect): 
-                arbol = Arbol(spawn_x, spawn_y, settings.RUTA_ASSETS)
+                arbol = Arbol(spawn_x, spawn_y, asset_manager_instance)
                 arboles_sprites.add(arbol)
     except Exception as e:
         print(f"Error al crear árboles: {e}")
@@ -62,7 +77,7 @@ def crear_entidades_juego():
         pos_enemigo_x = jugador.rect.centerx + offset_x
         pos_enemigo_y = jugador.rect.centery + offset_y
         try:
-            nuevo_enemigo = Enemigo(pos_enemigo_x, pos_enemigo_y)
+            nuevo_enemigo = Enemigo(pos_enemigo_x, pos_enemigo_y, asset_manager_instance)
             enemigos_sprites.add(nuevo_enemigo)
         except Exception as e:
             print(f"Error al crear un enemigo: {e}")
@@ -191,9 +206,29 @@ def renderizar_juego(pantalla, camara, textura_fondo_original, ancho_textura_fon
 
 # --- Bucle Principal del Juego ---
 def main():
-    pantalla, reloj, textura_fondo, ancho_text_fondo, alto_text_fondo, fuente_hud = inicializar_juego()
-    jugador, arboles_sprites, enemigos_sprites = crear_entidades_juego()
+    # 1. Inicializar Pygame y sus módulos principales
+    pygame.init()
+    pygame.font.init() # Esencial para la carga de fuentes
 
+    # 2. Configurar la pantalla ANTES de que AssetManager intente convertir imágenes
+    #    o cargar fuentes que dependan del estado inicializado de Pygame.
+    pantalla = pygame.display.set_mode((settings.ANCHO_PANTALLA, settings.ALTO_PANTALLA))
+    pygame.display.set_caption("Avatar Survivors")
+    reloj = pygame.time.Clock()
+
+    # 3. Crear instancia del AssetManager y precargar todos los assets
+    #    Ahora Pygame (display, font) está listo para el AssetManager.
+    asset_manager = AssetManager()
+    asset_manager.preload_all() 
+
+    # 4. Obtener assets específicos y configurar elementos que dependen de ellos
+    #    (anteriormente parte de inicializar_juego)
+    textura_fondo, ancho_text_fondo, alto_text_fondo, fuente_hud = inicializar_elementos_post_preload(asset_manager)
+
+    # 5. Crear entidades del juego, pasando el AssetManager
+    jugador, arboles_sprites, enemigos_sprites = crear_entidades_juego(asset_manager)
+
+    # 6. Configurar Cámara y HUD
     factor_zoom_actual = settings.FACTOR_ZOOM_INICIAL
     camara_ancho_vista_actual = settings.ANCHO_PANTALLA / factor_zoom_actual
     camara_alto_vista_actual = settings.ALTO_PANTALLA / factor_zoom_actual
@@ -201,10 +236,10 @@ def main():
     
     debug_hud = DebugHUD(jugador, fuente_hud)
     
-    # Inicializar perfiles_disponibles_nombres aquí una vez, manejar_eventos lo actualizará si es necesario
     perfiles_disponibles_nombres = list(jugador.perfiles_de_ataque.keys())
 
     ejecutando = True
+    logger.info("Comenzando bucle principal del juego...")
     while ejecutando:
         eventos_actuales = pygame.event.get()
         

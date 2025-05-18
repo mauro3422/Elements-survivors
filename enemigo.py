@@ -3,6 +3,7 @@ import os
 import settings # Para RUTA_ASSETS
 import math # Para cálculos de distancia y vectores
 import logging # <--- AÑADIR IMPORT
+# AssetManager no necesita ser importado aquí si se recibe como instancia
 
 # Obtener el mismo logger que usa el jugador para que todo vaya al mismo archivo
 logger = logging.getLogger('movimiento_jugador') # <--- OBTENER LOGGER
@@ -10,14 +11,14 @@ logger = logging.getLogger('movimiento_jugador') # <--- OBTENER LOGGER
 class Enemigo(pygame.sprite.Sprite):
     id_counter = 0 # <--- CONTADOR DE CLASE PARA ID ÚNICO
 
-    def __init__(self, x, y, nombre_archivo_imagen="chicken.png"):
+    def __init__(self, x, y, asset_manager_instance, nombre_asset_imagen="enemy_chicken"):
         """Constructor de la clase Enemigo.
 
         Args:
             x (int): Posición inicial en el eje X del enemigo.
             y (int): Posición inicial en el eje Y del enemigo.
-            nombre_archivo_imagen (str): Nombre del archivo de imagen para este enemigo
-                                         (ej: "chicken.png") dentro de la carpeta de enemigos.
+            asset_manager_instance (AssetManager): Instancia del AssetManager para cargar la imagen del enemigo.
+            nombre_asset_imagen (str): Nombre del asset de imagen para este enemigo dentro del AssetManager.
         """
         super().__init__()
 
@@ -25,16 +26,13 @@ class Enemigo(pygame.sprite.Sprite):
         Enemigo.id_counter += 1
         logger.debug(f"[Enemigo_{self.id_enemigo}] Creado en ({x}, {y})") # <--- LOG CREACIÓN
 
-        self.ruta_base_enemigos = os.path.join(settings.RUTA_ASSETS, "character", "animaciones", "Enemy")
+        self.asset_manager = asset_manager_instance # <--- Almacena la instancia
         
-        try:
-            ruta_imagen = os.path.join(self.ruta_base_enemigos, nombre_archivo_imagen)
-            self.image = pygame.image.load(ruta_imagen).convert_alpha()
-        except pygame.error as e:
-            logger.error(f"[Enemigo_{self.id_enemigo}] Error al cargar imagen {ruta_imagen}: {e}") # <--- LOG ERROR
-            self.image = pygame.Surface((30, 30))
-            self.image.fill(settings.ROJO)
-            pygame.draw.circle(self.image, settings.NEGRO, (15,15), 10)
+        # Cargar imagen a través del AssetManager
+        # El nombre_asset_imagen (ej: "enemy_chicken") debe coincidir con una clave precargada
+        self.image = self.asset_manager.get_image(nombre_asset_imagen)
+        # get_image ya devuelve un placeholder si falla, así que no es necesario un try-except aquí
+        # a menos que quieras un comportamiento muy específico para el fallo de carga del enemigo.
 
         self.rect = self.image.get_rect()
         self.rect.x = x

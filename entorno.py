@@ -1,80 +1,100 @@
 import pygame
-import os 
-# settings no se importa directamente ya que RUTA_ASSETS se pasa al constructor.
+import os
+import settings # Necesario para RUTA_ASSETS si no se usa AssetManager, pero ahora sí
 
-class Arbol(pygame.sprite.Sprite): # Hereda de pygame.sprite.Sprite
-    def __init__(self, x, y, ruta_assets):
-        # --- Constructor de la clase Arbol ---
-        # Args:
-        #     x (int): Posición en el eje X del árbol en el mundo del juego.
-        #     y (int): Posición en el eje Y del árbol en el mundo del juego.
-        #     ruta_assets (str): Ruta a la carpeta principal de 'assets'.
-        
-        super().__init__() # Llama al constructor de la clase padre (pygame.sprite.Sprite)
+class Arbol(pygame.sprite.Sprite):
+    def __init__(self, x, y, asset_manager_instance):
+        super().__init__()
+        self.asset_manager = asset_manager_instance
+        self.animaciones = {}
+        self._cargar_animaciones()
 
-        self.ruta_assets = ruta_assets
-        self.animacion_idle = [] # Lista para guardar los fotogramas de la animación "idle" (reposo/viento)
-        self._cargar_animaciones()   # Llama al método para cargar las imágenes
-
-        # --- Estado de Animación Inicial ---
+        self.estado_animacion = "idle" # Solo un estado por ahora
         self.indice_fotograma = 0
-        if self.animacion_idle: # Comprueba si se cargaron fotogramas
-            self.image = self.animacion_idle[self.indice_fotograma] # Imagen actual del sprite
-            self.rect = self.image.get_rect() # Rectángulo del sprite
-            self.rect.x = x
-            self.rect.y = y
+        self.tiempo_ultimo_fotograma = pygame.time.get_ticks()
+        self.retraso_animacion = 200 # Milisegundos por fotograma, ajustar según sea necesario
+
+        if self.animaciones.get(self.estado_animacion) and self.animaciones[self.estado_animacion]:
+            self.image_original = self.animaciones[self.estado_animacion][self.indice_fotograma]
         else:
-            # Fallback: si no se cargaron las imágenes, crea un placeholder verde
-            # Esto evita que el juego crashee si faltan los sprites del árbol.
-            print(f"Error: Animación 'idle' no encontrada para el Arbol en ({x},{y}). Usando placeholder.")
-            self.image = pygame.Surface((45, 45)) # Placeholder ahora de 45x45
-            self.image.fill((0,255,0)) # Verde brillante como placeholder
-            self.rect = self.image.get_rect()
-            self.rect.x = x
-            self.rect.y = y
-            
-        # --- Atributos de Animación ---
-        self.tiempo_ultimo_fotograma = pygame.time.get_ticks() # Para controlar la velocidad de la animación
-        # Retraso más largo para el árbol, para una animación de viento más sutil
-        self.retraso_animacion = 200 # Milisegundos entre fotogramas de la animación del árbol
+            # Fallback si la animación no se carga
+            self.image_original = pygame.Surface((32,32))
+            self.image_original.fill(settings.ROJO_ERROR_ASSET if hasattr(settings, 'ROJO_ERROR_ASSET') else (255,0,0))
+            print(f"Error: Animación '{self.estado_animacion}' no encontrada para el Árbol. Usando placeholder.")
+
+        # Escalar la imagen (ejemplo de escalado, puedes ajustarlo o quitarlo)
+        self.ancho_escalado = 45 
+        self.alto_escalado = 45  
+        self.image = pygame.transform.scale(self.image_original, (self.ancho_escalado, self.alto_escalado))
+
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = y
+
+        # --- Hitbox del Árbol ---
+        self.hitbox_offset_x = 5  
+        self.hitbox_offset_y = 10 
+        
+        hb_ancho = self.rect.width - (2 * self.hitbox_offset_x)
+        hb_alto = self.rect.height - (2 * self.hitbox_offset_y) 
+        
+        hb_ancho = max(1, hb_ancho)
+        hb_alto = max(1, hb_alto)
+
+        self.hitbox = pygame.Rect(0, 0, hb_ancho, hb_alto)
+        self._actualizar_posicion_hitbox()
 
     def _cargar_animaciones(self):
-        # --- Carga los fotogramas para la animación del árbol. ---
-        ruta_anim = os.path.join(self.ruta_assets, "scenary", "animaciones", "tree")
-        # self.animacion_idle = [] # Se inicializa en __init__
+        """Carga los fotogramas para las animaciones del árbol usando AssetManager."""
+        self.animaciones["idle"] = []
+        for i in range(1, 7): # Cargar 6 fotogramas: tree_frame_1 a tree_frame_6
+            clave_asset = f"tree_frame_{i}"
+            imagen = self.asset_manager.get_image(clave_asset)
+            self.animaciones["idle"].append(imagen)
         
-        nuevo_ancho_arbol = 45 # 32 * 1.4 redondeado
-        nuevo_alto_arbol = 45  # 32 * 1.4 redondeado
+        if not self.animaciones["idle"] or all(img.get_width() == 32 and img.get_height() == 32 for img in self.animaciones["idle"]):
+            # Esto es una heurística para detectar si solo se cargaron placeholders
+            # Podría mejorarse si AssetManager devuelve una bandera específica o si el placeholder tiene un color único
+            print("ADVERTENCIA: No se cargaron fotogramas válidos para la animación 'idle' del Árbol o solo se cargaron placeholders.")
+            # Asegurarse de que haya al menos un placeholder si todo falló gravemente.
+            if not self.animaciones["idle"]:
+                placeholder_surface = pygame.Surface((32,32))
+                placeholder_surface.fill(settings.ROJO_ERROR_ASSET if hasattr(settings, 'ROJO_ERROR_ASSET') else (255,0,0))
+                self.animaciones["idle"] = [placeholder_surface]
 
-        # Bucle para cargar las imágenes (Tree_idle_1.png a Tree_idle_6.png)
-        for i in range(1, 7): # Son 6 fotogramas
-            img_path = os.path.join(ruta_anim, f"Tree_idle_{i}.png")
-            try:
-                imagen_original = pygame.image.load(img_path).convert_alpha() # Carga con transparencia
-                # Reescalar la imagen a un 40% más grande
-                imagen_reescalada = pygame.transform.scale(imagen_original, (nuevo_ancho_arbol, nuevo_alto_arbol))
-                self.animacion_idle.append(imagen_reescalada) # Añade a la lista de fotogramas
-            except pygame.error as e:
-                print(f"Error al cargar o reescalar la imagen de animación del árbol {img_path}: {e}")
-                # Si falla una imagen, no se añade y la animación tendrá menos fotogramas (o ninguno).
-
-        # Si después de intentar cargar, la lista animacion_idle está vacía,
-        # se crea un placeholder para evitar errores.
-        if not self.animacion_idle:
-            print("CRITICAL: No se cargaron fotogramas para la animación idle del Arbol. Usando placeholder único.")
-            placeholder = pygame.Surface((nuevo_ancho_arbol, nuevo_alto_arbol)); placeholder.fill((0,255,0))
-            self.animacion_idle = [placeholder] # Asegura que haya al menos un fotograma.
-
+    def _actualizar_posicion_hitbox(self):
+        """Actualiza la posición del hitbox basándose en el rect principal."""
+        self.hitbox.topleft = (
+            self.rect.x + self.hitbox_offset_x,
+            self.rect.y + self.hitbox_offset_y
+        )
 
     def update(self):
-        # --- Actualiza la animación del árbol. ---
-        # Este método es llamado automáticamente por `grupo_sprites.update()` en main.py
-        # para cada Arbol en el grupo.
-        
+        """Actualiza la animación del árbol."""
         ahora = pygame.time.get_ticks()
-        if ahora - self.tiempo_ultimo_fotograma > self.retraso_animacion:
-            self.tiempo_ultimo_fotograma = ahora
-            # Solo animar si hay fotogramas (la lista no debería estar vacía por el fallback)
-            if self.animacion_idle: 
-                self.indice_fotograma = (self.indice_fotograma + 1) % len(self.animacion_idle)
-                self.image = self.animacion_idle[self.indice_fotograma]
+        if self.animaciones.get(self.estado_animacion) and self.animaciones[self.estado_animacion]:
+            if ahora - self.tiempo_ultimo_fotograma > self.retraso_animacion:
+                self.tiempo_ultimo_fotograma = ahora
+                self.indice_fotograma = (self.indice_fotograma + 1) % len(self.animaciones[self.estado_animacion])
+                self.image_original = self.animaciones[self.estado_animacion][self.indice_fotograma]
+                # Re-escalar la nueva imagen original
+                self.image = pygame.transform.scale(self.image_original, (self.ancho_escalado, self.alto_escalado))
+        # No es necesario actualizar el rect aquí ya que la posición del árbol es estática.
+        # El hitbox tampoco necesita actualizarse a menos que el tamaño del sprite cambie drásticamente con la animación,
+        # lo cual no es común para este tipo de objeto.
+
+    def dibujar_hitbox(self, superficie_camara, cam_mundo_x, cam_mundo_y):
+        """
+        Dibuja el hitbox del árbol en coordenadas de cámara para depuración.
+        Este método sería llamado por la Cámara si se implementa.
+        """
+        if settings.DEBUG_VER_HITBOXES and hasattr(self, 'hitbox'):
+            # Convertir coordenadas del hitbox del mundo a coordenadas de la cámara/pantalla
+            hitbox_cam_x = self.hitbox.x - cam_mundo_x
+            hitbox_cam_y = self.hitbox.y - cam_mundo_y
+            
+            # Crear un Rect temporal para dibujar en la posición correcta de la cámara
+            rect_a_dibujar_en_cam = pygame.Rect(hitbox_cam_x, hitbox_cam_y, self.hitbox.width, self.hitbox.height)
+            
+            # Dibujar el hitbox en la superficie de la cámara
+            pygame.draw.rect(superficie_camara, settings.VERDE_DEBUG, rect_a_dibujar_en_cam, 1) # Borde delgado
