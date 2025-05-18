@@ -82,13 +82,9 @@ def manejar_eventos(eventos, jugador, factor_zoom_actual, camara):
     for evento in eventos:
         if evento.type == pygame.QUIT:
             ejecutando_local = False
-        if evento.type == pygame.MOUSEWHEEL: 
-            if evento.y > 0: factor_zoom_actual += settings.FACTOR_ZOOM_PASO
-            elif evento.y < 0: factor_zoom_actual -= settings.FACTOR_ZOOM_PASO
-            factor_zoom_actual = max(settings.FACTOR_ZOOM_MIN, min(settings.FACTOR_ZOOM_MAX, factor_zoom_actual))
-            zoom_cambio = True
-        
         if evento.type == pygame.KEYDOWN:
+            if evento.key == pygame.K_ESCAPE:
+                ejecutando_local = False
             if evento.key == pygame.K_SPACE:
                 jugador.atacar(None) # El argumento enemigos_sprites ya no se usa en atacar directamente
 
@@ -137,6 +133,12 @@ def manejar_eventos(eventos, jugador, factor_zoom_actual, camara):
                     # Actualizar la lista de perfiles disponibles en caso de que se cree uno nuevo
                     perfiles_disponibles_nombres = list(jugador.perfiles_de_ataque.keys())
 
+        if evento.type == pygame.MOUSEWHEEL: 
+            if evento.y > 0: factor_zoom_actual += settings.FACTOR_ZOOM_PASO
+            elif evento.y < 0: factor_zoom_actual -= settings.FACTOR_ZOOM_PASO
+            factor_zoom_actual = max(settings.FACTOR_ZOOM_MIN, min(settings.FACTOR_ZOOM_MAX, factor_zoom_actual))
+            zoom_cambio = True
+
     if zoom_cambio:
         nuevo_camara_ancho_vista = settings.ANCHO_PANTALLA / factor_zoom_actual
         nuevo_camara_alto_vista = settings.ALTO_PANTALLA / factor_zoom_actual
@@ -155,7 +157,20 @@ def actualizar_estado_juego(jugador, arboles_sprites, enemigos_sprites, teclas_p
     jugador.actualizar_ataque(enemigos_sprites)
     
     arboles_sprites.update()
-    enemigos_sprites.update(jugador.hitbox, arboles_sprites)
+    # enemigos_sprites.update(jugador.hitbox, arboles_sprites) # <--- LÍNEA ORIGINAL
+
+    # Nueva lógica para actualizar enemigos con colisiones entre ellos y con árboles
+    for enemigo_actualizado in enemigos_sprites:
+        # Crear un grupo de obstáculos para ESTE enemigo
+        # que incluya todos los árboles y TODOS LOS DEMÁS enemigos.
+        obstaculos_para_este_enemigo = pygame.sprite.Group()
+        obstaculos_para_este_enemigo.add(arboles_sprites.sprites())
+        for otro_enemigo in enemigos_sprites:
+            if otro_enemigo != enemigo_actualizado: # Un enemigo no colisiona consigo mismo
+                obstaculos_para_este_enemigo.add(otro_enemigo)
+        
+        enemigo_actualizado.update(jugador.hitbox, obstaculos_para_este_enemigo)
+
 
     for enemigo in enemigos_sprites:
         if jugador.hitbox.colliderect(enemigo.hitbox):

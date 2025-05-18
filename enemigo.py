@@ -74,21 +74,60 @@ class Enemigo(pygame.sprite.Sprite):
         # O si prefieres basarlo en topleft con offsets:
         # self.hitbox.topleft = (self.rect.x + self.hitbox_offset_x, self.rect.y + self.hitbox_offset_y)
 
+    def _mover_y_colisionar_con_obstaculos(self, dx, dy, obstaculos):
+        # logger.debug(f"    [Enemigo_{self.id_enemigo}] _mover_y_colisionar_con_obstaculos: dx={dx:.2f}, dy={dy:.2f}")
+        original_rect_x = self.rect.x
+        original_rect_y = self.rect.y
+        original_hitbox_x = self.hitbox.x
+        original_hitbox_y = self.hitbox.y
+
+        # Mover en X
+        if dx != 0:
+            self.hitbox.x += dx
+            for obstaculo in obstaculos:
+                rect_colision_obstaculo = obstaculo.hitbox if hasattr(obstaculo, 'hitbox') else obstaculo.rect
+                if self.hitbox.colliderect(rect_colision_obstaculo):
+                    # logger.debug(f"      [Enemigo_{self.id_enemigo}] Colisión X con {type(obstaculo).__name__}_{getattr(obstaculo, 'id_enemigo', 'N/A')}")
+                    if dx > 0: # Moviéndose a la derecha
+                        self.hitbox.right = rect_colision_obstaculo.left
+                    elif dx < 0: # Moviéndose a la izquierda
+                        self.hitbox.left = rect_colision_obstaculo.right
+            self.rect.x = self.hitbox.left - self.hitbox_offset_x # Ajustar rect basado en hitbox
+
+        # Mover en Y
+        if dy != 0:
+            self.hitbox.y += dy
+            for obstaculo in obstaculos:
+                rect_colision_obstaculo = obstaculo.hitbox if hasattr(obstaculo, 'hitbox') else obstaculo.rect
+                if self.hitbox.colliderect(rect_colision_obstaculo):
+                    # logger.debug(f"      [Enemigo_{self.id_enemigo}] Colisión Y con {type(obstaculo).__name__}_{getattr(obstaculo, 'id_enemigo', 'N/A')}")
+                    if dy > 0: # Moviéndose hacia abajo
+                        self.hitbox.bottom = rect_colision_obstaculo.top
+                    elif dy < 0: # Moviéndose hacia arriba
+                        self.hitbox.top = rect_colision_obstaculo.bottom
+            self.rect.y = self.hitbox.top - self.hitbox_offset_y # Ajustar rect basado en hitbox
+        
+        # # Log si hubo cambio significativo (opcional, para reducir spam)
+        # if abs(self.hitbox.x - original_hitbox_x) > 0.1 or abs(self.hitbox.y - original_hitbox_y) > 0.1 :
+        #     logger.debug(f"    [Enemigo_{self.id_enemigo}] Pos DESPUÉS colisiones: Hitbox: {self.hitbox.topleft}, Rect: {self.rect.topleft}")
+        # else: # Si no hubo cambio aparente, se puede omitir el log de "después de colisiones"
+        #     pass
+
     def update(self, objetivo_rect, grupo_obstaculos):
         """Actualiza la lógica del enemigo, incluyendo movimiento y IA básica.
 
         Args:
             objetivo_rect (pygame.Rect): El rect del objetivo (ej. hitbox del jugador) para seguir.
-            grupo_obstaculos (pygame.sprite.Group): Grupo de sprites de obstáculos para evitar (no implementado aun).
+            grupo_obstaculos (pygame.sprite.Group): Grupo de sprites de obstáculos para evitar (árboles y otros enemigos).
         """
-        logger.debug(f"--- Inicio Update Enemigo_{self.id_enemigo} ---") # <--- LOG INICIO UPDATE
+        logger.debug(f"--- Inicio Update Enemigo_{self.id_enemigo} ---")
         logger.debug(f"[Enemigo_{self.id_enemigo}] Pos ANTES update: Rect: {self.rect.topleft}, Hitbox: {self.hitbox.topleft}")
 
         if self.vida_actual <= 0:
             self.morir()
             return
 
-        dx_al_objetivo = objetivo_rect.centerx - self.hitbox.centerx # Usar hitbox para el cálculo de IA
+        dx_al_objetivo = objetivo_rect.centerx - self.hitbox.centerx
         dy_al_objetivo = objetivo_rect.centery - self.hitbox.centery
         
         distancia_al_objetivo = math.sqrt(dx_al_objetivo**2 + dy_al_objetivo**2)
@@ -99,21 +138,29 @@ class Enemigo(pygame.sprite.Sprite):
         mov_y = 0
 
         if distancia_al_objetivo < self.rango_agro and distancia_al_objetivo > self.distancia_minima_al_jugador:
-            if distancia_al_objetivo > 0:
+            if distancia_al_objetivo > 0: # Evitar división por cero si ya está en el objetivo
                 dir_x = dx_al_objetivo / distancia_al_objetivo
                 dir_y = dy_al_objetivo / distancia_al_objetivo
                 mov_x = dir_x * self.velocidad_movimiento
                 mov_y = dir_y * self.velocidad_movimiento
         
-        logger.debug(f"[Enemigo_{self.id_enemigo}] Movimiento calculado: mov_x={mov_x:.2f}, mov_y={mov_y:.2f}")
+        logger.debug(f"[Enemigo_{self.id_enemigo}] Movimiento calculado (antes de colisión): mov_x={mov_x:.2f}, mov_y={mov_y:.2f}")
         
-        # Mover enemigo (aquí se podría añadir colisión con obstáculos en el futuro)
-        self.rect.x += mov_x
-        self.rect.y += mov_y
-        self._actualizar_posicion_hitbox() # Actualizar hitbox después de mover
+        # Mover enemigo y manejar colisiones con obstáculos (árboles y otros enemigos)
+        self._mover_y_colisionar_con_obstaculos(mov_x, mov_y, grupo_obstaculos)
         
-        logger.debug(f"[Enemigo_{self.id_enemigo}] Pos DESPUÉS update: Rect: {self.rect.topleft}, Hitbox: {self.hitbox.topleft}")
-        logger.debug(f"--- Fin Update Enemigo_{self.id_enemigo} ---") # <--- LOG FIN UPDATE
+        # Ya no se necesita la actualización directa de rect y hitbox aquí,
+        # porque _mover_y_colisionar_con_obstaculos ya actualiza self.rect y self.hitbox.
+        # self.rect.x += mov_x  # <-- ELIMINADO
+        # self.rect.y += mov_y  # <-- ELIMINADO
+        # self._actualizar_posicion_hitbox() # <-- ELIMINADO (o se asegura que _mover_y_colisionar actualice el hitbox correctamente)
+        # NOTA: _actualizar_posicion_hitbox() se llama dentro de _mover_y_colisionar_con_obstaculos
+        #       si la lógica de mover el rect se basa en el hitbox después de la corrección.
+        #       En mi implementación de _mover_y_colisionar_con_obstaculos, actualizo self.rect.x/y
+        #       basado en el hitbox.hitbox.left/top, lo que es correcto.
+
+        logger.debug(f"[Enemigo_{self.id_enemigo}] Pos DESPUÉS de _mover_y_colisionar_con_obstaculos: Rect: {self.rect.topleft}, Hitbox: {self.hitbox.topleft}")
+        logger.debug(f"--- Fin Update Enemigo_{self.id_enemigo} ---")
 
     def recibir_dano(self, cantidad):
         self.vida_actual -= cantidad
