@@ -36,6 +36,7 @@ CAMARA_ALTO_INICIAL = ALTO_PANTALLA / FACTOR_ZOOM_INICIAL
 NEGRO = (0, 0, 0)
 BLANCO = (255, 255, 255) # Definido aunque no se use actualmente en main, útil para futuro.
 ROJO = (255, 0, 0)
+VERDE = (0, 255, 0)
 
 # --- Rutas del Proyecto y Assets ---
 # `os.path.abspath(__file__)` obtiene la ruta absoluta completa del archivo actual (settings.py).
@@ -45,3 +46,6 @@ RUTA_BASE_PROYECTO = os.path.dirname(os.path.abspath(__file__))
 # `os.path.join(...)` construye una ruta de manera inteligente, compatible con diferentes sistemas operativos.
 # Aquí, crea la ruta a la carpeta 'assets' que está dentro de la carpeta base del proyecto.
 RUTA_ASSETS = os.path.join(RUTA_BASE_PROYECTO, "assets")
+
+# --- Configuraciones de Depuración ---
+DEBUG_VER_HITBOXES = True # Poner a False para ocultar hitboxes/rects de depuración

@@ -123,6 +123,16 @@ class Camara:
                         sprite_cam_x = sprite.rect.x - self.cam_mundo_x
                         sprite_cam_y = sprite.rect.y - self.cam_mundo_y
                         self.surface.blit(sprite.image, (sprite_cam_x, sprite_cam_y))
+
+                        # DEBUG: Dibujar rect/hitbox de los sprites (árboles)
+                        if settings.DEBUG_VER_HITBOXES:
+                            # Si el sprite tiene un hitbox personalizado, lo usamos. Si no, usamos su rect.
+                            debug_rect_a_dibujar = sprite.hitbox if hasattr(sprite, 'hitbox') else sprite.rect
+                            
+                            debug_rect_cam_x = debug_rect_a_dibujar.x - self.cam_mundo_x
+                            debug_rect_cam_y = debug_rect_a_dibujar.y - self.cam_mundo_y
+                            pygame.draw.rect(self.surface, settings.VERDE, # Color VERDE para estos
+                                             (debug_rect_cam_x, debug_rect_cam_y, debug_rect_a_dibujar.width, debug_rect_a_dibujar.height), 1)
                     else:
                         print("ERROR CAMARA: Sprite en grupo_otros_sprites o sus atributos (image/rect) es None.")
             elif not self.surface:
@@ -141,12 +151,22 @@ class Camara:
         except Exception as e:
             print(f"ERROR CAMARA: Excepción al dibujar al jugador: {e}")
 
-        # # DEBUG: Dibujar hitbox del jugador (COMENTADO)
-        # # if hasattr(jugador, 'hitbox'): 
-        # #     hitbox_cam_x = jugador.hitbox.x - self.cam_mundo_x
-        # #     hitbox_cam_y = jugador.hitbox.y - self.cam_mundo_y
-        # #     pygame.draw.rect(self.surface, settings.ROJO, 
-        # #                      (hitbox_cam_x, hitbox_cam_y, jugador.hitbox.width, jugador.hitbox.height), 1)
+        # DEBUG: Dibujar hitbox del jugador (AHORA CONDICIONAL)
+        if settings.DEBUG_VER_HITBOXES: # Solo si la depuración está activa
+            try:
+                if hasattr(jugador, 'hitbox') and self.surface: # Comprobar si el jugador tiene hitbox y la superficie existe
+                    # Calcular la posición del hitbox RELATIVA a la vista de la cámara.
+                    hitbox_cam_x = jugador.hitbox.x - self.cam_mundo_x
+                    hitbox_cam_y = jugador.hitbox.y - self.cam_mundo_y
+                    
+                    # Dibuja un rectángulo rojo delgado (grosor 1) que representa el hitbox.
+                    pygame.draw.rect(self.surface, settings.ROJO, 
+                                     (hitbox_cam_x, hitbox_cam_y, jugador.hitbox.width, jugador.hitbox.height), 1)
+                # else: Podríamos añadir un print si no se dibuja el hitbox por no tener el atributo o self.surface
+                #   if not hasattr(jugador, 'hitbox'): print("DEBUG CAMARA: Jugador no tiene atributo 'hitbox'.")
+                #   if not self.surface: print("DEBUG CAMARA: self.surface es None, no se puede dibujar hitbox.")
+            except Exception as e:
+                print(f"ERROR CAMARA: Excepción al dibujar el hitbox del jugador: {e}")
 
         # 5. Escalar la `self.surface` (la superficie de la cámara que contiene toda la escena dibujada)
         # a las dimensiones de la pantalla_destino_final. Esto aplica el zoom.
