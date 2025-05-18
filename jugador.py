@@ -45,6 +45,13 @@ class Jugador(pygame.sprite.Sprite):
         self.tiempo_ultimo_fotograma = pygame.time.get_ticks()
         self.retraso_animacion = 150 # Milisegundos entre fotogramas (ajustar según sea necesario)
 
+        # Atributos de combate
+        self.vida_maxima = 10
+        self.vida_actual = self.vida_maxima
+        self.dano_ataque = 2
+        self.ultimo_ataque_recibido = 0 # Tiempo del último golpe recibido (para cooldown)
+        self.cooldown_dano = 1000 # 1 segundo de invencibilidad después de ser golpeado
+
     def _cargar_animaciones(self):
         """Carga los fotogramas para las animaciones del jugador.
         Por ahora, solo carga la animación de "descanso".
@@ -176,3 +183,20 @@ class Jugador(pygame.sprite.Sprite):
         superficie.blit(self.image, self.rect)
         # Opcional: Dibujar el hitbox para depuración
         # pygame.draw.rect(superficie, (255,0,0), self.hitbox, 1) 
+
+    def recibir_dano(self, cantidad):
+        ahora = pygame.time.get_ticks()
+        if ahora - self.ultimo_ataque_recibido > self.cooldown_dano:
+            self.vida_actual -= cantidad
+            self.ultimo_ataque_recibido = ahora
+            print(f"Jugador recibe {cantidad} de daño. Vida restante: {self.vida_actual}")
+            if self.vida_actual <= 0:
+                self.morir()
+        # else: print("Jugador en cooldown, daño ignorado") # Para depuración
+
+    def morir(self):
+        print("Jugador ha muerto!")
+        # Por ahora, solo un print. Podríamos hacer que el juego termine, reiniciar, etc.
+        # self.kill() # Si quisiéramos que el sprite del jugador desaparezca (podría no ser deseable)
+        # O cambiar su estado a "muerto" para una animación de muerte, etc.
+        pass 

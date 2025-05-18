@@ -61,7 +61,7 @@ class Camara:
 
     def dibujar_escena(self, pantalla_destino_final, 
                        textura_fondo, ancho_textura_tile, alto_textura_tile, 
-                       jugador, grupo_otros_sprites):
+                       jugador, grupo_otros_sprites, grupo_enemigos):
         """Dibuja toda la escena (fondo, sprites, jugador) en la superficie interna de la cámara
         y luego escala esa superficie a la pantalla_destino_final.
 
@@ -71,7 +71,8 @@ class Camara:
             ancho_textura_tile (int): Ancho de la textura_fondo.
             alto_textura_tile (int): Alto de la textura_fondo.
             jugador (Jugador): La instancia del objeto jugador.
-            grupo_otros_sprites (pygame.sprite.Group): Grupo que contiene todos los demás sprites (árboles, enemigos, etc.).
+            grupo_otros_sprites (pygame.sprite.Group): Grupo que contiene sprites como los árboles.
+            grupo_enemigos (pygame.sprite.Group): Grupo que contiene los sprites de los enemigos.
         """
         
         # 1. Limpiar la superficie interna de la cámara (rellenar con un color base)
@@ -139,6 +140,30 @@ class Camara:
                  print("ERROR CAMARA: self.surface es None antes de dibujar grupo_otros_sprites.")
         except Exception as e:
             print(f"ERROR CAMARA: Excepción al dibujar grupo_otros_sprites: {e}")
+
+        # DIBUJAR ENEMIGOS (similar a grupo_otros_sprites)
+        try:
+            if grupo_enemigos and self.surface:
+                for enemigo_sprite in grupo_enemigos: # Iterar sobre el nuevo grupo
+                    if enemigo_sprite and hasattr(enemigo_sprite, 'image') and hasattr(enemigo_sprite, 'rect'):
+                        sprite_cam_x = enemigo_sprite.rect.x - self.cam_mundo_x
+                        sprite_cam_y = enemigo_sprite.rect.y - self.cam_mundo_y
+                        self.surface.blit(enemigo_sprite.image, (sprite_cam_x, sprite_cam_y))
+
+                        # DEBUG: Dibujar rect/hitbox de los enemigos
+                        if settings.DEBUG_VER_HITBOXES:
+                            debug_rect_a_dibujar = enemigo_sprite.hitbox if hasattr(enemigo_sprite, 'hitbox') else enemigo_sprite.rect
+                            
+                            debug_rect_cam_x = debug_rect_a_dibujar.x - self.cam_mundo_x
+                            debug_rect_cam_y = debug_rect_a_dibujar.y - self.cam_mundo_y
+                            pygame.draw.rect(self.surface, settings.VERDE, # Mismo color VERDE para debug de rects
+                                             (debug_rect_cam_x, debug_rect_cam_y, debug_rect_a_dibujar.width, debug_rect_a_dibujar.height), 1)
+                    else:
+                        print("ERROR CAMARA: Sprite en grupo_enemigos o sus atributos (image/rect) es None.")
+            elif not self.surface:
+                 print("ERROR CAMARA: self.surface es None antes de dibujar grupo_enemigos.")
+        except Exception as e:
+            print(f"ERROR CAMARA: Excepción al dibujar grupo_enemigos: {e}")
 
         # 4. Dibujar al jugador (RESTAURADO)
         try: # Añadido try-except para el dibujado del jugador

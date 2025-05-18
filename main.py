@@ -2,6 +2,7 @@ import pygame
 import settings # Importa todas las constantes de settings.py (ANCHO_PANTALLA, FPS, RUTA_ASSETS, etc.)
 from jugador import Jugador # Importa la clase Jugador desde jugador.py
 from entorno import Arbol   # Importa la clase Arbol desde entorno.py
+from enemigo import Enemigo # <--- IMPORTAR ENEMIGO
 from camara import Camara   # Importa la clase Camara desde camara.py
 import os                   # Módulo del sistema operativo, usado aquí para os.path.join
 import random               # Para generar números aleatorios (posiciones de los árboles)
@@ -77,6 +78,20 @@ try:
 except Exception as e: # Captura una excepción más general por si algo más falla aquí
     print(f"Error al crear árboles: {e}")
 
+# Crear Enemigos
+enemigos_sprites = pygame.sprite.Group() # Grupo para manejar todos los enemigos
+
+# Crear una instancia de prueba del enemigo "chicken.png"
+# Lo posicionaremos cerca del jugador inicialmente para verlo.
+# Asegúrate de que el jugador ya esté inicializado para usar jugador.rect.x
+pos_enemigo_x = jugador.rect.centerx + 100 
+pos_enemigo_y = jugador.rect.centery
+try:
+    enemigo_prueba = Enemigo(pos_enemigo_x, pos_enemigo_y) # Usa el nombre de archivo por defecto "chicken.png"
+    enemigos_sprites.add(enemigo_prueba)
+except Exception as e:
+    print(f"Error al crear el enemigo de prueba: {e}")
+
 # --- Reloj del Juego ---
 # Se usa para controlar los FPS (fotogramas por segundo).
 reloj = pygame.time.Clock()
@@ -123,6 +138,31 @@ while ejecutando:
     # Esto llamará al método `update()` de cada `Arbol`.
     arboles_sprites.update()
 
+    # Actualizar enemigos
+    enemigos_sprites.update(jugador.rect) # Llama al método update() de cada Enemigo, pasando el rect del jugador
+
+    # --- COLISIONES JUGADOR vs ENEMIGOS ---
+    # Iteramos manualmente para usar el hitbox del jugador y el rect del enemigo.
+    # Esto permite que el hitbox del jugador sea más preciso que su rect general.
+    ahora = pygame.time.get_ticks() # Para cooldowns si los implementamos aquí
+
+    for enemigo in enemigos_sprites: # Iterar sobre una copia si los enemigos pueden eliminarse durante la iteración
+                                   # pero como se eliminan en su propio update(), debería estar bien.
+        if jugador.hitbox.colliderect(enemigo.rect):
+            # El jugador intenta atacar al enemigo
+            # (Podríamos añadir un cooldown para el ataque del jugador si quisiéramos)
+            enemigo.recibir_dano(jugador.dano_ataque)
+
+            # El enemigo intenta atacar al jugador
+            # El jugador ya tiene un cooldown interno en su método recibir_dano()
+            jugador.recibir_dano(enemigo.dano_ataque)
+            
+            # Consideraciones adicionales:
+            # - Empuje: Podríamos mover ligeramente al jugador o al enemigo.
+            # - Efectos visuales: Chispas, sonido de golpe.
+            # - Si el enemigo muere por este golpe, se eliminará en su próximo enemigo.update().
+            # - Si el jugador muere, su método morir() se llamará.
+
     # Actualizar la posición de la cámara para que siga al jugador.
     camara.actualizar_posicion(jugador.rect)
 
@@ -132,7 +172,8 @@ while ejecutando:
                           textura_fondo_original, 
                           ANCHO_TEXTURA_FONDO, ALTO_TEXTURA_FONDO,
                           jugador,                
-                          arboles_sprites)       
+                          arboles_sprites,
+                          enemigos_sprites) # <--- PASAR ENEMIGOS A LA CAMARA       
     
     # # PRUEBA: Rellenar la pantalla de verde directamente
     # VERDE_PRUEBA = (0, 255, 0) # Definimos un color verde brillante
