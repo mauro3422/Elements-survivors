@@ -88,6 +88,65 @@ class Camara2D:
         if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_camara", False):
             logger_cam_debug.debug(f"  Cam2D Update: Offset final ({offset_x:.2f}, {offset_y:.2f}). Camera_rect final: {self.camera_rect}")
 
+    def apply(self, rect_mundo, factor_zoom_actual):
+        """Aplica la transformación de la cámara (offset y zoom) a un rect del mundo.
+
+        Args:
+            rect_mundo (pygame.Rect): El rectángulo en coordenadas del mundo.
+            factor_zoom_actual (float): El factor de zoom actual.
+
+        Returns:
+            pygame.Rect: El rectángulo transformado a coordenadas de pantalla.
+        """
+        # Mover el rect del mundo por el negativo del offset de la cámara
+        # Luego, escalar todo (posición y tamaño) por el factor de zoom.
+        
+        # Coordenadas relativas a la cámara (en el espacio del mundo, antes del zoom)
+        x_relativo_mundo = rect_mundo.x - self.camera_rect.x
+        y_relativo_mundo = rect_mundo.y - self.camera_rect.y
+
+        # Aplicar zoom a las coordenadas relativas y al tamaño
+        x_pantalla = x_relativo_mundo * factor_zoom_actual
+        y_pantalla = y_relativo_mundo * factor_zoom_actual
+        ancho_pantalla = rect_mundo.width * factor_zoom_actual
+        alto_pantalla = rect_mundo.height * factor_zoom_actual
+        
+        return pygame.Rect(int(x_pantalla), int(y_pantalla), int(ancho_pantalla), int(alto_pantalla))
+
+    def apply_rect(self, rect_mundo, factor_zoom_actual): # Podría ser un alias o la forma preferida.
+        return self.apply(rect_mundo, factor_zoom_actual)
+
+    def get_sprites_visibles_ordenados(self, todos_los_sprites):
+        """
+        Obtiene una lista de sprites que son visibles dentro de la cámara y los ordena.
+
+        El orden es por `sprite.rect.bottom`, para dibujar los sprites más bajos/cercanos al final.
+        La visibilidad se determina por la colisión del `sprite.rect` con `self.camera_rect`.
+        `self.camera_rect` ya está en coordenadas del mundo y su tamaño está ajustado por el zoom.
+
+        Args:
+            todos_los_sprites (pygame.sprite.Group): Un grupo con todos los sprites del juego.
+
+        Returns:
+            list: Una lista de sprites visibles, ordenados para el renderizado.
+        """
+        sprites_visibles = []
+        for sprite in todos_los_sprites:
+            if hasattr(sprite, 'rect') and self.camera_rect.colliderect(sprite.rect):
+                sprites_visibles.append(sprite)
+            elif not hasattr(sprite, 'rect') and settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_camara", False):
+                logger_cam_debug.warning(f"Cam2D GetVisible: Sprite {sprite} sin atributo 'rect'. No se puede determinar visibilidad.")
+
+        # Ordenar por la parte inferior del rect del sprite (más bajo en Y se dibuja después/encima)
+        sprites_visibles.sort(key=lambda s: s.rect.bottom)
+
+        if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_camara_verbose", False): # Nueva categoría para verbosidad
+            logger_cam_debug.debug(f"Cam2D GetVisible: {len(sprites_visibles)} sprites visibles de {len(todos_los_sprites)}. Ordenados por rect.bottom.")
+            # for s_idx, s_vis in enumerate(sprites_visibles):
+            #     logger_cam_debug.debug(f"    {s_idx}: {s_vis} (bottom: {s_vis.rect.bottom})")
+        
+        return sprites_visibles
+
     # La lógica de dibujar la escena (fondo, sprites, HUD) ahora está en la clase Juego.
     # Camara2D se enfoca solo en calcular el offset y aplicar la transformación.
     # Si se necesitara un método para dibujar directamente en una superficie a través de la cámara,

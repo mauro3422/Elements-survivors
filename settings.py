@@ -9,6 +9,34 @@ ALTO_PANTALLA = 600
 # Un valor común es 60 para una animación fluida.
 FPS = 60
 
+# --- Configuración del Jugador ---
+VIDA_MAXIMA_JUGADOR = 100 # Ejemplo, ajustar según necesidad
+VELOCIDAD_JUGADOR = 180 # Unidades por segundo
+JUGADOR_HITBOX_OFFSET_X = 4 # Offset horizontal para el hitbox del jugador
+JUGADOR_HITBOX_OFFSET_Y = 6 # Offset vertical superior para el hitbox del jugador
+JUGADOR_HITBOX_AJUSTE_INFERIOR = 4 # Ajuste adicional para la parte inferior del hitbox del jugador
+JUGADOR_RETRASO_ANIM_DESCANSO = 150 # ms entre frames de animación de descanso
+JUGADOR_DANO_BASE_ATAQUE = 5
+JUGADOR_COOLDOWN_ATAQUE = 700 # ms
+
+# --- Configuración Base de Parámetros de Ataque (usados como fallback si no están en perfil) ---
+ATAQUE_BASE_OFFSET_DISTANCIA = 25.0
+ATAQUE_BASE_EXTENSION = 30.0
+ATAQUE_BASE_GROSOR = 15.0
+ATAQUE_BASE_DURACION_TOTAL_MS = 300.0
+ATAQUE_BASE_PLANTILLA_ANGULOS_GRADOS = [-45, -22, 0, 22, 45] # Actualizado para el perfil por defecto del APM
+ATAQUE_BASE_DANO_MODIFICADOR = 1.0
+ATAQUE_BASE_COOLDOWN_MODIFICADOR = 1.0
+
+# --- Configuración del Enemigo ---
+ENEMIGO_VIDA_MAXIMA = 5
+ENEMIGO_VELOCIDAD = 70  # Unidades (píxeles) por segundo
+ENEMIGO_HITBOX_OFFSET_X = 3
+ENEMIGO_HITBOX_OFFSET_Y = 3
+ENEMIGO_DANO_ATAQUE = 1 # Daño que hace el enemigo (si tuviera un ataque explícito)
+ENEMIGO_RANGO_AGRO = 200 # Distancia a la que el enemigo detecta y persigue al jugador
+ENEMIGO_DIST_MIN_JUGADOR = 22 # Distancia mínima que el enemigo intenta mantener con el jugador
+
 # --- Configuración del Zoom de la Cámara ---
 # Factor de zoom inicial. Un valor mayor significa más zoom (objetos más grandes, vista más cercana).
 # 1.0 = sin zoom. 2.0 = los objetos se ven el doble de grandes.
@@ -70,7 +98,7 @@ NOMBRE_PERFIL_ATAQUE_INICIAL = "espada_predeterminada"
 
 # --- Configuración Global de Logs ---
 # Establecer en False para un output de log estándar (INFO) en la consola.
-MODO_DEBUG_LOGS = True
+MODO_DEBUG_LOGS = False
 LOG_LEVEL_VERBOSE = "DEBUG"  # Nivel de log cuando MODO_DEBUG_LOGS es True
 LOG_LEVEL_STANDARD = "INFO"  # Nivel de log cuando MODO_DEBUG_LOGS es False
 # La variable LOG_LEVEL que existía antes para el logger de main.py ya no es necesaria
@@ -84,7 +112,7 @@ LOG_CATEGORIAS = {
     "log_jugador_col": True,
     "log_jugador_cmb": True,
     "log_enemigo_mov": True,
-    "log_enemigo_ia": False,
+    "log_enemigo_ia": True,
     "log_enemigo_col": True,
     "log_enemigo_cmb": False,
     "log_animacion": False,
@@ -105,3 +133,23 @@ NOMBRE_FUENTE_HUD = "Arial"  # Fuente para el HUD principal (ej: información de
 NOMBRE_FUENTE_DEBUG = "Consolas" # Fuente para información de depuración
 TAMANO_FUENTE_HUD = 18
 TAMANO_FUENTE_DEBUG = 16
+
+# --- Configuraciones de Renderizado de Depuración ---
+HITBOX_COLOR_COLISION = ROJO # Ya definido
+HITBOX_COLOR_RECT_SPRITE = AZUL # Ya definido
+HITBOX_COLOR_ATAQUE = COLOR_ATAQUE_HITBOX # Ya definido (amarillo)
+
+GROSOR_HITBOX_COLISION_DEBUG = 1
+GROSOR_RECT_SPRITE_DEBUG = 1 # Para el rect del sprite si se dibuja separado del hitbox
+GROSOR_HITBOX_ATAQUE_DEBUG = 2
+
+# --- Configuraciones de Layout del HUD de Depuración ---
+HUD_PADDING_X = 10
+HUD_PADDING_Y = 10
+HUD_LINE_HEIGHT = 20
+HUD_ESPACIO_ENTRE_SECCIONES = 25 # Espacio entre la info general y la lista de categorías
+
+# --- Constantes de Gameplay/Física ---
+UMBRAL_MOV_FLOTANTE_ENTIDAD = 0.0001 # Para evitar micro-movimientos por errores de precisión flotante
+FACTOR_UMBRAL_TELETRANSPORTACION = 1.5 # Factor para calcular el umbral de detección de teletransportación
+MAX_PASADAS_RESOLUCION_ESTATICA = 2 # Número máximo de pasadas para resolver solapamientos estáticos

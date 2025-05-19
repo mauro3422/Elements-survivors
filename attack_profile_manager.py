@@ -44,13 +44,13 @@ class AttackProfileManager:
         # Esta función se moverá aquí desde Jugador
         logger.debug(f"Creando perfil de ataque por defecto con nombre: {nombre_perfil}")
         return {
-            "offset_distancia": 25,
-            "extension": 30,
-            "grosor": 15,
-            "duracion_total_ms": 300,
-            "plantilla_angulos_grados": [-45, -22, 0, 22, 45],
-            "dano_modificador": 1.0,
-            "cooldown_modificador": 1.0
+            "offset_distancia": settings.ATAQUE_BASE_OFFSET_DISTANCIA,
+            "extension": settings.ATAQUE_BASE_EXTENSION,
+            "grosor": settings.ATAQUE_BASE_GROSOR,
+            "duracion_total_ms": settings.ATAQUE_BASE_DURACION_TOTAL_MS,
+            "plantilla_angulos_grados": settings.ATAQUE_BASE_PLANTILLA_ANGULOS_GRADOS,
+            "dano_modificador": settings.ATAQUE_BASE_DANO_MODIFICADOR,
+            "cooldown_modificador": settings.ATAQUE_BASE_COOLDOWN_MODIFICADOR
         }
 
     def _cargar_o_crear_perfiles_ataque(self):

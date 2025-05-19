@@ -18,8 +18,7 @@ class CollisionHandler:
 
         if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_collision_handler", False):
             logger_ch.debug(f"    --- CH: Inicio _resolver_solapamientos_estaticos_eje ({eje}) --- Input: {movimiento_input_en_eje}, HB_in: {entidad_hitbox.topleft}")
-        MAX_PASADAS_RESOLUCION_ESTATICA = 3
-        for pasada in range(MAX_PASADAS_RESOLUCION_ESTATICA):
+        for pasada in range(settings.MAX_PASADAS_RESOLUCION_ESTATICA):
             colision_resuelta_en_pasada = False
             if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_collision_handler", False):
                 logger_ch.debug(f"      CH: Pasada {pasada + 1} res. estática eje {eje}")
@@ -220,8 +219,8 @@ class CollisionHandler:
 
         dist_mov_x = abs(entidad_hitbox.x - pos_segura_fase1_x)
         dist_mov_y = abs(entidad_hitbox.y - pos_segura_fase1_y)
-        umbral_tp_x = max(abs(dx_solicitado) + entidad_hitbox.width, entidad_hitbox.width * 1.5)
-        umbral_tp_y = max(abs(dy_solicitado) + entidad_hitbox.height, entidad_hitbox.height * 1.5)
+        umbral_tp_x = max(abs(dx_solicitado) + entidad_hitbox.width, entidad_hitbox.width * settings.FACTOR_UMBRAL_TELETRANSPORTACION)
+        umbral_tp_y = max(abs(dy_solicitado) + entidad_hitbox.height, entidad_hitbox.height * settings.FACTOR_UMBRAL_TELETRANSPORTACION)
 
         reversion_por_tp = False
         if (dist_mov_x > umbral_tp_x or dist_mov_y > umbral_tp_y):

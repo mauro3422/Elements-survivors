@@ -7,42 +7,39 @@ logger_ge = logging.getLogger(__name__) # Usará el nombre del módulo, ej. 'ges
 # No establecemos nivel aquí, se controla desde la configuración raíz y MODO_DEBUG_LOGS
 
 class GestorEventos:
-    def __init__(self, jugador, hud):
+    def __init__(self, jugador, hud, juego_ref):
         """
         Inicializa el GestorEventos.
 
         Args:
             jugador: Instancia del jugador para interactuar con él (ataque, perfiles).
             hud: Instancia del HUD para pasarle eventos.
+            juego_ref: Referencia a la instancia principal del juego.
         """
         self.jugador = jugador
         self.hud = hud
+        self.juego_ref = juego_ref
         
         # Estado interno que puede ser consultado por la clase Juego
         self.solicitud_salir = False
-        self.nuevo_factor_zoom = None # Se actualiza si hay MOUSEWHEEL
 
         if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_event_handler", False): # Categoria nueva
             logger_ge.debug("GestorEventos inicializado.")
 
-    def procesar_eventos(self, eventos, factor_zoom_actual):
+    def procesar_eventos(self, eventos_pygame):
         """
         Procesa la lista de eventos de Pygame.
 
         Args:
-            eventos: La lista de eventos obtenida de pygame.event.get().
-            factor_zoom_actual: El valor actual del zoom en la clase Juego.
-
-        Returns:
-            float or None: El nuevo factor de zoom si cambió, sino el original.
-                           (Decidí devolverlo directamente en vez de un flag)
+            eventos_pygame: La lista de eventos obtenida de pygame.event.get().
         """
         if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_event_handler_verbose", False): # Categoria más detallada
-            logger_ge.debug(f"Procesando {len(eventos)} eventos...")
+            logger_ge.debug(f"Procesando {len(eventos_pygame)} eventos...")
 
-        self.nuevo_factor_zoom = factor_zoom_actual # Empezamos con el actual
+        # Obtener el factor de zoom actual desde la instancia de Juego
+        factor_zoom_actual = self.juego_ref.factor_zoom_actual
 
-        for event in eventos:
+        for event in eventos_pygame:
             if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_event_handler_verbose", False):
                 logger_ge.debug(f"  Evento: {pygame.event.event_name(event.type)} ({event})")
 
@@ -59,9 +56,12 @@ class GestorEventos:
 
             if event.type == pygame.MOUSEWHEEL: 
                 delta_zoom = settings.FACTOR_ZOOM_PASO if event.y > 0 else -settings.FACTOR_ZOOM_PASO
-                self.nuevo_factor_zoom = max(settings.FACTOR_ZOOM_MIN, min(factor_zoom_actual + delta_zoom, settings.FACTOR_ZOOM_MAX))
-                if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_event_handler", False):
-                    logger_ge.debug(f"GestorEventos: MOUSEWHEEL (y:{event.y}). Zoom: {factor_zoom_actual:.2f} -> {self.nuevo_factor_zoom:.2f}")
+                nuevo_factor_zoom = max(settings.FACTOR_ZOOM_MIN, min(factor_zoom_actual + delta_zoom, settings.FACTOR_ZOOM_MAX))
+                if nuevo_factor_zoom != factor_zoom_actual: # Solo actualizar si realmente cambió
+                    self.juego_ref.actualizar_factor_zoom(nuevo_factor_zoom)
+                    # El log de la actualización del zoom ahora lo hará el método actualizar_factor_zoom en Juego.
+                    if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_event_handler", False):
+                        logger_ge.debug(f"GestorEventos: MOUSEWHEEL. Zoom actual: {factor_zoom_actual:.2f}, Solicitado nuevo: {nuevo_factor_zoom:.2f}")
 
             if event.type == pygame.KEYDOWN:
                 if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_event_handler", False):
@@ -161,8 +161,6 @@ class GestorEventos:
                     if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_event_handler", False):
                         logger_ge.warning(f"GestorEventos: {pygame.key.name(event.key)} presionado, pero no hay jugador o attack_profile_manager.")
 
-        return self.nuevo_factor_zoom # Devuelve el factor de zoom (puede ser el mismo o uno nuevo)
-
     def debe_salir(self):
         """Chequea si se ha solicitado salir del juego."""
         return self.solicitud_salir
@@ -218,17 +216,16 @@ if __name__ == '__main__':
     # Crear instancias
     jugador_mock = MockJugador()
     hud_mock = MockHUD()
-    gestor_evt = GestorEventos(jugador_mock, hud_mock)
+    gestor_evt = GestorEventos(jugador_mock, hud_mock, None)
 
     # Simular bucle de eventos
     print("\n--- Probando GestorEventos --- (Presiona ESC para 'salir', rueda del mouse para zoom, ESPACIO para atacar, F1-F2 para cambiar 'damage')")
     running_test = True
-    current_zoom = 1.0
     while running_test:
         eventos_pygame = pygame.event.get()
         
         # Aquí es donde la clase Juego llamaría a procesar_eventos
-        current_zoom = gestor_evt.procesar_eventos(eventos_pygame, current_zoom)
+        gestor_evt.procesar_eventos(eventos_pygame)
 
         if gestor_evt.debe_salir():
             running_test = False

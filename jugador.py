@@ -36,9 +36,10 @@ if not logger_jugador_general.level == logging.INFO: # Por defecto para INFO o s
 class Jugador(EntidadBase):
     def __init__(self, x, y, asset_manager_instance):
         vida_maxima_jugador = getattr(settings, 'VIDA_MAXIMA_JUGADOR', 100)
-        velocidad_jugador = getattr(settings, 'VELOCIDAD_JUGADOR', 3)
+        velocidad_jugador = getattr(settings, 'VELOCIDAD_JUGADOR', 180)
         hitbox_offset_x_jugador = getattr(settings, 'JUGADOR_HITBOX_OFFSET_X', 4)
         hitbox_offset_y_jugador = getattr(settings, 'JUGADOR_HITBOX_OFFSET_Y', 6)
+        hitbox_ajuste_inferior_jugador = getattr(settings, 'JUGADOR_HITBOX_AJUSTE_INFERIOR', 4)
         retraso_anim_descanso = getattr(settings, 'JUGADOR_RETRASO_ANIM_DESCANSO', 150)
 
         anim_descanso_claves = [f"player_reposo_{i}" for i in range(1, 5)]
@@ -90,10 +91,14 @@ class Jugador(EntidadBase):
         # que si se usara la fórmula genérica de EntidadBase con offsets simétricos.
         # Recalculamos explícitamente la altura del hitbox aquí para el jugador.
         hb_ancho_jugador = self.rect.width - (2 * self.hitbox_offset_x) # Ancho es simétrico
-        hb_alto_jugador_especifico = self.rect.height - (self.hitbox_offset_y + 4) 
+        hb_alto_jugador_especifico = self.rect.height - (self.hitbox_offset_y + hitbox_ajuste_inferior_jugador)
         self.hitbox.size = (max(1, hb_ancho_jugador), max(1, hb_alto_jugador_especifico))
         self._actualizar_posicion_hitbox() # Re-posicionar con el nuevo tamaño si cambió.
         
+        # Posiciones flotantes para movimiento preciso
+        self.pos_x_flotante = float(self.hitbox.x)
+        self.pos_y_flotante = float(self.hitbox.y)
+
         # Log de hitbox recalculado
         if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_jugador_mov", False):
             logger_mov.debug(f"{self.nombre_log_entidad} Hitbox recalculado a: {self.hitbox}")
@@ -114,83 +119,109 @@ class Jugador(EntidadBase):
         )
 
     def actualizar_movimiento(self, teclas_presionadas, obstaculos, mundo_ancho, mundo_alto, delta_time):
-        mov_x_input = 0 # Movimiento basado en input directo
-        mov_y_input = 0 # Movimiento basado en input directo
+        mov_x_input_raw = 0 
+        mov_y_input_raw = 0
 
         if teclas_presionadas[pygame.K_LEFT] or teclas_presionadas[pygame.K_a]:
-            mov_x_input = -self.velocidad
+            mov_x_input_raw = -self.velocidad
         if teclas_presionadas[pygame.K_RIGHT] or teclas_presionadas[pygame.K_d]:
-            mov_x_input = self.velocidad
+            mov_x_input_raw = self.velocidad
         if teclas_presionadas[pygame.K_UP] or teclas_presionadas[pygame.K_w]:
-            mov_y_input = -self.velocidad
+            mov_y_input_raw = -self.velocidad
         if teclas_presionadas[pygame.K_DOWN] or teclas_presionadas[pygame.K_s]:
-            mov_y_input = self.velocidad
+            mov_y_input_raw = self.velocidad
         
-        # Log de input (categoría "log_input" o "log_jugador_mov")
         if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_input", False):
-            logger_mov.debug(f"{self.nombre_log_entidad} Input teclado procesado: mov_x_input={mov_x_input}, mov_y_input={mov_y_input}")
+            logger_mov.debug(f"{self.nombre_log_entidad} Input teclado procesado: mov_x_input_raw={mov_x_input_raw}, mov_y_input_raw={mov_y_input_raw}")
 
-        # Aplicar delta_time al movimiento basado en input
-        mov_x_final = mov_x_input * delta_time
-        mov_y_final = mov_y_input * delta_time
+        dx_flotante_intentado = mov_x_input_raw * delta_time
+        dy_flotante_intentado = mov_y_input_raw * delta_time
 
         if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_jugador_mov", False):
-            logger_mov.debug(f"{self.nombre_log_entidad} Movimiento con delta_time (antes de límites): dx={mov_x_final:.4f}, dy={mov_y_final:.4f} (delta_time: {delta_time:.4f})")
+            logger_mov.debug(f"{self.nombre_log_entidad} Delta flotante intentado: dx={dx_flotante_intentado:.4f}, dy={dy_flotante_intentado:.4f} (delta_time: {delta_time:.4f})")
 
-        # --- Inicio: Lógica de colisión con límites del mundo ---
-        # Esta lógica se aplica ANTES de gestionar colisiones con otros obstáculos.
-        # Se ajusta mov_x_final y mov_y_final para que el JUGADOR no salga del mundo.
+        self.pos_x_flotante += dx_flotante_intentado
+        self.pos_y_flotante += dy_flotante_intentado
         
-        # Futura posición X del hitbox si se aplica mov_x_final
-        next_hitbox_x = self.hitbox.x + mov_x_final
-        # Futura posición Y del hitbox si se aplica mov_y_final
-        next_hitbox_y = self.hitbox.y + mov_y_final
+        if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_jugador_mov", False):
+            logger_mov.debug(f"{self.nombre_log_entidad} Pos flotante (pre-límites): ({self.pos_x_flotante:.4f}, {self.pos_y_flotante:.4f})")
 
-        # Comprobar y ajustar para el eje X
-        if next_hitbox_x < 0:
-            if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_jugador_col", False):
-                logger_col.debug(f"{self.nombre_log_entidad} Colisión borde IZQUIERDO. HB.x: {self.hitbox.x}, mov_x: {mov_x_final} -> ajustado.")
-            mov_x_final = -self.hitbox.x # Evita que hitbox.x sea < 0
-        elif next_hitbox_x + self.hitbox.width > mundo_ancho:
-            if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_jugador_col", False):
-                logger_col.debug(f"{self.nombre_log_entidad} Colisión borde DERECHO. HB.right: {self.hitbox.right}, W: {mundo_ancho}, mov_x: {mov_x_final} -> ajustado.")
-            mov_x_final = mundo_ancho - (self.hitbox.x + self.hitbox.width) # Evita que hitbox.right sea > mundo_ancho
-        # Comprobar y ajustar para el eje Y
-        if next_hitbox_y < 0:
-            if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_jugador_col", False):
-                logger_col.debug(f"{self.nombre_log_entidad} Colisión borde SUPERIOR. HB.y: {self.hitbox.y}, mov_y: {mov_y_final} -> ajustado.")
-            mov_y_final = -self.hitbox.y # Evita que hitbox.y sea < 0
-        elif next_hitbox_y + self.hitbox.height > mundo_alto:
-            if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_jugador_col", False):
-                logger_col.debug(f"{self.nombre_log_entidad} Colisión borde INFERIOR. HB.bottom: {self.hitbox.bottom}, H: {mundo_alto}, mov_y: {mov_y_final} -> ajustado.")
-            mov_y_final = mundo_alto - (self.hitbox.y + self.hitbox.height) # Evita que hitbox.bottom sea > mundo_alto
-        # --- Fin: Lógica de colisión con límites del mundo ---
+        # --- Colisión con Límites del Mundo (ajustando directamente pos_flotante) ---
+        if int(self.pos_x_flotante) < 0:
+            self.pos_x_flotante = 0.0
+        elif int(self.pos_x_flotante) + self.hitbox.width > mundo_ancho:
+            self.pos_x_flotante = float(mundo_ancho - self.hitbox.width)
         
-        if mov_x_final != 0 or mov_y_final != 0:
+        if int(self.pos_y_flotante) < 0:
+            self.pos_y_flotante = 0.0
+        elif int(self.pos_y_flotante) + self.hitbox.height > mundo_alto:
+            self.pos_y_flotante = float(mundo_alto - self.hitbox.height)
+        # --- Fin Colisión con Límites ---
+
+        if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_jugador_mov", False):
+            logger_mov.debug(f"{self.nombre_log_entidad} Pos flotante (post-límites): ({self.pos_x_flotante:.4f}, {self.pos_y_flotante:.4f})")
+
+        # Guardar la posición actual del hitbox para referencia
+        hitbox_x_actual = self.hitbox.x
+        hitbox_y_actual = self.hitbox.y
+
+        # Calcular el delta flotante total desde la posición actual del hitbox
+        delta_x_flotante_total = self.pos_x_flotante - hitbox_x_actual
+        delta_y_flotante_total = self.pos_y_flotante - hitbox_y_actual
+
+        # Determinar el movimiento entero para la colisión de forma simétrica
+        dx_para_colision = 0
+        if delta_x_flotante_total > settings.UMBRAL_MOV_FLOTANTE_ENTIDAD: # Usar constante
+            dx_para_colision = math.ceil(delta_x_flotante_total)
+        elif delta_x_flotante_total < -settings.UMBRAL_MOV_FLOTANTE_ENTIDAD: # Usar constante
+            dx_para_colision = math.floor(delta_x_flotante_total)
+
+        dy_para_colision = 0
+        if delta_y_flotante_total > settings.UMBRAL_MOV_FLOTANTE_ENTIDAD: # Usar constante
+            dy_para_colision = math.ceil(delta_y_flotante_total)
+        elif delta_y_flotante_total < -settings.UMBRAL_MOV_FLOTANTE_ENTIDAD: # Usar constante
+            dy_para_colision = math.floor(delta_y_flotante_total)
+        
+        if dx_para_colision != 0 or dy_para_colision != 0:
             if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_jugador_mov", False):
-                logger_mov.debug(f"{self.nombre_log_entidad} Movimiento neto (pre-colisión obstáculos): dx={mov_x_final:.2f}, dy={mov_y_final:.2f}")
+                logger_mov.debug(f"{self.nombre_log_entidad} Movimiento para CH: dx_int={dx_para_colision}, dy_int={dy_para_colision}. HB (antes CH): {self.hitbox.topleft}, PosFlotante: ({self.pos_x_flotante:.4f},{self.pos_y_flotante:.4f})")
 
-            if mov_x_final != 0:
-                self.ultima_direccion_mov_x = int(mov_x_final / abs(mov_x_final)) if mov_x_final != 0 else 0
-                self.ultima_direccion_mov_y = 0
-            elif mov_y_final != 0: # Usar elif para que la dirección no se sobreescriba si hay movimiento diagonal (prioridad a X)
+            # Actualizar la última dirección de movimiento basada en el input procesado
+            if dx_para_colision != 0: 
+                self.ultima_direccion_mov_x = 1 if dx_para_colision > 0 else -1
+                self.ultima_direccion_mov_y = 0 # Priorizar X si hay movimiento en ambos (raro con input normal)
+            elif dy_para_colision != 0: # Solo si no hubo movimiento en X
                 self.ultima_direccion_mov_x = 0
-                self.ultima_direccion_mov_y = int(mov_y_final / abs(mov_y_final)) if mov_y_final != 0 else 0
+                self.ultima_direccion_mov_y = 1 if dy_para_colision > 0 else -1
             
-            self._mover_y_colisionar(mov_x_final, mov_y_final, obstaculos)
+            # Aplicar el movimiento y manejar colisiones
+            # El CollisionHandler modificará self.hitbox directamente
+            self._mover_y_colisionar(dx_para_colision, dy_para_colision, obstaculos)
+
+            # Resincronizar las posiciones flotantes con la posición final del hitbox
+            self.pos_x_flotante = float(self.hitbox.x)
+            self.pos_y_flotante = float(self.hitbox.y)
 
             if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_jugador_mov", False):
-                logger_mov.debug(f"{self.nombre_log_entidad} Posición POST-mov/colisión: HB: {self.hitbox.topleft}, Rect: {self.rect.topleft}")
+                logger_mov.debug(f"{self.nombre_log_entidad} Posición POST CH: HB: {self.hitbox.topleft}, PosFlotante: ({self.pos_x_flotante:.2f}, {self.pos_y_flotante:.2f})")
         else:
+            # Si no hay delta entero, no llamamos a CH.
+            # El hitbox no se mueve, pero pos_flotante puede tener decimales.
+            # No es necesario actualizar self.hitbox.x/y aquí porque no hubo movimiento entero.
             if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_jugador_mov", False):
-                logger_mov.debug(f"{self.nombre_log_entidad} Sin movimiento solicitado este frame.")
+                logger_mov.debug(f"{self.nombre_log_entidad} Sin mov. para CH (delta_int fue 0). HB: {self.hitbox.topleft}, PosFlotante: ({self.pos_x_flotante:.4f}, {self.pos_y_flotante:.4f})")
 
-        self.actualizar_animacion() # Pasar delta_time a EntidadBase para la animación
+        # Actualizar el rect visual principal de la entidad basado en la posición final del hitbox
+        self.rect.topleft = (self.hitbox.x - self.hitbox_offset_x, self.hitbox.y - self.hitbox_offset_y)
+        
+        self.actualizar_animacion()
 
     # --- Métodos de Ataque (usan AttackProfileManager) ---
     def atacar(self): # Ya no necesita grupo_enemigos aquí
         ahora = pygame.time.get_ticks()
-        cooldown_mod = self.attack_profile_manager.get_parametro_ataque_activo("cooldown_modificador", 1.0)
+        # Usar la constante de settings como fallback para el cooldown_modificador
+        cooldown_mod_fallback = getattr(settings, 'ATAQUE_BASE_COOLDOWN_MODIFICADOR', 1.0)
+        cooldown_mod = self.attack_profile_manager.get_parametro_ataque_activo("cooldown_modificador", cooldown_mod_fallback)
         cooldown_ataque_actual = self.cooldown_general_ataque * float(cooldown_mod) # Asegurar float
         
         if ahora - self.ultimo_ataque_realizado > cooldown_ataque_actual:
@@ -214,13 +245,20 @@ class Jugador(EntidadBase):
             self.hitbox_ataque_actual_rect.size = (0,0) 
             return
 
-        # Obtener parámetros del perfil activo a través del manager
-        offset_dist = float(self.attack_profile_manager.get_parametro_ataque_activo("offset_distancia", 25))
-        extension = float(self.attack_profile_manager.get_parametro_ataque_activo("extension", 30))
-        grosor = float(self.attack_profile_manager.get_parametro_ataque_activo("grosor", 15))
-        duracion_total_ms = float(self.attack_profile_manager.get_parametro_ataque_activo("duracion_total_ms", 300))
-        plantilla_angulos = self.attack_profile_manager.get_parametro_ataque_activo("plantilla_angulos_grados", [0])
-        dano_mod = float(self.attack_profile_manager.get_parametro_ataque_activo("dano_modificador", 1.0))
+        # Obtener parámetros del perfil activo a través del manager, usando constantes de settings como fallback
+        offset_dist_fallback = getattr(settings, 'ATAQUE_BASE_OFFSET_DISTANCIA', 25.0)
+        extension_fallback = getattr(settings, 'ATAQUE_BASE_EXTENSION', 30.0)
+        grosor_fallback = getattr(settings, 'ATAQUE_BASE_GROSOR', 15.0)
+        duracion_total_ms_fallback = getattr(settings, 'ATAQUE_BASE_DURACION_TOTAL_MS', 300.0)
+        plantilla_angulos_fallback = getattr(settings, 'ATAQUE_BASE_PLANTILLA_ANGULOS_GRADOS', [0])
+        dano_mod_fallback = getattr(settings, 'ATAQUE_BASE_DANO_MODIFICADOR', 1.0)
+
+        offset_dist = float(self.attack_profile_manager.get_parametro_ataque_activo("offset_distancia", offset_dist_fallback))
+        extension = float(self.attack_profile_manager.get_parametro_ataque_activo("extension", extension_fallback))
+        grosor = float(self.attack_profile_manager.get_parametro_ataque_activo("grosor", grosor_fallback))
+        duracion_total_ms = float(self.attack_profile_manager.get_parametro_ataque_activo("duracion_total_ms", duracion_total_ms_fallback))
+        plantilla_angulos = self.attack_profile_manager.get_parametro_ataque_activo("plantilla_angulos_grados", plantilla_angulos_fallback)
+        dano_mod = float(self.attack_profile_manager.get_parametro_ataque_activo("dano_modificador", dano_mod_fallback))
         dano_actual = self.dano_base_ataque * dano_mod
         
         # Obtener valores calculados del manager

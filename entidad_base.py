@@ -128,6 +128,11 @@ class EntidadBase(pygame.sprite.Sprite):
         self.hitbox.topleft = (self.rect.x + self.hitbox_offset_x, 
                                self.rect.y + self.hitbox_offset_y)
     
+    def _actualizar_posicion_rect_desde_hitbox(self):
+        """Actualiza la posición del rect principal basándose en la posición del hitbox y los offsets."""
+        self.rect.topleft = (self.hitbox.x - self.hitbox_offset_x,
+                             self.hitbox.y - self.hitbox_offset_y)
+
     def actualizar_animacion(self):
         """Actualiza el fotograma actual de la animación de la entidad basado en el tiempo."""
         if not self.animaciones or not self.estado_animacion in self.animaciones or not self.animaciones[self.estado_animacion]:
