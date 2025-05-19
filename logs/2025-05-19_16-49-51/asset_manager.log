@@ -1,0 +1,22 @@
+2025-05-19 16:49:52 - asset_manager - [INFO] - AssetManager: Ruta base de assets: C:\Users\mauro\OneDrive\Escritorio\Prueba Juego\assets
+2025-05-19 16:49:52 - asset_manager - [INFO] - --- AM: Iniciando Preload General de Assets ---
+2025-05-19 16:49:52 - asset_manager - [INFO] - AM: Imagen 'player_reposo_1' cargada desde: C:\Users\mauro\OneDrive\Escritorio\Prueba Juego\assets\character\animaciones\Player\reposo\1.png
+2025-05-19 16:49:52 - asset_manager - [INFO] - AM: Imagen 'player_reposo_2' cargada desde: C:\Users\mauro\OneDrive\Escritorio\Prueba Juego\assets\character\animaciones\Player\reposo\2.png
+2025-05-19 16:49:52 - asset_manager - [INFO] - AM: Imagen 'player_reposo_3' cargada desde: C:\Users\mauro\OneDrive\Escritorio\Prueba Juego\assets\character\animaciones\Player\reposo\3.png
+2025-05-19 16:49:52 - asset_manager - [INFO] - AM: Imagen 'player_reposo_4' cargada desde: C:\Users\mauro\OneDrive\Escritorio\Prueba Juego\assets\character\animaciones\Player\reposo\4.png
+2025-05-19 16:49:52 - asset_manager - [INFO] - AM: Preload animaciones reposo jugador completado.
+2025-05-19 16:49:52 - asset_manager - [INFO] - AM: Imagen 'enemy_chicken' cargada desde: C:\Users\mauro\OneDrive\Escritorio\Prueba Juego\assets\character\animaciones\Enemy\chicken.png
+2025-05-19 16:49:52 - asset_manager - [INFO] - AM: Preload imágenes enemigos completado.
+2025-05-19 16:49:52 - asset_manager - [INFO] - AM: Imagen 'background_tierra' cargada desde: C:\Users\mauro\OneDrive\Escritorio\Prueba Juego\assets\scenary\texture\T_Tierra32x32.png
+2025-05-19 16:49:52 - asset_manager - [INFO] - AM: Imagen 'fondo_nivel_1' cargada desde: C:\Users\mauro\OneDrive\Escritorio\Prueba Juego\assets\scenary\texture\T_Tierra32x32.png
+2025-05-19 16:49:52 - asset_manager - [INFO] - AM: Imagen 'tree_frame_1' cargada desde: C:\Users\mauro\OneDrive\Escritorio\Prueba Juego\assets\scenary\animaciones\tree\Tree_idle_1.png
+2025-05-19 16:49:52 - asset_manager - [INFO] - AM: Imagen 'tree_frame_2' cargada desde: C:\Users\mauro\OneDrive\Escritorio\Prueba Juego\assets\scenary\animaciones\tree\Tree_idle_2.png
+2025-05-19 16:49:52 - asset_manager - [INFO] - AM: Imagen 'tree_frame_3' cargada desde: C:\Users\mauro\OneDrive\Escritorio\Prueba Juego\assets\scenary\animaciones\tree\Tree_idle_3.png
+2025-05-19 16:49:52 - asset_manager - [INFO] - AM: Imagen 'tree_frame_4' cargada desde: C:\Users\mauro\OneDrive\Escritorio\Prueba Juego\assets\scenary\animaciones\tree\Tree_idle_4.png
+2025-05-19 16:49:52 - asset_manager - [INFO] - AM: Imagen 'tree_frame_5' cargada desde: C:\Users\mauro\OneDrive\Escritorio\Prueba Juego\assets\scenary\animaciones\tree\Tree_idle_5.png
+2025-05-19 16:49:52 - asset_manager - [INFO] - AM: Imagen 'tree_frame_6' cargada desde: C:\Users\mauro\OneDrive\Escritorio\Prueba Juego\assets\scenary\animaciones\tree\Tree_idle_6.png
+2025-05-19 16:49:52 - asset_manager - [INFO] - AM: Preload imágenes entorno completado.
+2025-05-19 16:49:52 - asset_manager - [INFO] - AM: Fuente (sistema) 'hud_font' cargada: Arial, T:18
+2025-05-19 16:49:52 - asset_manager - [INFO] - AM: Fuente (sistema) 'debug_font' cargada: Consolas, T:16
+2025-05-19 16:49:52 - asset_manager - [INFO] - AM: Preload fuentes (HUD, Debug) completado.
+2025-05-19 16:49:52 - asset_manager - [INFO] - --- AM: Preload General de Assets Completado ---

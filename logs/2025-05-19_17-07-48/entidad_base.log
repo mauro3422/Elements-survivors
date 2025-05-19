@@ -1,0 +1,6 @@
+2025-05-19 17:07:49 - entidad_base - [INFO] - [Jugador_0] Creando en (400, 300)
+2025-05-19 17:07:49 - entidad_base - [DEBUG] - [Jugador_0] Hitbox inicial: <rect(404, 306, 24, 20)> en (404, 306)
+2025-05-19 17:07:49 - entidad_base - [INFO] - [Enemigo_1] Creando en (600, 200)
+2025-05-19 17:07:49 - entidad_base - [DEBUG] - [Enemigo_1] Hitbox inicial: <rect(603, 203, 26, 20)> en (603, 203)
+2025-05-19 17:07:49 - entidad_base - [INFO] - [Enemigo_2] Creando en (400, 500)
+2025-05-19 17:07:49 - entidad_base - [DEBUG] - [Enemigo_2] Hitbox inicial: <rect(403, 503, 26, 20)> en (403, 503)

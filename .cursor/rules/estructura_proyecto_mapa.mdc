@@ -1,0 +1,28 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# Estructura del Proyecto y Mapa Conceptual
+
+## Entendiendo la Arquitectura
+
+Para comprender la estructura general del proyecto, incluyendo los módulos principales y la organización de carpetas, la fuente principal de información es la sección "Estructura del Proyecto" en el archivo `[README.md](mdc:README.md)`.
+
+## Mapa Conceptual de Módulos (`mapa_conceptual_modulos.py`)
+
+**De vital importancia para entender las interrelaciones y responsabilidades de los módulos es el archivo `[mapa_conceptual_modulos.py](mdc:mapa_conceptual_modulos.py)`.**
+
+*   **Propósito**: Sirve como un glosario o "mapa conceptual" de los principales módulos, clases y sistemas del juego.
+*   **Ubicación**: Raíz del proyecto (`[mapa_conceptual_modulos.py](mdc:mapa_conceptual_modulos.py)`).
+*   **Contenido Clave**: Contiene el diccionario `MAPA_MODULOS_POR_CATEGORIA` que detalla:
+    *   Nombre del módulo.
+    *   Categoría.
+    *   Ruta relativa.
+    *   Responsabilidad principal.
+    *   Interacciones principales (entrantes y salientes).
+    *   Componentes clave internos.
+*   **Cuándo Consultarlo**: Siempre que se necesite entender el rol de un módulo, cómo se conecta con otros, o antes de planificar nuevas integraciones o refactorizaciones.
+*   **Mantenimiento**: Este archivo es un esfuerzo manual y debe actualizarse con cambios significativos en la arquitectura. Ver `[README.md](mdc:README.md)` para detalles sobre su mantenimiento.
+
+**Al realizar cualquier tarea que implique entender o modificar la arquitectura, este archivo `[mapa_conceptual_modulos.py](mdc:mapa_conceptual_modulos.py)` debe ser una de las primeras referencias.**

@@ -36,8 +36,16 @@ Esta sección es fundamental para cualquier colaborador, ya sea una IA o un desa
 
 **Diccionario de Código / Mapa Conceptual de Módulos:**
 
-*   **Propósito:** Esta sección (a construir y mantener) servirá como un glosario de los principales módulos, clases y sistemas del juego. Describirá brevemente la responsabilidad de cada uno y cómo interactúan entre sí. El objetivo es proporcionar una visión general rápida que facilite la incorporación de nuevos colaboradores y la comprensión de la arquitectura del código.
-*   **Mantenimiento:** Este diccionario es un esfuerzo manual y colaborativo.
+*   **Propósito:** Esta sección describe un archivo complementario, `mapa_conceptual_modulos.py`, que sirve como un glosario o "mapa conceptual" de los principales módulos, clases y sistemas del juego. Su objetivo es proporcionar una visión general rápida que facilite la incorporación de nuevos colaboradores y la comprensión de la arquitectura del código.
+*   **Ubicación y Formato:** El mapa conceptual detallado se encuentra en el archivo `mapa_conceptual_modulos.py`, ubicado en la raíz del proyecto. Este archivo Python contiene un diccionario principal llamado `MAPA_MODULOS_POR_CATEGORIA`. Las claves de este diccionario son cadenas que representan las categorías lógicas del proyecto (ej. "Core", "Entidades", "Sistemas"), que idealmente se alinearán con la estructura de carpetas del código fuente (ej. `src/core`, `src/entidades`). El valor asociado a cada clave de categoría es una lista de diccionarios, donde cada diccionario representa un módulo específico y típicamente incluye claves como:
+    *   `nombre_modulo`: Nombre del archivo del módulo (ej. "juego.py").
+    *   `categoria`: (Duplica la clave del diccionario padre para referencia interna si es útil, aunque la agrupación ya está dada por la estructura).
+    *   `ruta_relativa`: Ruta al archivo desde la raíz del proyecto (ej. "juego.py" o, después de la reestructuración, "src/core/juego.py").
+    *   `responsabilidad_principal`: Descripción concisa de lo que hace el módulo.
+    *   `interacciones_principales`: Un diccionario con listas `entrantes` (módulos que lo usan o de los que depende) y `salientes` (módulos que usa o de los que depende).
+    *   `componentes_clave_internos`: Lista de las clases o funciones más importantes dentro del módulo.
+    *   `notas_adicionales`: Cualquier otra información relevante.
+*   **Mantenimiento:** Este diccionario en `mapa_conceptual_modulos.py` es un esfuerzo manual y colaborativo.
     *   **Cuándo actualizar:** Se debe actualizar siempre que:
         *   Se añada un nuevo módulo principal al proyecto.
         *   Se elimine un módulo principal existente.
@@ -46,7 +54,7 @@ Esta sección es fundamental para cualquier colaborador, ya sea una IA o un desa
     *   **Qué actualizar (Nivel de Detalle):** El foco debe estar en:
         *   La **responsabilidad principal** del módulo (ej. "¿Qué hace `collision_handler.py`?").
         *   Sus **interacciones clave** con otros módulos principales (ej. "`collision_handler.py` es utilizado por `juego.py` y opera sobre instancias de `entidad_base.py`").
-        No es necesario ni recomendable listar todas las funciones internas, clases secundarias o variables de un módulo. El objetivo es mantener una visión general conceptual, no un reflejo detallado del código.
+        No es necesario ni recomendable listar todas las funciones internas, clases secundarias o variables de un módulo. El objetivo es mantener una visión general conceptual, no un reflejo detallado del código fuente.
 
 ## Estructura del Proyecto
 
@@ -137,6 +145,40 @@ Esta sección es fundamental para cualquier colaborador, ya sea una IA o un desa
      # }
      # MODULOS_CON_LOG_PROPIO = [..., "mi_modulo", ...]
      ```
+
+   - **Prints de Depuración Controlados por Variables Globales (Debug Prints)**:
+     - **Propósito**: Además del sistema de logging formal, el proyecto utiliza un mecanismo simple para activar/desactivar `print()`s específicos para depuración rápida y localizada sin necesidad de modificar constantemente el código o la configuración del logger. Esto es útil para trazas temporales mientras se desarrolla o depura una funcionalidad concreta.
+     - **Patrón de Uso**:
+       1.  **Definición de la Variable de Control**: En `src/config/settings.py`, se define una variable global booleana. El nombre de esta variable debe ser descriptivo del área o funcionalidad que controlan sus prints.
+           ```python
+           # Ejemplo en src/config/settings.py
+           DEBUG_PRINT_GESTION_DANO = True  # Activa prints relacionados con la gestión de daño
+           DEBUG_PRINT_CALCULO_FISICAS = False # Desactiva prints de cálculos de físicas
+           DEBUG_PRINT_ENTORNO = True # Activa/desactiva prints generales de la creación y estado de Obstaculos
+           DEBUG_PRINT_ENTORNO_ANIM = False # Activa/desactiva prints de cada frame de animación de Obstaculos (muy verboso)
+           DEBUG_PRINT_JUGADOR_ATAQUE_CALCULO = False # Activa/desactiva prints del cálculo del hitbox de ataque del jugador
+           DEBUG_PRINT_JUGADOR_RECIBIR_DANO_INFO = False # Activa/desactiva prints cuando el jugador recibe daño
+           ```
+       2.  **Uso Condicional en el Código**: En el módulo correspondiente, las sentencias `print()` destinadas a esta depuración se envuelven en una condición que verifica el estado de su variable de control en `settings`.
+           ```python
+           # Ejemplo en algun archivo .py
+           import settings # O from src.config import settings
+
+           def alguna_funcion_con_dano(dano):
+               if settings.DEBUG_PRINT_GESTION_DANO:
+                   print(f"DEBUG_AREA_DANO: Aplicando daño: {dano}")
+               # ... lógica de la función ...
+
+           def simular_fisica(objeto):
+               if settings.DEBUG_PRINT_CALCULO_FISICAS:
+                   print(f"DEBUG_FISICAS: Calculando para {objeto}")
+               # ... lógica de la función ...
+           ```
+     - **Ventajas**:
+       - Permite activar o desactivar grupos de `print`s de forma muy rápida y centralizada (`settings.py`) sin tocar el código fuente donde se usan.
+       - Evita la necesidad de comentar/descomentar `print`s manualmente.
+       - Mantiene la consola más limpia cuando no se necesitan estos `print`s específicos, separándolos del flujo de logging más formal.
+     - **Convención**: Los `print`s controlados de esta manera deberían, idealmente, incluir un prefijo distintivo (ej. `DEBUG_MI_AREA: ...`) para identificarlos fácilmente en la salida de la consola.
 
 2. **Sistema de Animaciones**:
    - Ubicación: `animaciones/`

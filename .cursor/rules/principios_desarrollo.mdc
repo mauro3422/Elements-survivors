@@ -1,0 +1,46 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# Principios y Reglas Fundamentales de Desarrollo
+
+Este documento resume los principios y reglas clave que deben seguirse al desarrollar este proyecto. Para más detalles, consultar siempre el archivo principal `[README.md](mdc:README.md)`.
+
+## Principios Clave
+
+1.  **Documentación Activa**:
+    *   El `[README.md](mdc:README.md)` y el `[CHANGELOG.md](mdc:CHANGELOG.md)` son documentos vivos.
+    *   **Obligatorio leerlos antes de cambios significativos y actualizarlos después.**
+2.  **Comunicación y Comprensión**:
+    *   Entender cómo los cambios encajan en el proyecto general antes de implementar.
+3.  **Metodología de Trabajo Iterativa**:
+    *   **Revisión Post-Tarea Obligatoria**: Al finalizar una tarea o un conjunto de cambios significativos, se debe realizar una revisión. Esta revisión incluye:
+        *   Resumir verbalmente los cambios realizados y los objetivos alcanzados.
+        *   Confirmar explícitamente que se cumplieron todos los requisitos de la tarea.
+        *   Identificar y comunicar cualquier posible error, efecto secundario no deseado o tarea pendiente.
+        *   Asegurar la claridad y la correcta implementación de la solución.
+    *   **Propuestas Proactivas**: Durante el análisis y desarrollo, estar atento a oportunidades de mejora (simplificaciones, refactorizaciones, aplicación de convenciones) y proponerlas para su consideración.
+
+## Reglas de Desarrollo
+
+Consultar la sección detallada en `[README.md](mdc:README.md)`. Resumen:
+
+1.  **Antes de crear nueva funcionalidad**:
+    *   Verificar si existe funcionalidad similar o integrable.
+    *   Revisar `[src/config/settings.py](mdc:src/config/settings.py)` para configuraciones relevantes.
+    *   Seguir las convenciones de nombres y estructuras.
+2.  **Al añadir nuevas características**:
+    *   Documentar en `[README.md](mdc:README.md)` y `[CHANGELOG.md](mdc:CHANGELOG.md)`.
+    *   Actualizar `[src/config/settings.py](mdc:src/config/settings.py)` si es necesario.
+    *   Mantener consistencia con la arquitectura existente.
+3.  **Para cualquier nueva entidad o sistema**:
+    *   Verificar integraciones necesarias (animaciones, configuración, estados, colisiones, eventos, assets).
+    *   Seguir convenciones de nombres y directorios.
+
+## Consideraciones Específicas para la IA
+
+*   **Adherencia Estricta al README**: El `[README.md](mdc:README.md)` es la fuente principal de verdad.
+*   **Uso del Mapa Conceptual**: Consultar `[mapa_conceptual_modulos.py](mdc:mapa_conceptual_modulos.py)` para entender la estructura y las interacciones.
+*   **Priorizar Configuraciones Existentes**: Antes de introducir nuevas variables o configuraciones, verificar siempre `[src/config/settings.py](mdc:src/config/settings.py)`.
+*   **Claridad en Logs y Commits**: Asegurarse de que los mensajes de log y las descripciones de los cambios sean claros y descriptivos.

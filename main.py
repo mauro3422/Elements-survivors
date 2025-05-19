@@ -1,52 +1,47 @@
 import pygame
-import settings # Importa todas las constantes de settings.py (ANCHO_PANTALLA, FPS, RUTA_ASSETS, etc.)
-import os                   # Módulo del sistema operativo, usado aquí para os.path.join
-import logging # <--- Añadir import para configurar logger principal
-import sys # Para asegurar que la ruta base del proyecto se añada al path si es necesario
-# Determinar la RUTA_BASE_PROYECTO y añadirla al sys.path si es necesario
-# para que los módulos como 'settings' y 'config' se puedan importar correctamente.
-RUTA_BASE_PROYECTO = os.path.dirname(os.path.abspath(__file__))
-if RUTA_BASE_PROYECTO not in sys.path:
-    sys.path.insert(0, RUTA_BASE_PROYECTO)
+from src.config import settings # Importa todas las constantes de settings.py
+from src.core.juego import Juego
+from src.config import config_logging
 
-# Ahora se pueden importar settings y config
-import config # Asegurarse que config.py está accesible
-from config_logging import setup_logging # <--- NUEVA IMPORTACIÓN
-from juego import Juego # <--- AÑADIR IMPORTACIÓN DE LA CLASE JUEGO
+# --- Configuración del Logging ---
+# Importar el módulo de configuración de logging y ejecutar la configuración.
+# Esto debe hacerse ANTES de que cualquier otro módulo intente obtener un logger,
+# para asegurar que todos los handlers y filtros se apliquen correctamente desde el inicio.
+config_logging.setup_logging() 
+# --- Fin Configuración del Logging ---
 
-# --- Configurar Logging --- 
-# Llamar a la función centralizada de configuración de logging.
-setup_logging() # <--- LLAMADA A LA FUNCIÓN
-
-# Obtener un logger para main.py DESPUÉS de que setup_logging haya configurado el sistema.
-logger = logging.getLogger("main") # Logger para main.py, cambiado de __name__ a "main"
+# No se necesita importar 'os', 'sys', 'logging', 'config', 'config_logging' directamente aquí.
+# La configuración de logging y sys.path debe ser manejada internamente por los módulos de src si es necesario.
 
 # --- Bucle Principal del Juego ---
 def main():
     """Función principal para iniciar y correr el juego."""
-    # La configuración de logging ya se hizo arriba, antes de definir main().
+    
+    # La inicialización de Pygame y la creación de la instancia del juego
+    # se manejan dentro de la clase Juego o sus componentes.
+    
+    # El logger principal también se configura dentro de los módulos de src,
+    # específicamente en config_logging.py y se importa donde sea necesario.
+    # No es necesario obtener un logger aquí si main.py solo inicia el juego.
 
-    # Verificación de RUTA_BASE_PROYECTO.
-    # En este punto, settings.RUTA_BASE_PROYECTO ya debería estar establecida por el bloque
-    # de código que se ejecuta al importar main.py, antes de setup_logging().
-    # Aquí solo verificamos si, por alguna razón externa o error, ha cambiado o es incorrecta.
-    if not hasattr(settings, 'RUTA_BASE_PROYECTO') or not settings.RUTA_BASE_PROYECTO:
-        # Esto sería un escenario inesperado si el bloque anterior funcionó.
-        logger.error("CRITICAL ERROR: settings.RUTA_BASE_PROYECTO no está configurada incluso después del intento inicial. Usando la ruta detectada localmente, pero esto puede indicar un problema.", extra={"categoria_log": "log_general"})
-        settings.RUTA_BASE_PROYECTO = RUTA_BASE_PROYECTO # Forzar de nuevo como último recurso
-    elif settings.RUTA_BASE_PROYECTO != RUTA_BASE_PROYECTO:
-        logger.warning(f"settings.RUTA_BASE_PROYECTO ({settings.RUTA_BASE_PROYECTO}) difiere de la ruta detectada en main() ({RUTA_BASE_PROYECTO}). Esto es inusual. Se mantendrá el valor establecido inicialmente en settings.", extra={"categoria_log": "log_general"})
-        # No la reasignamos aquí, confiamos en la primera asignación que ocurrió antes de setup_logging.
-
-    logger.info("Iniciando la aplicación del juego desde main.py.", extra={"categoria_log": "log_general"})
+    print(f"Ruta base del proyecto configurada en settings: {settings.RUTA_BASE_PROYECTO}")
+    print(f"Assets path: {settings.RUTA_ASSETS}")
+    print(f"Attack profiles path: {settings.RUTA_DATOS_PERFILES_ATAQUE}")
     
     try:
         juego_instancia = Juego()
         juego_instancia.run()
     except Exception as e:
-        logger.critical(f"Error fatal durante la ejecución del juego: {e}", exc_info=True, extra={"categoria_log": "log_general"})
+        # Idealmente, el logger ya estaría configurado por src.config.config_logging
+        # y se podría usar aquí si se importara logging.
+        # Por ahora, un print simple para errores críticos en main.
+        print(f"Error fatal durante la ejecución del juego: {e}")
+        # Considerar si el logger de src.utils podría usarse aquí si se propaga la configuración.
+        # from src.utils.logger_config import logger # (Ejemplo, si existiera y estuviera configurado)
+        # logger.critical(f"Error fatal durante la ejecución del juego: {e}", exc_info=True)
         pygame.quit()
-        sys.exit(1)
+        # import sys # Mover import sys aquí si solo se usa para sys.exit
+        # sys.exit(1) # sys no está importado globalmente ahora.
 
 if __name__ == '__main__':
     main()

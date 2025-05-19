@@ -1,0 +1,6 @@
+2025-05-19 17:14:33 - gestor_nivel - [INFO] - GestorNivel inicializado.
+2025-05-19 17:14:33 - gestor_nivel - [DEBUG] - GestorNivel: Cargando obstáculos hardcodeados (árboles).
+2025-05-19 17:14:33 - gestor_nivel - [INFO] - GestorNivel: 3 obstáculos (árboles) cargados.
+2025-05-19 17:14:33 - gestor_nivel - [DEBUG] - GestorNivel: Generando enemigos hardcodeados.
+2025-05-19 17:14:33 - gestor_nivel - [INFO] - GestorNivel: 2 enemigos generados.
+2025-05-19 17:14:33 - gestor_nivel - [INFO] - Elementos del nivel inicial cargados (obstáculos y enemigos).
