@@ -5,7 +5,7 @@ from typing import Tuple, List, Optional, Union, Dict, Any
 import json
 import os
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("utils")
 
 def calcular_distancia(punto1: Tuple[float, float], punto2: Tuple[float, float]) -> float:
     """Calcula la distancia euclidiana entre dos puntos."""
@@ -80,7 +80,7 @@ def cargar_json(ruta: str) -> Dict[str, Any]:
         with open(ruta, 'r', encoding='utf-8') as archivo:
             return json.load(archivo)
     except Exception as e:
-        logger.error(f"Error al cargar JSON {ruta}: {e}")
+        logger.error(f"Error al cargar JSON {ruta}: {e}", extra={"categoria_log": "log_general"})
         return {}
 
 def guardar_json(datos: Dict[str, Any], ruta: str) -> bool:
@@ -90,7 +90,7 @@ def guardar_json(datos: Dict[str, Any], ruta: str) -> bool:
             json.dump(datos, archivo, indent=4)
         return True
     except Exception as e:
-        logger.error(f"Error al guardar JSON {ruta}: {e}")
+        logger.error(f"Error al guardar JSON {ruta}: {e}", extra={"categoria_log": "log_general"})
         return False
 
 def rectangulos_colisionan(rect1: pygame.Rect, rect2: pygame.Rect) -> bool:
@@ -180,7 +180,7 @@ def asegurar_directorio(ruta: str) -> bool:
         os.makedirs(ruta, exist_ok=True)
         return True
     except Exception as e:
-        logger.error(f"Error al crear directorio {ruta}: {e}")
+        logger.error(f"Error al crear directorio {ruta}: {e}", extra={"categoria_log": "log_general"})
         return False
 
 def obtener_tiempo_actual() -> float:
@@ -191,4 +191,19 @@ def formatear_tiempo(segundos: float) -> str:
     """Formatea segundos en formato MM:SS."""
     minutos = int(segundos // 60)
     segundos = int(segundos % 60)
-    return f"{minutos:02d}:{segundos:02d}" 
+    return f"{minutos:02d}:{segundos:02d}"
+
+def collide_rect_extended(sprite1, sprite2) -> bool:
+    """Verifica colisión entre dos sprites, usando 'hitbox' si está disponible, sino 'rect'."""
+    # Asumimos que sprite1 y sprite2 son objetos que podrían tener 'hitbox' o 'rect'.
+    # Es buena práctica añadir type hints si conocemos los tipos de sprite1 y sprite2.
+    # Por ejemplo, si ambos heredan de una clase base EntidadBase que garantiza estos atributos.
+    # from entidad_base import EntidadBase # Ejemplo de importación si fuera necesario para type hint
+    # def collide_rect_extended(sprite1: EntidadBase, sprite2: EntidadBase) -> bool:
+
+    s1_col_area = getattr(sprite1, 'hitbox', getattr(sprite1, 'rect', None))
+    s2_col_area = getattr(sprite2, 'hitbox', getattr(sprite2, 'rect', None))
+
+    if s1_col_area and s2_col_area:
+        return s1_col_area.colliderect(s2_col_area)
+    return False 

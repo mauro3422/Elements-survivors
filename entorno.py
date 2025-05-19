@@ -1,6 +1,10 @@
 import pygame
 import os
 import settings # Necesario para RUTA_ASSETS si no se usa AssetManager, pero ahora sí
+import logging # <--- AÑADIR IMPORT
+
+# Logger para el módulo de entorno
+logger = logging.getLogger("entorno") # <--- AÑADIR LOGGER
 
 class Arbol(pygame.sprite.Sprite):
     id_arbol_counter = 0 # Contador para IDs únicos de árboles
@@ -26,7 +30,9 @@ class Arbol(pygame.sprite.Sprite):
             # Fallback si la animación no se carga
             self.image_original = pygame.Surface((32,32))
             self.image_original.fill(settings.ROJO_ERROR_ASSET if hasattr(settings, 'ROJO_ERROR_ASSET') else (255,0,0))
-            print(f"Error: Animación '{self.estado_animacion}' no encontrada para el Árbol. Usando placeholder.")
+            # print(f"Error: Animación '{self.estado_animacion}' no encontrada para el Árbol. Usando placeholder.")
+            if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_entorno", False):
+                logger.error(f"{self.nombre_log_entidad} Animación '{self.estado_animacion}' no encontrada. Usando placeholder.", extra={"categoria_log": "log_entorno"})
 
         # Escalar la imagen (ejemplo de escalado, puedes ajustarlo o quitarlo)
         self.ancho_escalado = 45 
@@ -60,7 +66,9 @@ class Arbol(pygame.sprite.Sprite):
         
         # Comprobar si todas las imágenes cargadas para la animación son la superficie placeholder del AssetManager
         if not self.animaciones["idle"] or all(img is self.asset_manager.placeholder_surface for img in self.animaciones["idle"]):
-            print("ADVERTENCIA: No se cargaron fotogramas válidos para la animación 'idle' del Árbol o solo placeholders (detectado por instancia de placeholder).")
+            # print("ADVERTENCIA: No se cargaron fotogramas válidos para la animación 'idle' del Árbol o solo placeholders (detectado por instancia de placeholder).")
+            if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_entorno", False):
+                logger.warning(f"{self.nombre_log_entidad} No se cargaron fotogramas válidos para animación 'idle' o solo placeholders.", extra={"categoria_log": "log_entorno"})
             # Asegurarse de que haya al menos un placeholder si todo falló gravemente o solo se cargaron placeholders.
             self.animaciones["idle"] = [self.asset_manager.placeholder_surface]
 

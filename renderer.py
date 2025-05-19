@@ -3,7 +3,7 @@ import settings
 import math # Para ceil
 import logging
 
-logger_render = logging.getLogger("log_render") # Logger específico para renderizado
+logger = logging.getLogger("renderer") # Cambiado de "log_render" a "renderer"
 
 class Renderer:
     def __init__(self, pantalla, camara, asset_manager):
@@ -12,12 +12,12 @@ class Renderer:
         self.asset_manager = asset_manager
         self.fondo_tile = self.asset_manager.get_image('background_tierra')
         if self.fondo_tile is self.asset_manager.placeholder_surface:
-            logger_render.warning("Renderer: Patrón de fondo 'background_tierra' no cargado. Se usará color sólido.")
+            logger.warning("Renderer: Patrón de fondo 'background_tierra' no cargado. Se usará color sólido.", extra={"categoria_log": "log_render"})
             # Podríamos tener un color de fondo por defecto si el tile no carga
             self.fondo_color_default = settings.NEGRO # O cualquier otro color de settings
 
         if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_render", False):
-            logger_render.debug("Renderer inicializado.")
+            logger.debug("Renderer inicializado.", extra={"categoria_log": "log_render"})
 
     def _renderizar_fondo_tileado(self, superficie_destino, factor_zoom):
         if self.fondo_tile is self.asset_manager.placeholder_surface:
@@ -59,18 +59,18 @@ class Renderer:
                                                          start_y + j * alto_tile_escalado))
         
         if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_render_verbose", False):
-            logger_render.debug(f"Renderer: Fondo tileado renderizado. Zoom: {factor_zoom:.2f}, OffsetCam: ({offset_x_camara},{offset_y_camara}), StartXY: ({start_x},{start_y})")
+            logger.debug(f"Renderer: Fondo tileado renderizado. Zoom: {factor_zoom:.2f}, OffsetCam: ({offset_x_camara},{offset_y_camara}), StartXY: ({start_x},{start_y})", extra={"categoria_log": "log_render_verbose"})
 
     def _renderizar_sprites_juego(self, superficie_destino, todos_los_sprites, factor_zoom):
         sprites_visibles_ordenados = self.camara.get_sprites_visibles_ordenados(todos_los_sprites)
         
         if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_render_verbose", False):
-            logger_render.debug(f"Renderer: Renderizando {len(sprites_visibles_ordenados)} sprites visibles y ordenados.")
+            logger.debug(f"Renderer: Renderizando {len(sprites_visibles_ordenados)} sprites visibles y ordenados.", extra={"categoria_log": "log_render_verbose"})
 
         for sprite in sprites_visibles_ordenados:
             if not hasattr(sprite, 'image') or not hasattr(sprite, 'rect'):
                 if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_render", False):
-                    logger_render.warning(f"Renderer: Sprite {sprite} no tiene 'image' o 'rect'. Saltando renderizado.")
+                    logger.warning(f"Renderer: Sprite {sprite} no tiene 'image' o 'rect'. Saltando renderizado.", extra={"categoria_log": "log_render"})
                 continue
             
             pos_mundo_original = sprite.rect.topleft
@@ -80,7 +80,7 @@ class Renderer:
             imagen_original = sprite.image
             if imagen_original is self.asset_manager.placeholder_surface:
                 if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_render", False):
-                    logger_render.debug(f"Renderer: Sprite {sprite} usa imagen placeholder. Se dibujará un rect rojo.")
+                    logger.debug(f"Renderer: Sprite {sprite} usa imagen placeholder. Se dibujará un rect rojo.", extra={"categoria_log": "log_render"})
                 pygame.draw.rect(superficie_destino, settings.ROJO, rect_en_pantalla, 1)
                 continue
             
@@ -94,12 +94,12 @@ class Renderer:
                 superficie_destino.blit(imagen_escalada, rect_en_pantalla.topleft)
             except pygame.error as e:
                 if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_render", False):
-                     logger_render.error(f"Renderer: Error al escalar/blitear imagen para {sprite} (tamaño: {ancho_escalado}x{alto_escalado}): {e}")
+                     logger.error(f"Renderer: Error al escalar/blitear imagen para {sprite} (tamaño: {ancho_escalado}x{alto_escalado}): {e}", extra={"categoria_log": "log_render"})
                 # Dibujar un rectángulo de error si falla el escalado/blit
                 pygame.draw.rect(superficie_destino, settings.FUCSIA, rect_en_pantalla, 2)
 
             if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_render_verbose", False):
-                logger_render.debug(f"  Renderer: Sprite {sprite} renderizado en {rect_en_pantalla.topleft}, escalado a {ancho_escalado}x{alto_escalado}. Pos mundo: {pos_mundo_original}")
+                logger.debug(f"  Renderer: Sprite {sprite} renderizado en {rect_en_pantalla.topleft}, escalado a {ancho_escalado}x{alto_escalado}. Pos mundo: {pos_mundo_original}", extra={"categoria_log": "log_render_verbose"})
 
     def _renderizar_hitboxes_debug(self, superficie_destino, todos_los_sprites, factor_zoom):
         # Usar la variable DEBUG_VER_HITBOXES de settings.py
@@ -119,7 +119,7 @@ class Renderer:
                 pygame.draw.rect(superficie_destino, settings.HITBOX_COLOR_COLISION, rect_hitbox_pantalla, settings.GROSOR_HITBOX_COLISION_DEBUG) 
                 
                 if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_render_hitbox", False):
-                    logger_render.debug(f"Renderer: Hitbox debug para {sprite} en {rect_hitbox_pantalla}")
+                    logger.debug(f"Renderer: Hitbox debug para {sprite} en {rect_hitbox_pantalla}", extra={"categoria_log": "log_render_hitbox"})
             
             # Opcionalmente, dibujar también el sprite.rect si es diferente del hitbox y se quiere visualizar
             if settings.DEBUG_VER_HITBOXES and hasattr(sprite, 'rect'): 
@@ -135,7 +135,7 @@ class Renderer:
                     color_ataque = getattr(settings, 'HITBOX_COLOR_ATAQUE', settings.VERDE) # Usar constante de color
                     pygame.draw.rect(superficie_destino, color_ataque, rect_attack_hb_pantalla, settings.GROSOR_HITBOX_ATAQUE_DEBUG) 
                     if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_render_hitbox", False):
-                        logger_render.debug(f"Renderer: Hitbox de ATAQUE para {sprite} en {rect_attack_hb_pantalla}")
+                        logger.debug(f"Renderer: Hitbox de ATAQUE para {sprite} en {rect_attack_hb_pantalla}", extra={"categoria_log": "log_render_hitbox"})
 
     def render_escena_completa(self, todos_los_sprites, factor_zoom):
         # 1. Limpiar/Renderizar Fondo
@@ -151,19 +151,19 @@ class Renderer:
         if hasattr(settings, 'DEBUG_VER_HITBOXES') and settings.DEBUG_VER_HITBOXES:
             self._renderizar_hitboxes_debug(self.pantalla, todos_los_sprites, factor_zoom)
         elif not hasattr(settings, 'DEBUG_VER_HITBOXES'):
-            # logger_render.warning("Renderer: settings.DEBUG_VER_HITBOXES no definido. No se renderizarán hitboxes.")
+            logger.warning("Renderer: settings.DEBUG_VER_HITBOXES no definido. No se renderizarán hitboxes.", extra={"categoria_log": "log_render"})
             pass
 
         # El flip se hace en la clase Juego después de renderizar el HUD
         if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_render", False):
-            logger_render.debug("Renderer: Escena completa renderizada (sin flip).")
+            logger.debug("Renderer: Escena completa renderizada (sin flip).", extra={"categoria_log": "log_render"})
 
     def render_hud(self, hud_instance):
         # Asumimos que la instancia de HUD tiene un método draw(superficie)
         if hud_instance and hasattr(hud_instance, 'draw') and callable(hud_instance.draw):
             hud_instance.draw(self.pantalla) # El HUD se dibuja directamente sobre la pantalla principal
             if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_render", False):
-                logger_render.debug("Renderer: HUD renderizado.")
+                logger.debug("Renderer: HUD renderizado.", extra={"categoria_log": "log_render"})
         elif hud_instance:
             if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_render", False):
-                logger_render.warning(f"Renderer: Instancia de HUD ({hud_instance}) no tiene método draw() o no es llamable.") 
+                logger.warning(f"Renderer: Instancia de HUD ({hud_instance}) no tiene método draw() o no es llamable.", extra={"categoria_log": "log_render"}) 

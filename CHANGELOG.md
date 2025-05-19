@@ -101,3 +101,37 @@
    - Implementar a través de `asset_manager.py`
 
 ## Formato para Nuevas Entradas 
+
+## [0.2.0] - 2024-07-29
+
+### Añadido
+- Logs organizados por sesión en subcarpetas con timestamp (ej. `logs/YYYY-MM-DD_HH-MM-SS/`).
+- Filtro `DuplicateFilter` para evitar mensajes idénticos repetidos en corto tiempo.
+- Opción `skip_duplicate_check` en `extra` para saltar el filtro de duplicados en logs específicos.
+
+### Mejorado
+- **Sistema de Logging Refactorizado Extensamente**:
+    - Cada módulo principal ahora puede tener su propio archivo de log (controlado por `settings.MODULOS_CON_LOG_PROPIO`).
+    - Estandarización: todos los módulos obtienen su logger con `logging.getLogger("nombre_del_modulo")`.
+    - Todas las llamadas al logger ahora usan `extra={"categoria_log": "nombre_categoria"}` para control granular.
+    - `config_logging.py` centraliza toda la configuración de logging, incluyendo formateadores, handlers y filtros.
+    - Uso de `colorlog` para salida en consola con colores.
+    - `CategoryFilter` compartido para activar/desactivar logs por categoría desde `settings.LOG_CATEGORIAS`.
+    - `DuplicateFilter` compartido para todos los handlers.
+    - Se actualizaron todos los módulos principales del juego (`main`, `juego`, `jugador`, `enemigo`, `entidad_base`, `asset_manager`, `collision_handler`, `renderer`, `camara`, `hud`, `utils`, `game_initializer`, `gestor_eventos`, `gestor_estado`, `gestor_nivel`, `entorno`, `attack_profile_manager`) para adherirse al nuevo sistema.
+- Mayor robustez en la importación de `settings` en `config_logging.py`.
+
+### Solucionado
+- Múltiples instancias de filtros de logging; ahora se usa una instancia compartida para `CategoryFilter` y `DuplicateFilter`.
+- Problemas con el `DuplicateFilter` no suprimiendo mensajes correctamente. 
+
+### Documentación y Estructura del Proyecto
+- **README.md Actualizado y Reestructurado Extensamente**:
+    - Se movió y renombró la sección de directrices para colaboradores a "Guía Esencial para Colaboradores (IA y Humanos)", ubicándola al inicio del documento para mayor visibilidad.
+    - Se expandieron significativamente las directrices para colaboradores, incluyendo:
+        - Énfasis en la obligatoriedad de leer y actualizar `README.md` y `CHANGELOG.md`.
+        - Reglas de desarrollo detalladas sobre la creación de nueva funcionalidad, manejo de `settings.py`, reutilización de código, y creación de nuevas entidades/sistemas.
+        - Introducción de la sección "Diccionario de Código / Mapa Conceptual de Módulos" (a construir), con directrices sobre su propósito y mantenimiento (cuándo y qué actualizar).
+    - Se revisó y actualizó la sección "Sistema de Logging" para reflejar la refactorización completa.
+    - Se reorganizaron secciones para mejorar la claridad y el flujo del documento.
+- Se estableció la práctica de mantener `README.md` y `CHANGELOG.md` como "documentos vivos". 

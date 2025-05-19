@@ -8,9 +8,9 @@ import settings # Para acceder a configuraciones globales como RUTA_ASSETS
 from entorno import Arbol # Necesitamos Arbol para los obstáculos
 import config # Necesitaremos config para las posiciones iniciales si las mantenemos temporalmente
 
-# Podríamos necesitar un logger específico para este módulo también
 import logging
-logger_gn = logging.getLogger(__name__)
+# logger_gn = logging.getLogger(__name__)
+logger = logging.getLogger("gestor_nivel")
 
 class GestorNivel:
     def __init__(self, asset_manager):
@@ -27,7 +27,8 @@ class GestorNivel:
         self.elementos_decorativos = pygame.sprite.Group() # Si tienes elementos solo visuales
         self.zonas_especiales = {} # Para zonas de colisión, triggers, etc.
 
-        logger_gn.info("GestorNivel inicializado.")
+        # logger_gn.info("GestorNivel inicializado.")
+        logger.info("GestorNivel inicializado.", extra={"categoria_log": "log_gestor_nivel"})
 
     def cargar_elementos_nivel_inicial(self):
         """
@@ -37,15 +38,17 @@ class GestorNivel:
         """
         self._cargar_obstaculos_hardcodeados()
         self._generar_enemigos_hardcodeados()
-        logger_gn.info("Elementos del nivel inicial cargados (obstáculos y enemigos).")
+        # logger_gn.info("Elementos del nivel inicial cargados (obstáculos y enemigos).")
+        logger.info("Elementos del nivel inicial cargados (obstáculos y enemigos).", extra={"categoria_log": "log_gestor_nivel"})
 
     def _cargar_obstaculos_hardcodeados(self):
         """
         Carga obstáculos (árboles) basados en una configuración hardcodeada.
         Esta es la lógica extraída de juego.py/_crear_entidades.
         """
-        if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_general", False): # Asumimos log_general para esto
-            logger_gn.debug("GestorNivel: Cargando obstáculos hardcodeados (árboles).")
+        if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_gestor_nivel", False): # Asumimos log_general para esto
+            # logger_gn.debug("GestorNivel: Cargando obstáculos hardcodeados (árboles).")
+            logger.debug("GestorNivel: Cargando obstáculos hardcodeados (árboles).", extra={"categoria_log": "log_gestor_nivel"})
 
         # Lógica original de juego.py para crear árboles
         arbol_config_list = [
@@ -56,19 +59,22 @@ class GestorNivel:
             arbol = Arbol(config_arbol_item["x"], config_arbol_item["y"], self.asset_manager)
             self.obstaculos.add(arbol)
             # No necesitamos añadirlo a todos_los_sprites aquí, eso lo hará la clase Juego
-            if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_gn_detalle", False): # Nueva categoría de log opcional
-                 logger_gn.debug(f"  GestorNivel: Árbol creado en ({config_arbol_item['x']}, {config_arbol_item['y']}) y añadido a obstáculos.")
+            if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_gestor_nivel_detalle", False): # Nueva categoría de log opcional
+                 # logger_gn.debug(f"  GestorNivel: Árbol creado en ({config_arbol_item['x']}, {config_arbol_item['y']}) y añadido a obstáculos.")
+                 logger.debug(f"  GestorNivel: Árbol creado en ({config_arbol_item['x']}, {config_arbol_item['y']}) y añadido a obstáculos.", extra={"categoria_log": "log_gestor_nivel_detalle"})
         
         if settings.MODO_DEBUG_LOGS:
-             logger_gn.info(f"GestorNivel: {len(self.obstaculos)} obstáculos (árboles) cargados.")
+             # logger_gn.info(f"GestorNivel: {len(self.obstaculos)} obstáculos (árboles) cargados.")
+             logger.info(f"GestorNivel: {len(self.obstaculos)} obstáculos (árboles) cargados.", extra={"categoria_log": "log_gestor_nivel"})
 
     def _generar_enemigos_hardcodeados(self, jugador_pos=None): # jugador_pos por si lo necesitamos en el futuro
         """
         Genera enemigos basados en una configuración hardcodeada.
         Esta es la lógica extraída de juego.py/_crear_entidades.
         """
-        if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_general", False):
-            logger_gn.debug("GestorNivel: Generando enemigos hardcodeados.")
+        if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_gestor_nivel", False):
+            # logger_gn.debug("GestorNivel: Generando enemigos hardcodeados.")
+            logger.debug("GestorNivel: Generando enemigos hardcodeados.", extra={"categoria_log": "log_gestor_nivel"})
 
         # Lógica original de juego.py para crear enemigos
         enemigo_config_list = [
@@ -79,11 +85,13 @@ class GestorNivel:
             enemigo = Enemigo(config_enemigo_item["x"], config_enemigo_item["y"], self.asset_manager)
             self.enemigos.add(enemigo)
             # No necesitamos añadirlo a todos_los_sprites aquí, eso lo hará la clase Juego
-            if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_gn_detalle", False):
-                 logger_gn.debug(f"  GestorNivel: Enemigo creado en ({config_enemigo_item['x']}, {config_enemigo_item['y']}) y añadido a enemigos.")
+            if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_gestor_nivel_detalle", False):
+                 # logger_gn.debug(f"  GestorNivel: Enemigo creado en ({config_enemigo_item['x']}, {config_enemigo_item['y']}) y añadido a enemigos.")
+                 logger.debug(f"  GestorNivel: Enemigo creado en ({config_enemigo_item['x']}, {config_enemigo_item['y']}) y añadido a enemigos.", extra={"categoria_log": "log_gestor_nivel_detalle"})
 
         if settings.MODO_DEBUG_LOGS:
-             logger_gn.info(f"GestorNivel: {len(self.enemigos)} enemigos generados.")
+             # logger_gn.info(f"GestorNivel: {len(self.enemigos)} enemigos generados.")
+             logger.info(f"GestorNivel: {len(self.enemigos)} enemigos generados.", extra={"categoria_log": "log_gestor_nivel"})
 
     def cargar_mapa_desde_tmx(self, nombre_mapa_tmx):
         """
@@ -93,12 +101,14 @@ class GestorNivel:
         """
         ruta_completa_mapa = os.path.join(settings.RUTA_ASSETS_MAPAS, nombre_mapa_tmx) # Asegúrate que RUTA_ASSETS_MAPAS exista en settings
         if not os.path.exists(ruta_completa_mapa):
-            logger_gn.error(f"GestorNivel: No se encontró el archivo de mapa TMX: {ruta_completa_mapa}")
+            # logger_gn.error(f"GestorNivel: No se encontró el archivo de mapa TMX: {ruta_completa_mapa}")
+            logger.error(f"GestorNivel: No se encontró el archivo de mapa TMX: {ruta_completa_mapa}", extra={"categoria_log": "log_gestor_nivel"})
             return
 
         try:
             self.mapa_tmx = pytmx.load_pygame(ruta_completa_mapa, pixelalpha=True)
-            logger_gn.info(f"GestorNivel: Mapa TMX '{nombre_mapa_tmx}' cargado exitosamente.")
+            # logger_gn.info(f"GestorNivel: Mapa TMX '{nombre_mapa_tmx}' cargado exitosamente.")
+            logger.info(f"GestorNivel: Mapa TMX '{nombre_mapa_tmx}' cargado exitosamente.", extra={"categoria_log": "log_gestor_nivel"})
             # Aquí procesaríamos las capas para popular self.obstaculos, self.elementos_decorativos, self.zonas_especiales
             # Ejemplo:
             # for layer in self.mapa_tmx.visible_layers:
@@ -115,7 +125,8 @@ class GestorNivel:
             #             pass
             
         except Exception as e:
-            logger_gn.error(f"GestorNivel: Error al cargar o procesar el mapa TMX '{nombre_mapa_tmx}': {e}", exc_info=True)
+            # logger_gn.error(f"GestorNivel: Error al cargar o procesar el mapa TMX '{nombre_mapa_tmx}': {e}", exc_info=True)
+            logger.error(f"GestorNivel: Error al cargar o procesar el mapa TMX '{nombre_mapa_tmx}': {e}", exc_info=True, extra={"categoria_log": "log_gestor_nivel"})
             self.mapa_tmx = None # Asegurar que no quede un estado inconsistente
 
         # Por ahora, mantenemos la carga hardcodeada como fallback o inicial
@@ -140,7 +151,8 @@ class GestorNivel:
         Útil para obtener propiedades personalizadas de los tiles.
         """
         if not self.mapa_tmx:
-            logger_gn.warning("Intento de obtener tile_data sin mapa TMX cargado.")
+            # logger_gn.warning("Intento de obtener tile_data sin mapa TMX cargado.")
+            logger.warning("Intento de obtener tile_data sin mapa TMX cargado.", extra={"categoria_log": "log_gestor_nivel"})
             return None
         try:
             capa = self.mapa_tmx.get_layer_by_name(capa_nombre)
@@ -152,7 +164,8 @@ class GestorNivel:
                     return propiedades
             return None
         except Exception as e:
-            logger_gn.error(f"Error al obtener tile_data para la capa {capa_nombre} en ({x},{y}): {e}")
+            # logger_gn.error(f"Error al obtener tile_data para la capa {capa_nombre} en ({x},{y}): {e}")
+            logger.error(f"Error al obtener tile_data para la capa {capa_nombre} en ({x},{y}): {e}", extra={"categoria_log": "log_gestor_nivel"})
             return None
 
 if __name__ == '__main__':
@@ -169,7 +182,8 @@ if __name__ == '__main__':
     # Simular AssetManager (muy básico)
     class MockAssetManager:
         def __init__(self, base_path):
-            logger_gn.info(f"MockAssetManager inicializado con base_path: {base_path}")
+            # logger_gn.info(f"MockAssetManager inicializado con base_path: {base_path}")
+            logger.info(f"MockAssetManager inicializado con base_path: {base_path}", extra={"categoria_log": "log_gestor_nivel"}) # Para prueba
         def get_sprite(self, *args, **kwargs):
             # Devuelve una superficie placeholder para que no falle la creación de entidades
             return pygame.Surface((32,32)) 

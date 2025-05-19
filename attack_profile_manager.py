@@ -3,7 +3,7 @@ import json
 import logging
 import settings
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("attack_profile_manager")
 
 class AttackProfileManager:
     def __init__(self, ruta_base_proyecto_settings, archivo_config_settings, nombre_perfil_inicial_settings):
@@ -24,10 +24,10 @@ class AttackProfileManager:
             self.seleccionar_perfil_ataque(self.nombre_perfil_ataque_activo)
         elif self.perfiles_de_ataque: # Si el activo no existe pero hay otros, tomar el primero
             primer_perfil = next(iter(self.perfiles_de_ataque))
-            logger.warning(f"Perfil activo '{self.nombre_perfil_ataque_activo}' no encontrado tras carga. Usando el primero disponible: '{primer_perfil}'")
+            logger.warning(f"Perfil activo '{self.nombre_perfil_ataque_activo}' no encontrado tras carga. Usando el primero disponible: '{primer_perfil}'", extra={"categoria_log": "log_apm"})
             self.seleccionar_perfil_ataque(primer_perfil)
         else: # No hay perfiles (debería haberse creado uno por defecto en _cargar_o_crear_perfiles_ataque)
-            logger.error("No se encontraron perfiles después de la inicialización. Esto no debería ocurrir.")
+            logger.error("No se encontraron perfiles después de la inicialización. Esto no debería ocurrir.", extra={"categoria_log": "log_apm"})
 
 
     @property
@@ -42,7 +42,7 @@ class AttackProfileManager:
 
     def _crear_perfil_ataque_por_defecto(self, nombre_perfil):
         # Esta función se moverá aquí desde Jugador
-        logger.debug(f"Creando perfil de ataque por defecto con nombre: {nombre_perfil}")
+        logger.debug(f"Creando perfil de ataque por defecto con nombre: {nombre_perfil}", extra={"categoria_log": "log_apm"})
         return {
             "offset_distancia": settings.ATAQUE_BASE_OFFSET_DISTANCIA,
             "extension": settings.ATAQUE_BASE_EXTENSION,
@@ -57,7 +57,7 @@ class AttackProfileManager:
         # Esta función se moverá aquí desde Jugador
         # Necesitará self.ruta_base_proyecto y self.archivo_config_nombre
         # Y llamará a self._forzar_creacion_perfil_default_y_guardar() si es necesario
-        logger.info(f"Intentando cargar perfiles de ataque desde: {self.archivo_config_nombre}")
+        logger.info(f"Intentando cargar perfiles de ataque desde: {self.archivo_config_nombre}", extra={"categoria_log": "log_apm"})
         try:
             ruta_completa_config = os.path.join(self.ruta_base_proyecto, self.archivo_config_nombre)
             with open(ruta_completa_config, 'r') as f:

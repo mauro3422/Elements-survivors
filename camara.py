@@ -2,13 +2,17 @@ import pygame
 import settings # Para acceder a ANCHO_PANTALLA, ALTO_PANTALLA, NEGRO, etc.
 import logging # Asegurarse de que logging esté importado
 
-# Logger para mensajes de depuración detallados de la cámara.
-logger_cam_debug = logging.getLogger("log_camara")
-logger_cam_debug.setLevel(logging.DEBUG)
+# Eliminar loggers antiguos y sus setLevel:
+# # Logger para mensajes de depuración detallados de la cámara.
+# logger_cam_debug = logging.getLogger("log_camara")
+# logger_cam_debug.setLevel(logging.DEBUG)
+# 
+# # Logger para mensajes generales (INFO) de la cámara.
+# logger_cam_general = logging.getLogger("juego.camara.general")
+# logger_cam_general.setLevel(logging.INFO)
 
-# Logger para mensajes generales (INFO) de la cámara.
-logger_cam_general = logging.getLogger("juego.camara.general")
-logger_cam_general.setLevel(logging.INFO)
+# Nuevo logger unificado para el módulo
+logger = logging.getLogger("camara")
 
 class Camara2D:
     def __init__(self, ancho_mundo, alto_mundo, ancho_pantalla_fisica, alto_pantalla_fisica):
@@ -31,13 +35,13 @@ class Camara2D:
         self.camera_rect = pygame.Rect(0, 0, self.ancho_pantalla_fisica, self.alto_pantalla_fisica)
 
         if settings.MODO_DEBUG_LOGS:
-            logger_cam_general.info(f"Camara2D inicializada: Mundo({ancho_mundo}x{alto_mundo}), PantallaFisica({ancho_pantalla_fisica}x{alto_pantalla_fisica})")
+            logger.info(f"Camara2D inicializada: Mundo({ancho_mundo}x{alto_mundo}), PantallaFisica({ancho_pantalla_fisica}x{alto_pantalla_fisica})", extra={"categoria_log": "log_camara"})
             if settings.LOG_CATEGORIAS.get("log_camara", False):
-                 logger_cam_debug.debug(f"  Camara2D init: camera_rect inicial: {self.camera_rect}")
+                 logger.debug(f"  Camara2D init: camera_rect inicial: {self.camera_rect}", extra={"categoria_log": "log_camara"})
 
     def update(self, objetivo, factor_zoom_actual):
         if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_camara", False):
-            logger_cam_debug.debug(f"Cam2D Update: Objetivo centro: {objetivo.rect.center if objetivo else 'N/A'}, Zoom: {factor_zoom_actual:.2f}")
+            logger.debug(f"Cam2D Update: Objetivo centro: {objetivo.rect.center if objetivo else 'N/A'}, Zoom: {factor_zoom_actual:.2f}", extra={"categoria_log": "log_camara"})
 
         """Actualiza la posición y el tamaño de la vista de la cámara.
         
@@ -56,7 +60,7 @@ class Camara2D:
         self.camera_rect.width = ancho_vista_mundo
         self.camera_rect.height = alto_vista_mundo
         if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_camara", False):
-            logger_cam_debug.debug(f"  Cam2D Update: VistaMundo calculada: {ancho_vista_mundo:.2f}x{alto_vista_mundo:.2f}")
+            logger.debug(f"  Cam2D Update: VistaMundo calculada: {ancho_vista_mundo:.2f}x{alto_vista_mundo:.2f}", extra={"categoria_log": "log_camara"})
 
         # Calcular el offset_x, offset_y (topleft de la camera_rect en el mundo)
         # para que el objetivo (su centro) quede en el centro de esta vista_mundo.
@@ -67,7 +71,7 @@ class Camara2D:
             offset_x = (self.ancho_mundo - ancho_vista_mundo) / 2
             offset_y = (self.alto_mundo - alto_vista_mundo) / 2
             if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_camara", False):
-                logger_cam_debug.debug(f"  Cam2D Update: Sin objetivo. Offset calculado para centrar: ({offset_x:.2f}, {offset_y:.2f})")
+                logger.debug(f"  Cam2D Update: Sin objetivo. Offset calculado para centrar: ({offset_x:.2f}, {offset_y:.2f})", extra={"categoria_log": "log_camara"})
 
         # Aplicar límites al offset_x para que la vista de la cámara no se salga del mundo.
         if self.ancho_mundo >= ancho_vista_mundo:
@@ -86,7 +90,7 @@ class Camara2D:
         self.camera_rect.y = int(offset_y)
 
         if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_camara", False):
-            logger_cam_debug.debug(f"  Cam2D Update: Offset final ({offset_x:.2f}, {offset_y:.2f}). Camera_rect final: {self.camera_rect}")
+            logger.debug(f"  Cam2D Update: Offset final ({offset_x:.2f}, {offset_y:.2f}). Camera_rect final: {self.camera_rect}", extra={"categoria_log": "log_camara"})
 
     def apply(self, rect_mundo, factor_zoom_actual):
         """Aplica la transformación de la cámara (offset y zoom) a un rect del mundo.
@@ -135,15 +139,15 @@ class Camara2D:
             if hasattr(sprite, 'rect') and self.camera_rect.colliderect(sprite.rect):
                 sprites_visibles.append(sprite)
             elif not hasattr(sprite, 'rect') and settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_camara", False):
-                logger_cam_debug.warning(f"Cam2D GetVisible: Sprite {sprite} sin atributo 'rect'. No se puede determinar visibilidad.")
+                logger.warning(f"Cam2D GetVisible: Sprite {sprite} sin atributo 'rect'. No se puede determinar visibilidad.", extra={"categoria_log": "log_camara"})
 
         # Ordenar por la parte inferior del rect del sprite (más bajo en Y se dibuja después/encima)
         sprites_visibles.sort(key=lambda s: s.rect.bottom)
 
         if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_camara_verbose", False): # Nueva categoría para verbosidad
-            logger_cam_debug.debug(f"Cam2D GetVisible: {len(sprites_visibles)} sprites visibles de {len(todos_los_sprites)}. Ordenados por rect.bottom.")
+            logger.debug(f"Cam2D GetVisible: {len(sprites_visibles)} sprites visibles de {len(todos_los_sprites)}. Ordenados por rect.bottom.", extra={"categoria_log": "log_camara_verbose"})
             # for s_idx, s_vis in enumerate(sprites_visibles):
-            #     logger_cam_debug.debug(f"    {s_idx}: {s_vis} (bottom: {s_vis.rect.bottom})")
+            #     logger.debug(f"    {s_idx}: {s_vis} (bottom: {s_vis.rect.bottom})")
         
         return sprites_visibles
 

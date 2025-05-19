@@ -3,13 +3,8 @@ import os
 import settings  # Para RUTA_ASSETS, ROJO_ERROR_ASSET, y ahora configuraciones de FUENTES
 import logging
 
-# Logger específico para mensajes de depuración detallados sobre carga/gestión de assets.
-logger_assets_debug = logging.getLogger("log_assets")
-logger_assets_debug.setLevel(logging.DEBUG)
-
-# Logger para mensajes generales (INFO, WARNING, ERROR, CRITICAL) del AssetManager.
-logger_am_general = logging.getLogger("juego.asset_manager.general")
-logger_am_general.setLevel(logging.INFO)
+# Nuevo logger unificado para el módulo
+logger = logging.getLogger("asset_manager")
 
 class AssetManager:
     def __init__(self, ruta_base_proyecto):
@@ -24,10 +19,11 @@ class AssetManager:
         nombre_subcarpeta_assets = getattr(settings, 'RUTA_ASSETS', 'assets')
         self.ruta_assets_completa = os.path.join(ruta_base_proyecto, nombre_subcarpeta_assets)
         
-        # Este INFO es general e importante, no depende de la categoría "log_assets"
-        logger_am_general.info(f"AssetManager: Ruta base de assets: {self.ruta_assets_completa}")
+        # Reemplazar logger_am_general.info por logger.info y añadir extra
+        logger.info(f"AssetManager: Ruta base de assets: {self.ruta_assets_completa}", extra={"categoria_log": "log_assets"})
         if not os.path.isdir(self.ruta_assets_completa):
-            logger_am_general.error(f"AssetManager: ¡RUTA DE ASSETS NO EXISTE!: {self.ruta_assets_completa}")
+            # Reemplazar logger_am_general.error por logger.error y añadir extra
+            logger.error(f"AssetManager: ¡RUTA DE ASSETS NO EXISTE!: {self.ruta_assets_completa}", extra={"categoria_log": "log_assets"})
 
     def _construir_ruta_completa(self, subcarpeta_relativa_a_assets, nombre_archivo):
         """Construye la ruta completa al archivo del asset, relativa a la ruta_assets_completa."""       
@@ -49,7 +45,8 @@ class AssetManager:
         """
         if nombre_clave_asset in self.images:
             if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_assets", False):
-                logger_assets_debug.debug(f"AM: Imagen '{nombre_clave_asset}' ya cargada. Devolviendo existente.")
+                # Reemplazar logger_assets_debug.debug por logger.debug y añadir extra
+                logger.debug(f"AM: Imagen '{nombre_clave_asset}' ya cargada. Devolviendo existente.", extra={"categoria_log": "log_assets"})
             return self.images[nombre_clave_asset]
 
         ruta_completa = self._construir_ruta_completa(subcarpeta_asset, nombre_archivo)
@@ -59,16 +56,18 @@ class AssetManager:
             if colorkey: image.set_colorkey(colorkey)
             self.images[nombre_clave_asset] = image
             
-            # Log INFO de carga exitosa. Se muestra si MODO_DEBUG_LOGS es True, independientemente de la categoría "log_assets".
             if settings.MODO_DEBUG_LOGS:
-                logger_am_general.info(f"AM: Imagen '{nombre_clave_asset}' cargada desde: {ruta_completa}")
+                # Reemplazar logger_am_general.info por logger.info y añadir extra
+                logger.info(f"AM: Imagen '{nombre_clave_asset}' cargada desde: {ruta_completa}", extra={"categoria_log": "log_assets"})
             return image
         except pygame.error as e:
-            logger_am_general.error(f"AM: Error pygame al cargar '{nombre_clave_asset}' ({ruta_completa}): {e}")
+            # Reemplazar logger_am_general.error por logger.error y añadir extra
+            logger.error(f"AM: Error pygame al cargar '{nombre_clave_asset}' ({ruta_completa}): {e}", extra={"categoria_log": "log_assets"})
             self.images[nombre_clave_asset] = self.placeholder_surface 
             return self.placeholder_surface
         except FileNotFoundError:
-            logger_am_general.error(f"AM: Archivo NO ENCONTRADO para '{nombre_clave_asset}': {ruta_completa}")
+            # Reemplazar logger_am_general.error por logger.error y añadir extra
+            logger.error(f"AM: Archivo NO ENCONTRADO para '{nombre_clave_asset}': {ruta_completa}", extra={"categoria_log": "log_assets"})
             self.images[nombre_clave_asset] = self.placeholder_surface
             return self.placeholder_surface
 
@@ -76,11 +75,13 @@ class AssetManager:
         """Recupera una imagen previamente cargada."""
         image = self.images.get(nombre_clave_asset)
         if image is None:
-            logger_am_general.warning(f"AM: get_image '{nombre_clave_asset}' no encontrada. Devolviendo placeholder.")
+            # Reemplazar logger_am_general.warning por logger.warning y añadir extra
+            logger.warning(f"AM: get_image '{nombre_clave_asset}' no encontrada. Devolviendo placeholder.", extra={"categoria_log": "log_assets"})
             return self.placeholder_surface
-        # El debug de "recuperada" solo si la categoría está activa.
+        
         if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_assets", False):
-            logger_assets_debug.debug(f"AM: get_image '{nombre_clave_asset}' recuperada.")
+            # Reemplazar logger_assets_debug.debug por logger.debug y añadir extra
+            logger.debug(f"AM: get_image '{nombre_clave_asset}' recuperada.", extra={"categoria_log": "log_assets"})
         return image
 
     def load_font(self, nombre_fuente_o_ruta_relativa, tamano, nombre_clave_asset):
@@ -91,7 +92,8 @@ class AssetManager:
         """
         if nombre_clave_asset in self.fonts:
             if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_assets", False):
-                logger_assets_debug.debug(f"AM: Fuente '{nombre_clave_asset}' (T:{tamano}) ya cargada. Devolviendo existente.")
+                # Reemplazar logger_assets_debug.debug por logger.debug y añadir extra
+                logger.debug(f"AM: Fuente '{nombre_clave_asset}' (T:{tamano}) ya cargada. Devolviendo existente.", extra={"categoria_log": "log_assets"})
             return self.fonts[nombre_clave_asset]
         
         ruta_final_fuente, es_ruta_de_archivo = nombre_fuente_o_ruta_relativa, False
@@ -103,32 +105,39 @@ class AssetManager:
             font = pygame.font.Font(ruta_final_fuente, tamano) if es_ruta_de_archivo else pygame.font.SysFont(ruta_final_fuente, tamano)
             self.fonts[nombre_clave_asset] = font
             tipo_log = "archivo" if es_ruta_de_archivo else "sistema"
-            # INFO de carga exitosa de fuente, visible si MODO_DEBUG_LOGS es True.
+            
             if settings.MODO_DEBUG_LOGS:
-                logger_am_general.info(f"AM: Fuente ({tipo_log}) '{nombre_clave_asset}' cargada: {ruta_final_fuente}, T:{tamano}")
+                # Reemplazar logger_am_general.info por logger.info y añadir extra
+                logger.info(f"AM: Fuente ({tipo_log}) '{nombre_clave_asset}' cargada: {ruta_final_fuente}, T:{tamano}", extra={"categoria_log": "log_assets"})
             return font
         except pygame.error as e:
-            logger_am_general.error(f"AM: Error pygame al cargar fuente '{nombre_clave_asset}' ({ruta_final_fuente}, T:{tamano}): {e}")
+            # Reemplazar logger_am_general.error por logger.error y añadir extra
+            logger.error(f"AM: Error pygame al cargar fuente '{nombre_clave_asset}' ({ruta_final_fuente}, T:{tamano}): {e}", extra={"categoria_log": "log_assets"})
         except FileNotFoundError as e:
-             logger_am_general.error(f"AM: Archivo NO ENCONTRADO para fuente '{nombre_clave_asset}': {ruta_final_fuente} : {e}")
-        # Fallback a fuente por defecto de Pygame (los logs de warning/critical ya usan logger_am_general)
+            # Reemplazar logger_am_general.error por logger.error y añadir extra
+            logger.error(f"AM: Archivo NO ENCONTRADO para fuente '{nombre_clave_asset}': {ruta_final_fuente} : {e}", extra={"categoria_log": "log_assets"})
+        
         try:
             font = pygame.font.Font(None, tamano) 
             self.fonts[nombre_clave_asset] = font
-            logger_am_general.warning(f"AM: Usando fuente Pygame default para '{nombre_clave_asset}' (T:{tamano}) tras error.")
+            # Reemplazar logger_am_general.warning por logger.warning y añadir extra
+            logger.warning(f"AM: Usando fuente Pygame default para '{nombre_clave_asset}' (T:{tamano}) tras error.", extra={"categoria_log": "log_assets"})
             return font
         except Exception as ex_default:
-            logger_am_general.critical(f"AM CRITICAL: Fallo al cargar fuente especificada Y Pygame default para '{nombre_clave_asset}': {ex_default}")
+            # Reemplazar logger_am_general.critical por logger.critical y añadir extra
+            logger.critical(f"AM CRITICAL: Fallo al cargar fuente especificada Y Pygame default para '{nombre_clave_asset}': {ex_default}", extra={"categoria_log": "log_assets"})
             return pygame.font.Font(None, tamano) 
 
     def get_font(self, nombre_clave_asset):
         """Recupera una fuente previamente cargada."""
         font = self.fonts.get(nombre_clave_asset)
         if font is None:
-            logger_am_general.warning(f"AM: get_font '{nombre_clave_asset}' no cargada. Devolviendo Pygame default (24px).")
+            # Reemplazar logger_am_general.warning por logger.warning y añadir extra
+            logger.warning(f"AM: get_font '{nombre_clave_asset}' no cargada. Devolviendo Pygame default (24px).", extra={"categoria_log": "log_assets"})
             return pygame.font.Font(None, 24) 
         if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_assets", False):
-            logger_assets_debug.debug(f"AM: get_font '{nombre_clave_asset}' recuperada.")
+            # Reemplazar logger_assets_debug.debug por logger.debug y añadir extra
+            logger.debug(f"AM: get_font '{nombre_clave_asset}' recuperada.", extra={"categoria_log": "log_assets"})
         return font
 
     def preload_player_animations(self):
@@ -136,13 +145,17 @@ class AssetManager:
         ruta_base_player = os.path.join("character", "animaciones", "Player")
         ruta_reposo = os.path.join(ruta_base_player, "reposo")
         for i in range(1, 5):
-            self.load_image(ruta_reposo, f"{i}.png", f"player_reposo_{i}", usar_alpha=True) # load_image ya loguea individualmente
-        if settings.MODO_DEBUG_LOGS: logger_am_general.info("AM: Preload animaciones reposo jugador completado.")
+            self.load_image(ruta_reposo, f"{i}.png", f"player_reposo_{i}", usar_alpha=True)
+        if settings.MODO_DEBUG_LOGS:
+            # Reemplazar logger_am_general.info por logger.info y añadir extra
+            logger.info("AM: Preload animaciones reposo jugador completado.", extra={"categoria_log": "log_assets"})
 
     def preload_enemy_images(self):
         """Carga las imágenes de los enemigos."""
         self.load_image(os.path.join("character", "animaciones", "Enemy"), "chicken.png", "enemy_chicken", usar_alpha=True)
-        if settings.MODO_DEBUG_LOGS: logger_am_general.info("AM: Preload imágenes enemigos completado.")
+        if settings.MODO_DEBUG_LOGS:
+            # Reemplazar logger_am_general.info por logger.info y añadir extra
+            logger.info("AM: Preload imágenes enemigos completado.", extra={"categoria_log": "log_assets"})
 
     def preload_environment_images(self):
         """Carga las imágenes del entorno."""
@@ -151,30 +164,34 @@ class AssetManager:
         ruta_anim_arbol = os.path.join("scenary", "animaciones", "tree")
         for i in range(1, 7):
             self.load_image(ruta_anim_arbol, f"Tree_idle_{i}.png", f"tree_frame_{i}", usar_alpha=True)
-        if settings.MODO_DEBUG_LOGS: logger_am_general.info("AM: Preload imágenes entorno completado.")
+        if settings.MODO_DEBUG_LOGS:
+            # Reemplazar logger_am_general.info por logger.info y añadir extra
+            logger.info("AM: Preload imágenes entorno completado.", extra={"categoria_log": "log_assets"})
 
     def preload_fonts(self):
         """Carga las fuentes comunes definidas en settings.py."""
-        nombre_fuente_hud = getattr(settings, 'NOMBRE_FUENTE_HUD', 'Arial') # Fallback a Arial
+        nombre_fuente_hud = getattr(settings, 'NOMBRE_FUENTE_HUD', 'Arial')
         tamano_fuente_hud = getattr(settings, 'TAMANO_FUENTE_HUD', 18)
-        self.load_font(nombre_fuente_hud, tamano_fuente_hud, "hud_font") # Clave genérica "hud_font"
+        self.load_font(nombre_fuente_hud, tamano_fuente_hud, "hud_font")
 
-        nombre_fuente_debug = getattr(settings, 'NOMBRE_FUENTE_DEBUG', 'Consolas') # Fallback a Consolas
+        nombre_fuente_debug = getattr(settings, 'NOMBRE_FUENTE_DEBUG', 'Consolas')
         tamano_fuente_debug = getattr(settings, 'TAMANO_FUENTE_DEBUG', 16)
-        # La clase Juego busca la fuente de debug con la clave 'debug_font'
         self.load_font(nombre_fuente_debug, tamano_fuente_debug, "debug_font")
         
-        if settings.MODO_DEBUG_LOGS: logger_am_general.info("AM: Preload fuentes (HUD, Debug) completado.")
+        if settings.MODO_DEBUG_LOGS:
+            # Reemplazar logger_am_general.info por logger.info y añadir extra
+            logger.info("AM: Preload fuentes (HUD, Debug) completado.", extra={"categoria_log": "log_assets"})
 
     def preload_all(self):
         """Carga todos los assets definidos en los métodos preload_*."""
-        # Estos logs son generales y resumen el proceso.
-        logger_am_general.info("--- AM: Iniciando Preload General de Assets ---")
+        # Reemplazar logger_am_general.info por logger.info y añadir extra
+        logger.info("--- AM: Iniciando Preload General de Assets ---", extra={"categoria_log": "log_assets"})
         self.preload_player_animations()
         self.preload_enemy_images()
         self.preload_environment_images()
         self.preload_fonts()
-        logger_am_general.info("--- AM: Preload General de Assets Completado ---")
+        # Reemplazar logger_am_general.info por logger.info y añadir extra
+        logger.info("--- AM: Preload General de Assets Completado ---", extra={"categoria_log": "log_assets"})
 
 # Ejemplo de cómo se podría usar (esto iría en main.py o clase Juego)
 if __name__ == '__main__':

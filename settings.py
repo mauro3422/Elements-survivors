@@ -98,7 +98,7 @@ NOMBRE_PERFIL_ATAQUE_INICIAL = "espada_predeterminada"
 
 # --- Configuración Global de Logs ---
 # Establecer en False para un output de log estándar (INFO) en la consola.
-MODO_DEBUG_LOGS = False
+MODO_DEBUG_LOGS = True
 LOG_LEVEL_VERBOSE = "DEBUG"  # Nivel de log cuando MODO_DEBUG_LOGS es True
 LOG_LEVEL_STANDARD = "INFO"  # Nivel de log cuando MODO_DEBUG_LOGS es False
 # La variable LOG_LEVEL que existía antes para el logger de main.py ya no es necesaria
@@ -111,10 +111,12 @@ LOG_CATEGORIAS = {
     "log_jugador_mov": True,
     "log_jugador_col": True,
     "log_jugador_cmb": True,
+    "log_jugador_general": True,
     "log_enemigo_mov": True,
     "log_enemigo_ia": True,
     "log_enemigo_col": True,
     "log_enemigo_cmb": False,
+    "log_enemigo_general": True,
     "log_animacion": False,
     "log_camara": False,
     "log_collision_handler": True,
@@ -122,7 +124,42 @@ LOG_CATEGORIAS = {
     "log_event_handler_verbose": False,
     "log_gestor_estado": True,
     "log_gestor_estado_detalle": False,
+    "log_render": True,                     # Logs generales del renderer
+    "log_render_verbose": False,            # Logs detallados del renderer (ej. cada sprite)
+    "log_render_hitbox": False,             # Logs específicos del renderizado de hitboxes
+    "log_camara_verbose": False,             # Logs detallados de la cámara (ej. cada sprite visible)
+    "log_apm": True,
+    "log_initializer": True,
+    "log_entidad_base": True,
+    "log_gestor_nivel": True,
+    "log_gestor_nivel_detalle": False,
+    "log_entorno": True,
 }
+
+# Nueva constante para el filtro de duplicados
+LOG_DUPLICATE_MESSAGE_TIMEDELTA_MS = 50 # Milisegundos. Mensajes idénticos dentro de este tiempo se suprimen.
+
+# Lista de nombres de loggers que tendrán su propio archivo de log en la carpeta 'logs/'
+# Estos nombres idealmente coincidirán con los nombres de los módulos (ej., "juego" para juego.py)
+MODULOS_CON_LOG_PROPIO = [
+    "juego",
+    "main", # Para logs del script principal
+    "renderer",
+    "jugador",
+    "enemigo",
+    "asset_manager",
+    "collision_handler",
+    "gestor_eventos",
+    "gestor_estado",
+    "gestor_nivel",
+    "camara",
+    "hud",
+    "entidad_base",
+    "utils", # Si decidimos que utils también necesita logs específicos
+    "attack_profile_manager",
+    "game_initializer",
+    "entorno",
+]
 
 # --- Configuración de Fuentes ---
 # Define los nombres de las fuentes a usar. 

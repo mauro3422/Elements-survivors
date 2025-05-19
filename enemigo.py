@@ -7,18 +7,8 @@ from entidad_base import EntidadBase # <--- IMPORTAR EntidadBase
 from collision_handler import CollisionHandler # <--- IMPORTAR COLLISION_HANDLER
 # AssetManager no necesita ser importado aquí si se recibe como instancia
 
-# --- Loggers Categóricos para Enemigo ---
-logger_enemigo_mov = logging.getLogger("log_enemigo_mov")
-logger_enemigo_mov.setLevel(logging.DEBUG)
-
-logger_enemigo_ia = logging.getLogger("log_enemigo_ia")
-logger_enemigo_ia.setLevel(logging.DEBUG)
-
-logger_enemigo_col = logging.getLogger("log_enemigo_col") # Para colisiones específicas del enemigo (no del CollisionHandler)
-logger_enemigo_col.setLevel(logging.DEBUG)
-
-logger_enemigo_gen = logging.getLogger("juego.enemigo.general") # Para INFOs, WARNINGs generales
-logger_enemigo_gen.setLevel(logging.INFO)
+# Unificar loggers
+logger = logging.getLogger("enemigo")
 
 class Enemigo(EntidadBase): # <--- HEREDAR DE EntidadBase
     # id_counter de EntidadBase se usará, así que este contador de clase aquí podría ser redundante
@@ -73,7 +63,8 @@ class Enemigo(EntidadBase): # <--- HEREDAR DE EntidadBase
         self.distancia_minima_al_jugador = getattr(settings, 'ENEMIGO_DIST_MIN_JUGADOR', 22)
 
         if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_enemigo_ia", False): # O log_general si es más apropiado
-            logger_enemigo_ia.debug(f"{self.nombre_log_entidad} Atributos IA: Agro:{self.rango_agro}, DMinAlJugador:{self.distancia_minima_al_jugador}, DanoAtaque:{self.dano_ataque}")
+            # logger_enemigo_ia.debug(f"{self.nombre_log_entidad} Atributos IA: Agro:{self.rango_agro}, DMinAlJugador:{self.distancia_minima_al_jugador}, DanoAtaque:{self.dano_ataque}")
+            logger.debug(f"{self.nombre_log_entidad} Atributos IA: Agro:{self.rango_agro}, DMinAlJugador:{self.distancia_minima_al_jugador}, DanoAtaque:{self.dano_ataque}", extra={"categoria_log": "log_enemigo_ia"})
 
         # El hitbox original del enemigo se centraba en el rect. 
         # EntidadBase lo crea basado en topleft y offsets para reducir tamaño.
@@ -89,11 +80,13 @@ class Enemigo(EntidadBase): # <--- HEREDAR DE EntidadBase
         """Sobreescribe EntidadBase para centrar el hitbox en el rect del enemigo."""
         self.hitbox.center = self.rect.center
         if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_enemigo_mov", False):
-            logger_enemigo_mov.debug(f"{self.nombre_log_entidad} Hitbox recentrado (enemigo): {self.hitbox.center} (Rect center: {self.rect.center})")
+            # logger_enemigo_mov.debug(f"{self.nombre_log_entidad} Hitbox recentrado (enemigo): {self.hitbox.center} (Rect center: {self.rect.center})")
+            logger.debug(f"{self.nombre_log_entidad} Hitbox recentrado (enemigo): {self.hitbox.center} (Rect center: {self.rect.center})", extra={"categoria_log": "log_enemigo_mov"})
 
     def _mover_y_colisionar_con_obstaculos(self, dx_int, dy_int, obstaculos): # Ahora recibe deltas enteros
         if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_enemigo_col", False):
-            logger_enemigo_col.debug(f"{self.nombre_log_entidad} Inicia _mover_y_colisionar_con_obstaculos. dx_int={dx_int}, dy_int={dy_int}. HB Actual: {self.hitbox.topleft}")
+            # logger_enemigo_col.debug(f"{self.nombre_log_entidad} Inicia _mover_y_colisionar_con_obstaculos. dx_int={dx_int}, dy_int={dy_int}. HB Actual: {self.hitbox.topleft}")
+            logger.debug(f"{self.nombre_log_entidad} Inicia _mover_y_colisionar_con_obstaculos. dx_int={dx_int}, dy_int={dy_int}. HB Actual: {self.hitbox.topleft}", extra={"categoria_log": "log_enemigo_col"})
         
         hitbox_x_antes_colision = self.hitbox.x
         hitbox_y_antes_colision = self.hitbox.y
@@ -116,7 +109,8 @@ class Enemigo(EntidadBase): # <--- HEREDAR DE EntidadBase
         self._actualizar_posicion_hitbox() 
 
         if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_enemigo_mov", False):
-            logger_enemigo_mov.debug(f"{self.nombre_log_entidad} _mover_y_colisionar: HB Antes CH: ({hitbox_x_antes_colision},{hitbox_y_antes_colision}), HB Despues CH y Sinc: ({self.hitbox.x},{self.hitbox.y}), Rect: {self.rect.topleft}, PosFlotante: ({self.pos_x_flotante:.2f},{self.pos_y_flotante:.2f})")
+            # logger_enemigo_mov.debug(f"{self.nombre_log_entidad} _mover_y_colisionar: HB Antes CH: ({hitbox_x_antes_colision},{hitbox_y_antes_colision}), HB Despues CH y Sinc: ({self.hitbox.x},{self.hitbox.y}), Rect: {self.rect.topleft}, PosFlotante: ({self.pos_x_flotante:.2f},{self.pos_y_flotante:.2f})")
+            logger.debug(f"{self.nombre_log_entidad} _mover_y_colisionar: HB Antes CH: ({hitbox_x_antes_colision},{hitbox_y_antes_colision}), HB Despues CH y Sinc: ({self.hitbox.x},{self.hitbox.y}), Rect: {self.rect.topleft}, PosFlotante: ({self.pos_x_flotante:.2f},{self.pos_y_flotante:.2f})", extra={"categoria_log": "log_enemigo_mov"})
 
     def update(self, objetivo_rect, grupo_obstaculos, delta_time):
         """Actualiza la lógica del enemigo, incluyendo movimiento y IA básica.
@@ -130,7 +124,8 @@ class Enemigo(EntidadBase): # <--- HEREDAR DE EntidadBase
         self.actualizar_animacion() # <--- Llamada corregida. Enemigo podría no tener animaciones, pero EntidadBase lo maneja.
 
         if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_enemigo_ia", False):
-            logger_enemigo_ia.debug(f"{self.nombre_log_entidad} --- Inicio Update IA --- Delta: {delta_time:.4f}s. Pos ANTES: HB {self.hitbox.topleft}, Rect {self.rect.topleft}, Flot ({self.pos_x_flotante:.2f}, {self.pos_y_flotante:.2f})")
+            # logger_enemigo_ia.debug(f"{self.nombre_log_entidad} --- Inicio Update IA --- Delta: {delta_time:.4f}s. Pos ANTES: HB {self.hitbox.topleft}, Rect {self.rect.topleft}, Flot ({self.pos_x_flotante:.2f}, {self.pos_y_flotante:.2f})")
+            logger.debug(f"{self.nombre_log_entidad} --- Inicio Update IA --- Delta: {delta_time:.4f}s. Pos ANTES: HB {self.hitbox.topleft}, Rect {self.rect.topleft}, Flot ({self.pos_x_flotante:.2f}, {self.pos_y_flotante:.2f})", extra={"categoria_log": "log_enemigo_ia"})
 
         # Guardar la posición actual del hitbox para referencia ANTES de actualizar las posiciones flotantes
         hitbox_x_antes_update = self.hitbox.x
@@ -141,7 +136,8 @@ class Enemigo(EntidadBase): # <--- HEREDAR DE EntidadBase
         distancia_al_objetivo = math.sqrt(dx_al_objetivo**2 + dy_al_objetivo**2)
         
         if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_enemigo_ia", False):
-            logger_enemigo_ia.debug(f"{self.nombre_log_entidad} Target (centro {objetivo_rect.center}), Dist: {distancia_al_objetivo:.2f}. Mi Centro HB: {self.hitbox.center}")
+            # logger_enemigo_ia.debug(f"{self.nombre_log_entidad} Target (centro {objetivo_rect.center}), Dist: {distancia_al_objetivo:.2f}. Mi Centro HB: {self.hitbox.center}")
+            logger.debug(f"{self.nombre_log_entidad} Target (centro {objetivo_rect.center}), Dist: {distancia_al_objetivo:.2f}. Mi Centro HB: {self.hitbox.center}", extra={"categoria_log": "log_enemigo_ia"})
 
         mov_x_input_ia = 0 
         mov_y_input_ia = 0 
@@ -153,13 +149,16 @@ class Enemigo(EntidadBase): # <--- HEREDAR DE EntidadBase
                 mov_x_input_ia = dir_x * self.velocidad
                 mov_y_input_ia = dir_y * self.velocidad
                 if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_enemigo_ia", False):
-                    logger_enemigo_ia.debug(f"{self.nombre_log_entidad} EN RANGO AGRO. Input IA (vel): ({mov_x_input_ia:.2f}, {mov_y_input_ia:.2f})")
+                    # logger_enemigo_ia.debug(f"{self.nombre_log_entidad} EN RANGO AGRO. Input IA (vel): ({mov_x_input_ia:.2f}, {mov_y_input_ia:.2f})")
+                    logger.debug(f"{self.nombre_log_entidad} EN RANGO AGRO. Input IA (vel): ({mov_x_input_ia:.2f}, {mov_y_input_ia:.2f})", extra={"categoria_log": "log_enemigo_ia"})
             else: 
                  if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_enemigo_ia", False):
-                    logger_enemigo_ia.debug(f"{self.nombre_log_entidad} EN RANGO AGRO PERO DISTANCIA CERO. No se calcula mov.") 
+                    # logger_enemigo_ia.debug(f"{self.nombre_log_entidad} EN RANGO AGRO PERO DISTANCIA CERO. No se calcula mov.") 
+                    logger.debug(f"{self.nombre_log_entidad} EN RANGO AGRO PERO DISTANCIA CERO. No se calcula mov.", extra={"categoria_log": "log_enemigo_ia"})
         else:
             if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_enemigo_ia", False):
-                logger_enemigo_ia.debug(f"{self.nombre_log_entidad} FUERA DE RANGO AGRO/DEMASIADO CERCA. No se calcula mov.")
+                # logger_enemigo_ia.debug(f"{self.nombre_log_entidad} FUERA DE RANGO AGRO/DEMASIADO CERCA. No se calcula mov.")
+                logger.debug(f"{self.nombre_log_entidad} FUERA DE RANGO AGRO/DEMASIADO CERCA. No se calcula mov.", extra={"categoria_log": "log_enemigo_ia"})
         
         delta_x_flotante_frame = mov_x_input_ia * delta_time
         delta_y_flotante_frame = mov_y_input_ia * delta_time
@@ -168,7 +167,8 @@ class Enemigo(EntidadBase): # <--- HEREDAR DE EntidadBase
         self.pos_y_flotante += delta_y_flotante_frame
         
         if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_enemigo_mov", False):
-            logger_enemigo_mov.debug(f"{self.nombre_log_entidad} Pos flotante (post-IA y delta): ({self.pos_x_flotante:.4f}, {self.pos_y_flotante:.4f})")
+            # logger_enemigo_mov.debug(f"{self.nombre_log_entidad} Pos flotante (post-IA y delta): ({self.pos_x_flotante:.4f}, {self.pos_y_flotante:.4f})")
+            logger.debug(f"{self.nombre_log_entidad} Pos flotante (post-IA y delta): ({self.pos_x_flotante:.4f}, {self.pos_y_flotante:.4f})", extra={"categoria_log": "log_enemigo_mov"})
 
         # Calcular el delta flotante total desde la posición ANTERIOR del hitbox
         delta_x_flotante_total = self.pos_x_flotante - hitbox_x_antes_update
@@ -188,18 +188,22 @@ class Enemigo(EntidadBase): # <--- HEREDAR DE EntidadBase
 
         if dx_para_colision != 0 or dy_para_colision != 0:
             if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_enemigo_mov", False):
-                 logger_enemigo_mov.debug(f"{self.nombre_log_entidad} Solicita movimiento a CH (deltas enteros): dx_int={dx_para_colision}, dy_int={dy_para_colision}. HB Actual: {self.hitbox.topleft} (Flotantes totales: dx={delta_x_flotante_total:.4f}, dy={delta_y_flotante_total:.4f})")
+                 # logger_enemigo_mov.debug(f"{self.nombre_log_entidad} Solicita movimiento a CH (deltas enteros): dx_int={dx_para_colision}, dy_int={dy_para_colision}. HB Actual: {self.hitbox.topleft} (Flotantes totales: dx={delta_x_flotante_total:.4f}, dy={delta_y_flotante_total:.4f})")
+                 logger.debug(f"{self.nombre_log_entidad} Solicita movimiento a CH (deltas enteros): dx_int={dx_para_colision}, dy_int={dy_para_colision}. HB Actual: {self.hitbox.topleft} (Flotantes totales: dx={delta_x_flotante_total:.4f}, dy={delta_y_flotante_total:.4f})", extra={"categoria_log": "log_enemigo_mov"})
             self._mover_y_colisionar_con_obstaculos(dx_para_colision, dy_para_colision, grupo_obstaculos)
             if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_enemigo_mov", False):
-                 logger_enemigo_mov.debug(f"{self.nombre_log_entidad} Posición DESPUÉS de mov/col: HB {self.hitbox.topleft}, Rect {self.rect.topleft}, Flot ({self.pos_x_flotante:.2f}, {self.pos_y_flotante:.2f})")
+                 # logger_enemigo_mov.debug(f"{self.nombre_log_entidad} Posición DESPUÉS de mov/col: HB {self.hitbox.topleft}, Rect {self.rect.topleft}, Flot ({self.pos_x_flotante:.2f}, {self.pos_y_flotante:.2f})")
+                 logger.debug(f"{self.nombre_log_entidad} Posición DESPUÉS de mov/col: HB {self.hitbox.topleft}, Rect {self.rect.topleft}, Flot ({self.pos_x_flotante:.2f}, {self.pos_y_flotante:.2f})", extra={"categoria_log": "log_enemigo_mov"})
         else:
             self.pos_x_flotante = float(self.hitbox.x)
             self.pos_y_flotante = float(self.hitbox.y)
             if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_enemigo_mov", False):
-                 logger_enemigo_mov.debug(f"{self.nombre_log_entidad} Sin mov. para CH (delta_int fue 0). HB: {self.hitbox.topleft}, PosFlotante resinc: ({self.pos_x_flotante:.2f},{self.pos_y_flotante:.2f})")
+                 # logger_enemigo_mov.debug(f"{self.nombre_log_entidad} Sin mov. para CH (delta_int fue 0). HB: {self.hitbox.topleft}, PosFlotante resinc: ({self.pos_x_flotante:.2f},{self.pos_y_flotante:.2f})")
+                 logger.debug(f"{self.nombre_log_entidad} Sin mov. para CH (delta_int fue 0). HB: {self.hitbox.topleft}, PosFlotante resinc: ({self.pos_x_flotante:.2f},{self.pos_y_flotante:.2f})", extra={"categoria_log": "log_enemigo_mov"})
         
         if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_enemigo_ia", False):
-            logger_enemigo_ia.debug(f"{self.nombre_log_entidad} --- Fin Update IA ---")
+            # logger_enemigo_ia.debug(f"{self.nombre_log_entidad} --- Fin Update IA ---")
+            logger.debug(f"{self.nombre_log_entidad} --- Fin Update IA ---", extra={"categoria_log": "log_enemigo_ia"})
 
     # def puede_atacar_al_jugador(self):
     #     ahora = pygame.time.get_ticks()

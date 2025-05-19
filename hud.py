@@ -3,7 +3,7 @@ import pygame
 import settings
 import logging # Para el logger del HUD
 
-logger = logging.getLogger("juego.hud")
+logger = logging.getLogger("hud")
 # if not logger.handlers: # Evitar duplicación de handlers si el módulo se recarga
 # logger.setLevel(logging.DEBUG) # Permitir que pasen mensajes DEBUG
 # La configuración centralizada de logging ya se encarga del nivel.
@@ -38,7 +38,7 @@ class DebugHUD:
             if event.key == self.tecla_toggle_modo_debug_global:
                 settings.MODO_DEBUG_LOGS = not settings.MODO_DEBUG_LOGS
                 if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_general", False):
-                    logger.info(f"MODO_DEBUG_LOGS global cambiado a: {settings.MODO_DEBUG_LOGS}")
+                    logger.info(f"MODO_DEBUG_LOGS global cambiado a: {settings.MODO_DEBUG_LOGS}", extra={"categoria_log": "log_general"})
 
             if event.key in self.mapa_teclas_log:
                 indice_cat = self.mapa_teclas_log[event.key]
@@ -46,7 +46,7 @@ class DebugHUD:
                     nombre_cat = self.categorias_log_list[indice_cat]
                     settings.LOG_CATEGORIAS[nombre_cat] = not settings.LOG_CATEGORIAS[nombre_cat]
                     if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_general", False):
-                        logger.debug(f"Categoría de log \'{nombre_cat}\' cambiada a: {settings.LOG_CATEGORIAS[nombre_cat]}")
+                        logger.debug(f"Categoría de log '{nombre_cat}' cambiada a: {settings.LOG_CATEGORIAS[nombre_cat]}", extra={"categoria_log": "log_general"})
 
     def update(self):
         # Recolectar y almacenar la información necesaria para dibujar.

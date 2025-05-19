@@ -1,5 +1,53 @@
 # Juego Pygame Modular
 
+**Nota Importante:** Este README es un documento vivo y evoluciona con el proyecto. Se actualizará continuamente para reflejar los cambios más recientes en la arquitectura, funcionalidades clave, y las mejores prácticas aprendidas. Se espera que futuras IAs y desarrolladores consulten y contribuyan a este documento.
+
+## Guía Esencial para Colaboradores (IA y Humanos)
+
+Esta sección es fundamental para cualquier colaborador, ya sea una IA o un desarrollador humano. Su propósito es asegurar la coherencia, mantenibilidad y comprensión del proyecto a medida que evoluciona.
+
+**Principios Clave:**
+
+*   **Documentación Activa:** Este `README.md` y el archivo `CHANGELOG.md` son documentos vivos. **Es obligatorio leerlos antes de realizar cualquier cambio significativo y actualizarlos después de implementar dichos cambios.**
+    *   El `README.md` debe reflejar el estado actual de la arquitectura, los sistemas principales y las convenciones de desarrollo.
+    *   El `CHANGELOG.md` debe registrar todas las nuevas características, correcciones de errores importantes y cambios que rompan la compatibilidad, versionando adecuadamente el proyecto.
+*   **Comunicación y Comprensión:** Antes de añadir nueva funcionalidad o modificar sistemas existentes, asegúrate de entender cómo encaja en el panorama general del proyecto.
+
+**Reglas de Desarrollo:**
+
+1.  **Antes de crear nueva funcionalidad:**
+    *   Verificar si existe un sistema similar o si la funcionalidad puede integrarse en uno existente.
+    *   Revisar `settings.py` para configuraciones existentes o relevantes.
+    *   Seguir las convenciones de nombres y estructuras establecidas en este `README.md`.
+    *   Priorizar el uso y extensión de los sistemas existentes sobre la creación de nuevos redundantes.
+2.  **Al añadir nuevas características:**
+    *   Documentar la nueva característica y su uso en este `README.md`, actualizando o creando las secciones pertinentes.
+    *   Actualizar `settings.py` si la nueva característica introduce nuevas configuraciones globales o modifica existentes.
+    *   Mantener la consistencia con los patrones de diseño y la arquitectura de los sistemas existentes.
+    *   Utilizar las funciones de utilidad de `utils.py` para tareas comunes siempre que sea posible.
+3.  **Para cualquier nueva entidad o sistema que se cree:**
+    *   Verificar si necesita integrarse con el sistema de animaciones.
+    *   Verificar si necesita archivos de configuración específicos (ej. JSON en `config/`).
+    *   Verificar si necesita un manejo de estados a través de `gestor_estado.py`.
+    *   Verificar si necesita interactuar con el sistema de colisiones (`collision_handler.py`).
+    *   Verificar si necesita emitir o escuchar eventos a través de `gestor_eventos.py`.
+    *   Verificar si necesita cargar assets a través de `asset_manager.py`.
+    *   Seguir las convenciones de nombres y estructuras de directorios correspondientes.
+
+**Diccionario de Código / Mapa Conceptual de Módulos:**
+
+*   **Propósito:** Esta sección (a construir y mantener) servirá como un glosario de los principales módulos, clases y sistemas del juego. Describirá brevemente la responsabilidad de cada uno y cómo interactúan entre sí. El objetivo es proporcionar una visión general rápida que facilite la incorporación de nuevos colaboradores y la comprensión de la arquitectura del código.
+*   **Mantenimiento:** Este diccionario es un esfuerzo manual y colaborativo.
+    *   **Cuándo actualizar:** Se debe actualizar siempre que:
+        *   Se añada un nuevo módulo principal al proyecto.
+        *   Se elimine un módulo principal existente.
+        *   Se refactorice un módulo existente de tal manera que su propósito central, sus responsabilidades clave o sus interacciones principales con otros módulos cambien significativamente.
+        La actualización de esta sección debe considerarse parte integral del conjunto de cambios (commit/pull request) que introduce la modificación en el código. No se recomienda un umbral numérico fijo (ej. "cada X cambios"), sino un juicio basado en el impacto del cambio en la arquitectura general.
+    *   **Qué actualizar (Nivel de Detalle):** El foco debe estar en:
+        *   La **responsabilidad principal** del módulo (ej. "¿Qué hace `collision_handler.py`?").
+        *   Sus **interacciones clave** con otros módulos principales (ej. "`collision_handler.py` es utilizado por `juego.py` y opera sobre instancias de `entidad_base.py`").
+        No es necesario ni recomendable listar todas las funciones internas, clases secundarias o variables de un módulo. El objetivo es mantener una visión general conceptual, no un reflejo detallado del código.
+
 ## Estructura del Proyecto
 
 ### Módulos Principales
@@ -47,15 +95,47 @@
 
 ### Sistemas y sus Interrelaciones
 
-1. **Sistema de Logging**:
-   - Configuración central en `config_logging.py`
-   - Cada módulo debe usar: `logger = logging.getLogger(__name__)`
-   - Categorías de log definidas en `settings.py` bajo `LOG_CATEGORIAS`
-   - Niveles de log: DEBUG, INFO, WARNING, ERROR, CRITICAL
-   - Ejemplo de uso:
+1. **Sistema de Logging (Refactorizado V. 0.2.0)**:
+   - **Filosofía**: El sistema de logging está diseñado para ser centralizado, configurable y ofrecer control granular sobre los mensajes, facilitando tanto el desarrollo como la depuración.
+   - **Configuración Central**: Toda la configuración del sistema de logging reside en `config_logging.py`. Esto incluye la definición de formateadores (para consola y archivos), handlers (stream para consola con `colorlog`, y `RotatingFileHandler` para archivos), y filtros (`CategoryFilter`, `DuplicateFilter`).
+   - **Obtención de Loggers**: Cada módulo debe obtener su logger específico usando `logger = logging.getLogger("nombre_del_modulo")`. Por ejemplo, en `jugador.py` se usa `logging.getLogger("jugador")`. Esto permite que los logs se asocien correctamente con su origen.
+   - **Logs por Módulo y Sesión**: 
+     - Los logs de los módulos listados en `settings.MODULOS_CON_LOG_PROPIO` se guardan en archivos individuales dentro de una carpeta de sesión (ej. `logs/YYYY-MM-DD_HH-MM-SS/nombre_del_modulo.log`).
+     - Los logs de módulos no listados allí (o si el handler específico falla) van a un archivo `general.log` dentro de la misma carpeta de sesión.
+   - **Categorías de Log y Control de Activación**:
+     - Las categorías de log (ej. `"log_jugador_mov"`, `"log_assets"`) se definen y activan/desactivan en el diccionario `settings.LOG_CATEGORIAS`.
+     - Para asignar una categoría a un mensaje, se usa el parámetro `extra` en la llamada al logger: `logger.debug("Mensaje", extra={"categoria_log": "nombre_categoria"})`.
+     - El `CategoryFilter` utiliza `settings.LOG_CATEGORIAS` y `settings.MODO_DEBUG_LOGS` para decidir si un mensaje de una categoría particular debe procesarse.
+     - `settings.MODO_DEBUG_LOGS = True` habilita un nivel de log más verboso (DEBUG), mientras que `False` usa un nivel estándar (INFO).
+   - **Filtro de Duplicados (`DuplicateFilter`)**:
+     - Suprime automáticamente mensajes de log idénticos que ocurren repetidamente dentro de un breve intervalo de tiempo (configurable mediante `settings.LOG_DUPLICATE_MESSAGE_TIMEDELTA_MS`).
+     - Se puede omitir este filtro para un mensaje específico añadiendo `"skip_duplicate_check": True` al diccionario `extra`: `logger.info("Mensaje importante que no debe filtrarse", extra={"categoria_log": "log_general", "skip_duplicate_check": True})`.
+   - **Niveles de Log Estándar**: DEBUG, INFO, WARNING, ERROR, CRITICAL.
+   - **Ejemplo de Uso Completo**:
      ```python
-     logger.debug("Mensaje de debug", extra={"categoria": "log_entidad_mov"})
-     logger.info("Mensaje informativo")
+     # En un módulo, por ejemplo, mi_modulo.py
+     import logging
+     import settings
+
+     logger = logging.getLogger("mi_modulo") # Obtener logger específico del módulo
+
+     def alguna_funcion():
+         # Este mensaje solo se registrará si MODO_DEBUG_LOGS es True Y LOG_CATEGORIAS["categoria_especifica"] es True
+         logger.debug("Este es un mensaje de debug detallado.", extra={"categoria_log": "categoria_especifica"})
+         
+         logger.info("Información general de la función.", extra={"categoria_log": "log_general"})
+         
+         if error_condicion:
+             logger.error("Ocurrió un error.", extra={"categoria_log": "log_errores"})
+
+     # En settings.py, asegúrate de tener:
+     # LOG_CATEGORIAS = {
+     #     "categoria_especifica": True, 
+     #     "log_general": True,
+     #     "log_errores": True,
+     #     # ...otras categorías...
+     # }
+     # MODULOS_CON_LOG_PROPIO = [..., "mi_modulo", ...]
      ```
 
 2. **Sistema de Animaciones**:
@@ -164,19 +244,6 @@
      2. Revisar `settings.py` para configuraciones existentes
      3. Seguir las convenciones de nombres establecidas
      4. Usar los sistemas existentes en lugar de crear nuevos
-   - Al añadir nuevas características:
-     1. Documentar en el README
-     2. Actualizar `settings.py` si es necesario
-     3. Mantener consistencia con sistemas existentes
-     4. Usar las utilidades de `utils.py`
-   - Para cualquier nueva entidad o sistema:
-     1. Verificar si necesita animaciones
-     2. Verificar si necesita configuración específica
-     3. Verificar si necesita estados
-     4. Verificar si necesita colisiones
-     5. Verificar si necesita eventos
-     6. Verificar si necesita assets
-     7. Seguir las convenciones de nombres correspondientes
 
 ### Manejo de Variables Globales y Configuraciones
 

@@ -3,7 +3,8 @@ import settings
 import logging
 
 # Logger para GestorEventos
-logger_ge = logging.getLogger(__name__) # Usará el nombre del módulo, ej. 'gestor_eventos'
+# logger_ge = logging.getLogger(__name__) # Usará el nombre del módulo, ej. 'gestor_eventos'
+logger = logging.getLogger("gestor_eventos")
 # No establecemos nivel aquí, se controla desde la configuración raíz y MODO_DEBUG_LOGS
 
 class GestorEventos:
@@ -24,7 +25,8 @@ class GestorEventos:
         self.solicitud_salir = False
 
         if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_event_handler", False): # Categoria nueva
-            logger_ge.debug("GestorEventos inicializado.")
+            # logger_ge.debug("GestorEventos inicializado.")
+            logger.debug("GestorEventos inicializado.", extra={"categoria_log": "log_event_handler"})
 
     def procesar_eventos(self, eventos_pygame):
         """
@@ -34,19 +36,22 @@ class GestorEventos:
             eventos_pygame: La lista de eventos obtenida de pygame.event.get().
         """
         if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_event_handler_verbose", False): # Categoria más detallada
-            logger_ge.debug(f"Procesando {len(eventos_pygame)} eventos...")
+            # logger_ge.debug(f"Procesando {len(eventos_pygame)} eventos...")
+            logger.debug(f"Procesando {len(eventos_pygame)} eventos...", extra={"categoria_log": "log_event_handler_verbose"})
 
         # Obtener el factor de zoom actual desde la instancia de Juego
         factor_zoom_actual = self.juego_ref.factor_zoom_actual
 
         for event in eventos_pygame:
             if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_event_handler_verbose", False):
-                logger_ge.debug(f"  Evento: {pygame.event.event_name(event.type)} ({event})")
+                # logger_ge.debug(f"  Evento: {pygame.event.event_name(event.type)} ({event})")
+                logger.debug(f"  Evento: {pygame.event.event_name(event.type)} ({event})", extra={"categoria_log": "log_event_handler_verbose"})
 
             if event.type == pygame.QUIT:
                 self.solicitud_salir = True
                 if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_event_handler", False):
-                    logger_ge.info("GestorEventos: Solicitud de SALIR recibida (QUIT).")
+                    # logger_ge.info("GestorEventos: Solicitud de SALIR recibida (QUIT).")
+                    logger.info("GestorEventos: Solicitud de SALIR recibida (QUIT).", extra={"categoria_log": "log_event_handler"})
             
             if hasattr(self.hud, 'manejar_input_hud'):
                 # Dejamos que el HUD maneje el evento si lo necesita
@@ -61,25 +66,30 @@ class GestorEventos:
                     self.juego_ref.actualizar_factor_zoom(nuevo_factor_zoom)
                     # El log de la actualización del zoom ahora lo hará el método actualizar_factor_zoom en Juego.
                     if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_event_handler", False):
-                        logger_ge.debug(f"GestorEventos: MOUSEWHEEL. Zoom actual: {factor_zoom_actual:.2f}, Solicitado nuevo: {nuevo_factor_zoom:.2f}")
+                        # logger_ge.debug(f"GestorEventos: MOUSEWHEEL. Zoom actual: {factor_zoom_actual:.2f}, Solicitado nuevo: {nuevo_factor_zoom:.2f}")
+                        logger.debug(f"GestorEventos: MOUSEWHEEL. Zoom actual: {factor_zoom_actual:.2f}, Solicitado nuevo: {nuevo_factor_zoom:.2f}", extra={"categoria_log": "log_event_handler"})
 
             if event.type == pygame.KEYDOWN:
                 if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_event_handler", False):
-                    logger_ge.debug(f"GestorEventos: KEYDOWN {pygame.key.name(event.key)} ({event.key})")
+                    # logger_ge.debug(f"GestorEventos: KEYDOWN {pygame.key.name(event.key)} ({event.key})")
+                    logger.debug(f"GestorEventos: KEYDOWN {pygame.key.name(event.key)} ({event.key})", extra={"categoria_log": "log_event_handler"})
 
                 if event.key == pygame.K_ESCAPE:
                     self.solicitud_salir = True
                     if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_event_handler", False):
-                        logger_ge.info("GestorEventos: Solicitud de SALIR recibida (ESCAPE).")
+                        # logger_ge.info("GestorEventos: Solicitud de SALIR recibida (ESCAPE).")
+                        logger.info("GestorEventos: Solicitud de SALIR recibida (ESCAPE).", extra={"categoria_log": "log_event_handler"})
                 
                 if event.key == pygame.K_SPACE: 
                     if self.jugador:
                         self.jugador.atacar() # Jugador.atacar() tiene sus propios logs
                         if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_event_handler", False):
-                            logger_ge.debug("GestorEventos: K_SPACE (Atacar jugador) procesado.")
+                            # logger_ge.debug("GestorEventos: K_SPACE (Atacar jugador) procesado.")
+                            logger.debug("GestorEventos: K_SPACE (Atacar jugador) procesado.", extra={"categoria_log": "log_event_handler"})
                     else:
                         if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_event_handler", False):
-                            logger_ge.warning("GestorEventos: K_SPACE presionado, pero no hay instancia de jugador.")
+                            # logger_ge.warning("GestorEventos: K_SPACE presionado, pero no hay instancia de jugador.")
+                            logger.warning("GestorEventos: K_SPACE presionado, pero no hay instancia de jugador.", extra={"categoria_log": "log_event_handler"})
 
 
                 if self.jugador and hasattr(self.jugador, 'attack_profile_manager'):
@@ -88,14 +98,16 @@ class GestorEventos:
 
                     if not nombres_perfiles:
                         if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_event_handler", False):
-                            logger_ge.warning("GestorEventos: No hay perfiles de ataque disponibles para cambiar.")
+                            # logger_ge.warning("GestorEventos: No hay perfiles de ataque disponibles para cambiar.")
+                            logger.warning("GestorEventos: No hay perfiles de ataque disponibles para cambiar.", extra={"categoria_log": "log_event_handler"})
                     else:
                         try:
                             indice_actual = nombres_perfiles.index(apm.nombre_perfil_ataque_activo)
                         except ValueError:
                             # El perfil activo actual no está en la lista, algo raro. Seleccionar el primero.
                             if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_event_handler", False):
-                                logger_ge.warning(f"GestorEventos: Perfil activo '{apm.nombre_perfil_ataque_activo}' no en lista. Seleccionando el primero.")
+                                # logger_ge.warning(f"GestorEventos: Perfil activo '{apm.nombre_perfil_ataque_activo}' no en lista. Seleccionando el primero.")
+                                logger.warning(f"GestorEventos: Perfil activo '{apm.nombre_perfil_ataque_activo}' no en lista. Seleccionando el primero.", extra={"categoria_log": "log_event_handler"})
                             apm.seleccionar_perfil_ataque(nombres_perfiles[0])
                             indice_actual = 0 # Asumir el primero
 
@@ -104,13 +116,15 @@ class GestorEventos:
                             nuevo_indice = (indice_actual - 1 + len(nombres_perfiles)) % len(nombres_perfiles)
                             apm.seleccionar_perfil_ataque(nombres_perfiles[nuevo_indice])
                             if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_event_handler", False):
-                                logger_ge.debug(f"GestorEventos: K_PAGEUP. Nuevo perfil ataque: {apm.nombre_perfil_ataque_activo}")
+                                # logger_ge.debug(f"GestorEventos: K_PAGEUP. Nuevo perfil ataque: {apm.nombre_perfil_ataque_activo}")
+                                logger.debug(f"GestorEventos: K_PAGEUP. Nuevo perfil ataque: {apm.nombre_perfil_ataque_activo}", extra={"categoria_log": "log_event_handler"})
                         
                         elif event.key == pygame.K_PAGEDOWN:
                             nuevo_indice = (indice_actual + 1) % len(nombres_perfiles)
                             apm.seleccionar_perfil_ataque(nombres_perfiles[nuevo_indice])
                             if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_event_handler", False):
-                                logger_ge.debug(f"GestorEventos: K_PAGEDOWN. Nuevo perfil ataque: {apm.nombre_perfil_ataque_activo}")
+                                # logger_ge.debug(f"GestorEventos: K_PAGEDOWN. Nuevo perfil ataque: {apm.nombre_perfil_ataque_activo}")
+                                logger.debug(f"GestorEventos: K_PAGEDOWN. Nuevo perfil ataque: {apm.nombre_perfil_ataque_activo}", extra={"categoria_log": "log_event_handler"})
 
                     param_map = {
                         pygame.K_F1: ("offset_distancia", 0.1), pygame.K_F2: ("offset_distancia", -0.1), # Asumiendo que offset_distancia existe
@@ -150,16 +164,21 @@ class GestorEventos:
 
                             apm.set_parametro_ataque_activo(param_name, new_value)
                             if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_event_handler", False): 
-                                logger_ge.debug(f"GestorEventos: {pygame.key.name(event.key)}. Param '{param_name}' -> {new_value:.2f}")
+                                # logger_ge.debug(f"GestorEventos: {pygame.key.name(event.key)}. Param '{param_name}' -> {new_value:.2f}")
+                                logger.debug(f"GestorEventos: {pygame.key.name(event.key)}. Param '{param_name}' -> {new_value:.2f}", extra={"categoria_log": "log_event_handler"})
                         except ValueError as e:
-                            logger_ge.error(f"GestorEventos Error: F-Key Convert '{param_name}' a float. Valor era: {apm.get_parametro_ataque_activo(param_name)}. Error: {e}")
+                            # logger_ge.error(f"GestorEventos Error: F-Key Convert '{param_name}' a float. Valor era: {apm.get_parametro_ataque_activo(param_name)}. Error: {e}")
+                            logger.error(f"GestorEventos Error: F-Key Convert '{param_name}' a float. Valor era: {apm.get_parametro_ataque_activo(param_name)}. Error: {e}", extra={"categoria_log": "log_event_handler"})
                         except AttributeError:
-                            logger_ge.error(f"GestorEventos Error: F-Key APM no disponible en jugador.")
+                            # logger_ge.error(f"GestorEventos Error: F-Key APM no disponible en jugador.")
+                            logger.error(f"GestorEventos Error: F-Key APM no disponible en jugador.", extra={"categoria_log": "log_event_handler"})
                         except Exception as e:
-                            logger_ge.error(f"GestorEventos Error: F-Key '{param_name}' mod: {e}")
+                            # logger_ge.error(f"GestorEventos Error: F-Key '{param_name}' mod: {e}")
+                            logger.error(f"GestorEventos Error: F-Key '{param_name}' mod: {e}", extra={"categoria_log": "log_event_handler"})
                 elif event.key >= pygame.K_F1 and event.key <= pygame.K_F10 : # Si se presiona Fkey pero no hay jugador/APM
                     if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_event_handler", False):
-                        logger_ge.warning(f"GestorEventos: {pygame.key.name(event.key)} presionado, pero no hay jugador o attack_profile_manager.")
+                        # logger_ge.warning(f"GestorEventos: {pygame.key.name(event.key)} presionado, pero no hay jugador o attack_profile_manager.")
+                        logger.warning(f"GestorEventos: {pygame.key.name(event.key)} presionado, pero no hay jugador o attack_profile_manager.", extra={"categoria_log": "log_event_handler"})
 
     def debe_salir(self):
         """Chequea si se ha solicitado salir del juego."""
@@ -176,21 +195,25 @@ if __name__ == '__main__':
         def __init__(self):
             self.attack_profile_manager = MockAttackProfileManager()
         def atacar(self):
-            logger_ge.info("MockJugador.atacar() llamado")
+            # logger_ge.info("MockJugador.atacar() llamado")
+            logger.info("MockJugador.atacar() llamado", extra={"categoria_log": "log_event_handler"}) # Ejemplo de categoría para test
 
     class MockAttackProfileManager:
         def __init__(self):
             self.perfil_actual_nombre = "default"
             self.params = {"damage": 10, "attack_cooldown": 500}
         def seleccionar_perfil_anterior(self): 
-            logger_ge.info("MockAPM.seleccionar_perfil_anterior()")
+            # logger_ge.info("MockAPM.seleccionar_perfil_anterior()")
+            logger.info("MockAPM.seleccionar_perfil_anterior()", extra={"categoria_log": "log_event_handler"})
         def seleccionar_perfil_siguiente(self): 
-            logger_ge.info("MockAPM.seleccionar_perfil_siguiente()")
+            # logger_ge.info("MockAPM.seleccionar_perfil_siguiente()")
+            logger.info("MockAPM.seleccionar_perfil_siguiente()", extra={"categoria_log": "log_event_handler"})
         def get_parametro_ataque_activo(self, nombre_param):
             return self.params.get(nombre_param, 0)
         def modificar_parametro_perfil_activo(self, nombre_param, valor):
             self.params[nombre_param] = valor
-            logger_ge.info(f"MockAPM.modificar_parametro_perfil_activo({nombre_param}, {valor})")
+            # logger_ge.info(f"MockAPM.modificar_parametro_perfil_activo({nombre_param}, {valor})")
+            logger.info(f"MockAPM.modificar_parametro_perfil_activo({nombre_param}, {valor})", extra={"categoria_log": "log_event_handler"})
 
     class MockHUD:
         def manejar_input_hud(self, event):
@@ -229,7 +252,8 @@ if __name__ == '__main__':
 
         if gestor_evt.debe_salir():
             running_test = False
-            logger_ge.info("Prueba: detectada solicitud_salir. Terminando bucle.")
+            # logger_ge.info("Prueba: detectada solicitud_salir. Terminando bucle.")
+            logger.info("Prueba: detectada solicitud_salir. Terminando bucle.", extra={"categoria_log": "log_event_handler"})
         
         # Pequeña pausa para no consumir 100% CPU en el test
         pygame.time.wait(50) 
