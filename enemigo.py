@@ -3,13 +3,28 @@ import os
 import settings # Para RUTA_ASSETS
 import math # Para cálculos de distancia y vectores
 import logging # <--- AÑADIR IMPORT
+from entidad_base import EntidadBase # <--- IMPORTAR EntidadBase
+from collision_handler import CollisionHandler # <--- IMPORTAR COLLISION_HANDLER
 # AssetManager no necesita ser importado aquí si se recibe como instancia
 
-# Obtener el mismo logger que usa el jugador para que todo vaya al mismo archivo
-logger = logging.getLogger('movimiento_jugador') # <--- OBTENER LOGGER
+# --- Loggers Categóricos para Enemigo ---
+logger_enemigo_mov = logging.getLogger("log_enemigo_mov")
+logger_enemigo_mov.setLevel(logging.DEBUG)
 
-class Enemigo(pygame.sprite.Sprite):
-    id_counter = 0 # <--- CONTADOR DE CLASE PARA ID ÚNICO
+logger_enemigo_ia = logging.getLogger("log_enemigo_ia")
+logger_enemigo_ia.setLevel(logging.DEBUG)
+
+logger_enemigo_col = logging.getLogger("log_enemigo_col") # Para colisiones específicas del enemigo (no del CollisionHandler)
+logger_enemigo_col.setLevel(logging.DEBUG)
+
+logger_enemigo_gen = logging.getLogger("juego.enemigo.general") # Para INFOs, WARNINGs generales
+logger_enemigo_gen.setLevel(logging.INFO)
+
+class Enemigo(EntidadBase): # <--- HEREDAR DE EntidadBase
+    # id_counter de EntidadBase se usará, así que este contador de clase aquí podría ser redundante
+    # a menos que queramos un conteo separado solo para enemigos. 
+    # Por simplicidad, usaremos el de EntidadBase (self.id_entidad).
+    # id_counter = 0 
 
     def __init__(self, x, y, asset_manager_instance, nombre_asset_imagen="enemy_chicken"):
         """Constructor de la clase Enemigo.
@@ -20,154 +35,128 @@ class Enemigo(pygame.sprite.Sprite):
             asset_manager_instance (AssetManager): Instancia del AssetManager para cargar la imagen del enemigo.
             nombre_asset_imagen (str): Nombre del asset de imagen para este enemigo dentro del AssetManager.
         """
-        super().__init__()
+        vida_maxima_enemigo = getattr(settings, 'ENEMIGO_VIDA_MAXIMA', 5)
+        velocidad_enemigo = getattr(settings, 'ENEMIGO_VELOCIDAD', 1.5)
+        hitbox_offset_x_enemigo = getattr(settings, 'ENEMIGO_HITBOX_OFFSET_X', 3)
+        hitbox_offset_y_enemigo = getattr(settings, 'ENEMIGO_HITBOX_OFFSET_Y', 3) 
+        # Para el hitbox del enemigo, parece que los offsets se usan para centrar un hitbox más pequeño
+        # que el rect. EntidadBase calcula: 
+        # hb_ancho = self.rect.width - (2 * self.hitbox_offset_x)
+        # hb_alto = self.rect.height - (2 * self.hitbox_offset_y)
+        # Esto es diferente a cómo el enemigo original calcula su hitbox_offset_y en _actualizar_posicion_hitbox:
+        # self.hitbox.centery = self.rect.centery (lo que implica que el offset_y es para el tamaño, no posición directa)
+        # Vamos a pasar los offsets, y EntidadBase lo construirá. Si el centrado es clave,
+        # Enemigo._actualizar_posicion_hitbox() deberá sobreescribirse.
 
-        self.id_enemigo = Enemigo.id_counter # <--- ASIGNAR ID ÚNICO
-        Enemigo.id_counter += 1
-        logger.debug(f"[Enemigo_{self.id_enemigo}] Creado en ({x}, {y})") # <--- LOG CREACIÓN
-
-        self.asset_manager = asset_manager_instance # <--- Almacena la instancia
+        super().__init__(
+            x=x, y=y, asset_manager_instance=asset_manager_instance,
+            vida_maxima=vida_maxima_enemigo,
+            velocidad=velocidad_enemigo,
+            hitbox_offset_x=hitbox_offset_x_enemigo,
+            hitbox_offset_y=hitbox_offset_y_enemigo, # OJO: Ver nota arriba sobre el cálculo del hitbox
+            nombre_asset_imagen_inicial=nombre_asset_imagen,
+            nombre_entidad_tipo="Enemigo"
+            # No dict_animaciones_config por ahora, ya que el enemigo es estático
+        )
         
-        # Cargar imagen a través del AssetManager
-        # El nombre_asset_imagen (ej: "enemy_chicken") debe coincidir con una clave precargada
-        self.image = self.asset_manager.get_image(nombre_asset_imagen)
-        # get_image ya devuelve un placeholder si falla, así que no es necesario un try-except aquí
-        # a menos que quieras un comportamiento muy específico para el fallo de carga del enemigo.
+        # logger.debug(f"[Enemigo_{self.id_entidad}] Creado en ({x}, {y}) con imagen {nombre_asset_imagen}")
+        # El log de creación ya lo hace EntidadBase con self.nombre_entidad_tipo y self.id_entidad
 
-        self.rect = self.image.get_rect()
-        self.rect.x = x
-        self.rect.y = y
+        # Atributos específicos del Enemigo
+        self.dano_ataque = getattr(settings, 'ENEMIGO_DANO_ATAQUE', 1)
+        self.rango_agro = getattr(settings, 'ENEMIGO_RANGO_AGRO', 200)
+        self.distancia_minima_al_jugador = getattr(settings, 'ENEMIGO_DIST_MIN_JUGADOR', 22)
 
-        # --- Definición del Hitbox del Enemigo (similar al jugador) ---
-        # Estos valores pueden necesitar ajuste según el sprite del enemigo.
-        self.hitbox_offset_x = 3 
-        self.hitbox_offset_y = 3
-        hb_ancho = self.rect.width - (2 * self.hitbox_offset_x)
-        hb_alto = self.rect.height - (2 * self.hitbox_offset_y)
-        
-        # Asegurarse de que el hitbox tenga al menos 1x1 de tamaño
-        hb_ancho = max(1, hb_ancho) 
-        hb_alto = max(1, hb_alto)
+        if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_enemigo_ia", False): # O log_general si es más apropiado
+            logger_enemigo_ia.debug(f"{self.nombre_log_entidad} Atributos IA: Agro:{self.rango_agro}, DMinAlJugador:{self.distancia_minima_al_jugador}, DanoAtaque:{self.dano_ataque}")
 
-        self.hitbox = pygame.Rect(0, 0, hb_ancho, hb_alto)
-        self._actualizar_posicion_hitbox() # Posicionar hitbox inicial
-
-        # Atributos de combate
-        self.vida_maxima = 5
-        self.vida_actual = self.vida_maxima
-        self.dano_ataque = 1
-        # self.tiempo_creacion = pygame.time.get_ticks() # Ya no tan relevante para aggro simple
-        # self.cooldown_ataque_jugador = 500 
-        # self.ultimo_ataque_al_jugador = 0
-
-        # Atributos de movimiento y aggro
-        self.velocidad_movimiento = 1.5 # Más lento que el jugador
-        self.rango_agro = 200 # Píxeles de distancia para empezar a seguir
-        self.distancia_minima_al_jugador = 22 # Reducido desde 35, basado en análisis de hitboxes
+        # El hitbox original del enemigo se centraba en el rect. 
+        # EntidadBase lo crea basado en topleft y offsets para reducir tamaño.
+        # Si el comportamiento de centrado es crucial, debemos sobreescribir _actualizar_posicion_hitbox.
+        # Por ahora, probaremos con el hitbox de EntidadBase.
+        # Si el hitbox original era: hb_ancho = self.rect.width - (2*offX), hb_alto = self.rect.height - (2*offY)
+        # y luego se centraba, el resultado final del tamaño es el mismo que el de EntidadBase.
+        # La diferencia era el método de posicionamiento. EntidadBase usa topleft + offset para el topleft del hitbox.
+        # El enemigo original hacía self.hitbox.center = self.rect.center después de calcular el tamaño.
+        # Vamos a sobreescribir _actualizar_posicion_hitbox para mantener el centrado.
 
     def _actualizar_posicion_hitbox(self):
-        """Actualiza la posición del hitbox basándose en la posición del rect principal."""
-        self.hitbox.centerx = self.rect.centerx
-        self.hitbox.centery = self.rect.centery
-        # O si prefieres basarlo en topleft con offsets:
-        # self.hitbox.topleft = (self.rect.x + self.hitbox_offset_x, self.rect.y + self.hitbox_offset_y)
+        """Sobreescribe EntidadBase para centrar el hitbox en el rect del enemigo."""
+        self.hitbox.center = self.rect.center
+        if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_enemigo_mov", False):
+            logger_enemigo_mov.debug(f"{self.nombre_log_entidad} Hitbox recentrado (enemigo): {self.hitbox.center} (Rect center: {self.rect.center})")
 
     def _mover_y_colisionar_con_obstaculos(self, dx, dy, obstaculos):
-        # logger.debug(f"    [Enemigo_{self.id_enemigo}] _mover_y_colisionar_con_obstaculos: dx={dx:.2f}, dy={dy:.2f}")
-        original_rect_x = self.rect.x
-        original_rect_y = self.rect.y
-        original_hitbox_x = self.hitbox.x
-        original_hitbox_y = self.hitbox.y
-
-        # Mover en X
-        if dx != 0:
-            self.hitbox.x += dx
-            for obstaculo in obstaculos:
-                rect_colision_obstaculo = obstaculo.hitbox if hasattr(obstaculo, 'hitbox') else obstaculo.rect
-                if self.hitbox.colliderect(rect_colision_obstaculo):
-                    # logger.debug(f"      [Enemigo_{self.id_enemigo}] Colisión X con {type(obstaculo).__name__}_{getattr(obstaculo, 'id_enemigo', 'N/A')}")
-                    if dx > 0: # Moviéndose a la derecha
-                        self.hitbox.right = rect_colision_obstaculo.left
-                    elif dx < 0: # Moviéndose a la izquierda
-                        self.hitbox.left = rect_colision_obstaculo.right
-            self.rect.x = self.hitbox.left - self.hitbox_offset_x # Ajustar rect basado en hitbox
-
-        # Mover en Y
-        if dy != 0:
-            self.hitbox.y += dy
-            for obstaculo in obstaculos:
-                rect_colision_obstaculo = obstaculo.hitbox if hasattr(obstaculo, 'hitbox') else obstaculo.rect
-                if self.hitbox.colliderect(rect_colision_obstaculo):
-                    # logger.debug(f"      [Enemigo_{self.id_enemigo}] Colisión Y con {type(obstaculo).__name__}_{getattr(obstaculo, 'id_enemigo', 'N/A')}")
-                    if dy > 0: # Moviéndose hacia abajo
-                        self.hitbox.bottom = rect_colision_obstaculo.top
-                    elif dy < 0: # Moviéndose hacia arriba
-                        self.hitbox.top = rect_colision_obstaculo.bottom
-            self.rect.y = self.hitbox.top - self.hitbox_offset_y # Ajustar rect basado en hitbox
+        if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_enemigo_col", False):
+            logger_enemigo_col.debug(f"{self.nombre_log_entidad} Inicia _mover_y_colisionar_con_obstaculos. dx={dx:.2f}, dy={dy:.2f}. HB Actual: {self.hitbox.topleft}")
         
-        # # Log si hubo cambio significativo (opcional, para reducir spam)
-        # if abs(self.hitbox.x - original_hitbox_x) > 0.1 or abs(self.hitbox.y - original_hitbox_y) > 0.1 :
-        #     logger.debug(f"    [Enemigo_{self.id_enemigo}] Pos DESPUÉS colisiones: Hitbox: {self.hitbox.topleft}, Rect: {self.rect.topleft}")
-        # else: # Si no hubo cambio aparente, se puede omitir el log de "después de colisiones"
-        #     pass
+        CollisionHandler.gestionar_movimiento_y_colision(
+            self.hitbox,
+            self.rect,
+            self.hitbox_offset_x,
+            self.hitbox_offset_y,
+            dx,
+            dy,
+            obstaculos
+        )
+        # CollisionHandler actualiza rect y hitbox. Aquí nos aseguramos de que el hitbox esté centrado en el rect.
+        self._actualizar_posicion_hitbox() 
 
-    def update(self, objetivo_rect, grupo_obstaculos):
+    def update(self, objetivo_rect, grupo_obstaculos, delta_time):
         """Actualiza la lógica del enemigo, incluyendo movimiento y IA básica.
 
         Args:
             objetivo_rect (pygame.Rect): El rect del objetivo (ej. hitbox del jugador) para seguir.
             grupo_obstaculos (pygame.sprite.Group): Grupo de sprites de obstáculos para evitar (árboles y otros enemigos).
+            delta_time (float): Tiempo transcurrido desde el último frame, en segundos.
         """
-        logger.debug(f"--- Inicio Update Enemigo_{self.id_enemigo} ---")
-        logger.debug(f"[Enemigo_{self.id_enemigo}] Pos ANTES update: Rect: {self.rect.topleft}, Hitbox: {self.hitbox.topleft}")
+        # super().update(delta_time) # Si EntidadBase.update() maneja animaciones y usa delta_time
+        self.actualizar_animacion() # <--- Llamada corregida. Enemigo podría no tener animaciones, pero EntidadBase lo maneja.
 
-        if self.vida_actual <= 0:
-            self.morir()
-            return
+        if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_enemigo_ia", False):
+            logger_enemigo_ia.debug(f"{self.nombre_log_entidad} --- Inicio Update IA --- Delta: {delta_time:.4f}s. Pos ANTES: HB {self.hitbox.topleft}, Rect {self.rect.topleft}")
 
         dx_al_objetivo = objetivo_rect.centerx - self.hitbox.centerx
         dy_al_objetivo = objetivo_rect.centery - self.hitbox.centery
-        
         distancia_al_objetivo = math.sqrt(dx_al_objetivo**2 + dy_al_objetivo**2)
         
-        logger.debug(f"[Enemigo_{self.id_enemigo}] Target (Jugador): {objetivo_rect.center}, Dist: {distancia_al_objetivo:.2f}, dx_obj: {dx_al_objetivo:.2f}, dy_obj: {dy_al_objetivo:.2f}")
+        if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_enemigo_ia", False):
+            logger_enemigo_ia.debug(f"{self.nombre_log_entidad} Target (centro {objetivo_rect.center}), Dist: {distancia_al_objetivo:.2f}. Mi Centro HB: {self.hitbox.center}")
 
-        mov_x = 0
-        mov_y = 0
+        mov_x_input = 0
+        mov_y_input = 0
 
         if distancia_al_objetivo < self.rango_agro and distancia_al_objetivo > self.distancia_minima_al_jugador:
-            if distancia_al_objetivo > 0: # Evitar división por cero si ya está en el objetivo
+            if distancia_al_objetivo > 0: 
                 dir_x = dx_al_objetivo / distancia_al_objetivo
                 dir_y = dy_al_objetivo / distancia_al_objetivo
-                mov_x = dir_x * self.velocidad_movimiento
-                mov_y = dir_y * self.velocidad_movimiento
+                mov_x_input = dir_x * self.velocidad
+                mov_y_input = dir_y * self.velocidad
+                if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_enemigo_ia", False):
+                    logger_enemigo_ia.debug(f"{self.nombre_log_entidad} EN RANGO AGRO. Movimiento input (dx,dy): ({mov_x_input:.2f}, {mov_y_input:.2f})")
+            else: # distancia_al_objetivo == 0
+                 if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_enemigo_ia", False):
+                    logger_enemigo_ia.debug(f"{self.nombre_log_entidad} EN OBJETIVO (dist 0). No se calcula movimiento desde IA.")
+        else:
+            if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_enemigo_ia", False):
+                logger_enemigo_ia.debug(f"{self.nombre_log_entidad} FUERA DE RANGO AGRO/DEMASIADO CERCA. Dist: {distancia_al_objetivo:.2f} (RangoAgro: {self.rango_agro}, DistMin: {self.distancia_minima_al_jugador}). No se calcula mov.")
         
-        logger.debug(f"[Enemigo_{self.id_enemigo}] Movimiento calculado (antes de colisión): mov_x={mov_x:.2f}, mov_y={mov_y:.2f}")
+        # Aplicar delta_time al movimiento
+        mov_x_final = mov_x_input * delta_time
+        mov_y_final = mov_y_input * delta_time
+
+        if mov_x_final != 0 or mov_y_final != 0:
+            if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_enemigo_mov", False):
+                 logger_enemigo_mov.debug(f"{self.nombre_log_entidad} Solicita movimiento (pre-colisión, con delta_time): dx={mov_x_final:.4f}, dy={mov_y_final:.4f}. HB Actual: {self.hitbox.topleft}")
+            self._mover_y_colisionar_con_obstaculos(mov_x_final, mov_y_final, grupo_obstaculos)
+            if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_enemigo_mov", False):
+                 logger_enemigo_mov.debug(f"{self.nombre_log_entidad} Posición DESPUÉS de mov/col: HB {self.hitbox.topleft}, Rect {self.rect.topleft}")
+        else:
+            if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_enemigo_mov", False):
+                 logger_enemigo_mov.debug(f"{self.nombre_log_entidad} Sin movimiento solicitado por IA este frame.")
         
-        # Mover enemigo y manejar colisiones con obstáculos (árboles y otros enemigos)
-        self._mover_y_colisionar_con_obstaculos(mov_x, mov_y, grupo_obstaculos)
-        
-        # Ya no se necesita la actualización directa de rect y hitbox aquí,
-        # porque _mover_y_colisionar_con_obstaculos ya actualiza self.rect y self.hitbox.
-        # self.rect.x += mov_x  # <-- ELIMINADO
-        # self.rect.y += mov_y  # <-- ELIMINADO
-        # self._actualizar_posicion_hitbox() # <-- ELIMINADO (o se asegura que _mover_y_colisionar actualice el hitbox correctamente)
-        # NOTA: _actualizar_posicion_hitbox() se llama dentro de _mover_y_colisionar_con_obstaculos
-        #       si la lógica de mover el rect se basa en el hitbox después de la corrección.
-        #       En mi implementación de _mover_y_colisionar_con_obstaculos, actualizo self.rect.x/y
-        #       basado en el hitbox.hitbox.left/top, lo que es correcto.
-
-        logger.debug(f"[Enemigo_{self.id_enemigo}] Pos DESPUÉS de _mover_y_colisionar_con_obstaculos: Rect: {self.rect.topleft}, Hitbox: {self.hitbox.topleft}")
-        logger.debug(f"--- Fin Update Enemigo_{self.id_enemigo} ---")
-
-    def recibir_dano(self, cantidad):
-        self.vida_actual -= cantidad
-        logger.info(f"[Enemigo_{self.id_enemigo}] ({self.rect.center}) recibe {cantidad} de daño. Vida restante: {self.vida_actual}")
-        # No necesita cooldown de recibir daño si el jugador tiene cooldown de atacar.
-
-    def morir(self):
-        logger.info(f"[Enemigo_{self.id_enemigo}] en ({self.rect.centerx},{self.rect.centery}) ha muerto!")
-        self.kill() # Elimina el sprite de todos los grupos a los que pertenece.
+        if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_enemigo_ia", False):
+            logger_enemigo_ia.debug(f"{self.nombre_log_entidad} --- Fin Update IA ---")
 
     # def puede_atacar_al_jugador(self):
     #     ahora = pygame.time.get_ticks()

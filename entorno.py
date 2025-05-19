@@ -3,8 +3,14 @@ import os
 import settings # Necesario para RUTA_ASSETS si no se usa AssetManager, pero ahora sí
 
 class Arbol(pygame.sprite.Sprite):
+    id_arbol_counter = 0 # Contador para IDs únicos de árboles
+
     def __init__(self, x, y, asset_manager_instance):
         super().__init__()
+        self.id_arbol = Arbol.id_arbol_counter
+        Arbol.id_arbol_counter += 1
+        self.nombre_log_entidad = f"[Arbol_{self.id_arbol}]"
+
         self.asset_manager = asset_manager_instance
         self.animaciones = {}
         self._cargar_animaciones()
@@ -52,15 +58,11 @@ class Arbol(pygame.sprite.Sprite):
             imagen = self.asset_manager.get_image(clave_asset)
             self.animaciones["idle"].append(imagen)
         
-        if not self.animaciones["idle"] or all(img.get_width() == 32 and img.get_height() == 32 for img in self.animaciones["idle"]):
-            # Esto es una heurística para detectar si solo se cargaron placeholders
-            # Podría mejorarse si AssetManager devuelve una bandera específica o si el placeholder tiene un color único
-            print("ADVERTENCIA: No se cargaron fotogramas válidos para la animación 'idle' del Árbol o solo se cargaron placeholders.")
-            # Asegurarse de que haya al menos un placeholder si todo falló gravemente.
-            if not self.animaciones["idle"]:
-                placeholder_surface = pygame.Surface((32,32))
-                placeholder_surface.fill(settings.ROJO_ERROR_ASSET if hasattr(settings, 'ROJO_ERROR_ASSET') else (255,0,0))
-                self.animaciones["idle"] = [placeholder_surface]
+        # Comprobar si todas las imágenes cargadas para la animación son la superficie placeholder del AssetManager
+        if not self.animaciones["idle"] or all(img is self.asset_manager.placeholder_surface for img in self.animaciones["idle"]):
+            print("ADVERTENCIA: No se cargaron fotogramas válidos para la animación 'idle' del Árbol o solo placeholders (detectado por instancia de placeholder).")
+            # Asegurarse de que haya al menos un placeholder si todo falló gravemente o solo se cargaron placeholders.
+            self.animaciones["idle"] = [self.asset_manager.placeholder_surface]
 
     def _actualizar_posicion_hitbox(self):
         """Actualiza la posición del hitbox basándose en el rect principal."""

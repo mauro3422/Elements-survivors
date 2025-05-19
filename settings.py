@@ -46,6 +46,8 @@ BLANCO = (255, 255, 255)
 ROJO = (255, 0, 0)
 VERDE = (0, 255, 0) # Color verde normal
 VERDE_DEBUG = (0, 255, 0, 150) # Verde semitransparente para debug (RGBA)
+COLOR_HITBOX = (255, 0, 0)  # Rojo para hitboxes de colisión
+COLOR_ATAQUE_HITBOX = (255, 255, 0) # Amarillo para hitboxes de ataque
 
 # Colores HUD
 COLOR_HUD_TEXTO = BLANCO # Usar el blanco ya definido
@@ -65,3 +67,41 @@ INCREMENTO_AJUSTE_DEBUG = 2 # Píxeles o unidades a cambiar con cada pulsación 
 INCREMENTO_DURACION_DEBUG = 10 # Milisegundos a cambiar para la duración del ataque
 ARCHIVO_CONFIG_ATAQUE = "config_ataque.json" # Archivo para guardar/cargar config de ataque
 NOMBRE_PERFIL_ATAQUE_INICIAL = "espada_predeterminada"
+
+# --- Configuración Global de Logs ---
+# Establecer en False para un output de log estándar (INFO) en la consola.
+MODO_DEBUG_LOGS = True
+LOG_LEVEL_VERBOSE = "DEBUG"  # Nivel de log cuando MODO_DEBUG_LOGS es True
+LOG_LEVEL_STANDARD = "INFO"  # Nivel de log cuando MODO_DEBUG_LOGS es False
+# La variable LOG_LEVEL que existía antes para el logger de main.py ya no es necesaria
+# ya que se determinará con MODO_DEBUG_LOGS.
+
+LOG_CATEGORIAS = {
+    "log_general": True,
+    "log_assets": False,
+    "log_input": False,
+    "log_jugador_mov": True,
+    "log_jugador_col": True,
+    "log_jugador_cmb": True,
+    "log_enemigo_mov": True,
+    "log_enemigo_ia": False,
+    "log_enemigo_col": True,
+    "log_enemigo_cmb": False,
+    "log_animacion": False,
+    "log_camara": False,
+    "log_collision_handler": True,
+    "log_event_handler": True,
+    "log_event_handler_verbose": False,
+    "log_gestor_estado": True,
+    "log_gestor_estado_detalle": False,
+}
+
+# --- Configuración de Fuentes ---
+# Define los nombres de las fuentes a usar. 
+# Pueden ser nombres de fuentes del sistema (ej: "Arial", "Consolas")
+# o nombres de archivos .ttf/.otf (ej: "MyCustomFont.ttf").
+# Si es un nombre de archivo, DEBE estar ubicado en la carpeta assets/fonts/.
+NOMBRE_FUENTE_HUD = "Arial"  # Fuente para el HUD principal (ej: información del jugador)
+NOMBRE_FUENTE_DEBUG = "Consolas" # Fuente para información de depuración
+TAMANO_FUENTE_HUD = 18
+TAMANO_FUENTE_DEBUG = 16
