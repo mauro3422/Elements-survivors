@@ -135,3 +135,64 @@
     - Se revisó y actualizó la sección "Sistema de Logging" para reflejar la refactorización completa.
     - Se reorganizaron secciones para mejorar la claridad y el flujo del documento.
 - Se estableció la práctica de mantener `README.md` y `CHANGELOG.md` como "documentos vivos". 
+
+## [0.2.1] - 2024-05-19
+
+### Solucionado
+- **Bug Mayor de Teletransporte del Jugador**: Corregido un bug crítico donde el jugador se teletransportaba incorrectamente en el eje Y al colisionar con obstáculos y ser empujado. El problema residía en la lógica de `ajuste_final_y` dentro de `_resolver_solapamientos_estaticos_eje` en `CollisionHandler.py`, que no consideraba adecuadamente la dirección del movimiento original del input, llevando a un ajuste incorrecto.
+- **Precisión en el Movimiento**: Se ajustó la lógica de movimiento del jugador para que `dx_para_colision` y `dy_para_colision` se redondeen al entero más cercano antes de pasarlos al `CollisionHandler`, pero la actualización final de la posición flotante ahora considera el `delta_real` devuelto por el `CollisionHandler` para evitar desincronizaciones y movimientos entrecortados.
+
+### Cambiado
+- Se añadieron logs detallados temporalmente en `CollisionHandler.py` y `jugador.py` para diagnosticar problemas de colisión y movimiento. Estos logs fueron posteriormente eliminados tras la identificación y corrección de los bugs.
+- Se modificó `mapa_conceptual_modulos.py` para actualizar la ruta de `config_logging.py` a `src/config/config_logging.py` y `settings.py` a `src/config/settings.py`, y se agruparon conceptualmente bajo una categoría "Config".
+- Se actualizó el `README.md` para reflejar la nueva ubicación de `config_logging.py`.
+
+### Problemas Conocidos y Nuevos
+- **Bug de "Expulsión" del Jugador**: Se ha observado un comportamiento donde el jugador puede ser "expulsado" o experimentar un desplazamiento anómalo y rápido cuando es rodeado por múltiples enemigos que se mueven activamente hacia él. Esto podría estar relacionado con la forma en que se resuelven múltiples colisiones simultáneas o la lógica de empuje acumulado. (Ver `TODO.md` - Prioridad Alta).
+- **Bug Crítico - Cierre Inesperado del Juego**: Se ha reportado un nuevo bug donde el juego se cierra inesperadamente al presionar una tecla después de las últimas sesiones de depuración. La causa es desconocida y requiere investigación inmediata. (Ver `TODO.md` - Prioridad Máxima - Bloqueante).
+
+### Próximos Pasos (Investigación Inmediata)
+- Analizar los logs de la sesión `logs/2024-05-19_21-20-16/` (y anteriores si es necesario) para entender el bug de "expulsión".
+- Intentar reproducir y diagnosticar el bug del cierre inesperado del juego.
+
+## [0.2.2] - 2024-05-20
+
+### Solucionado
+- **Bug Crítico - Cierre Inesperado del Juego**: Resuelto el problema que causaba que el juego se cerrara inesperadamente al presionar teclas. El bug era causado por prints de depuración no protegidos en `jugador.py` y errores en la forma de acceder al perfil de ataque activo en el `AttackProfileManager`.
+
+### Mejorado
+- **Sistema de Depuración**:
+  - Se añadieron variables de control en `settings.py` para todos los prints de depuración: `DEBUG_PRINT_JUGADOR_MOV_DEBUG` y `DEBUG_PRINT_JUGADOR_ATAQUE_DEBUG`.
+  - Se encapsularon todos los prints de depuración con condicionales que verifican estas variables, evitando errores cuando los prints están presentes pero desactivados.
+
+- **Gestión de Errores**:
+  - Se mejoró el manejo de excepciones en `gestor_eventos.py` para capturar y loguear errores durante el procesamiento de eventos sin interrumpir el juego.
+  - Se corrigió la forma en que se accede a los parámetros de ataque en `jugador.py`, utilizando el método correcto `get_parametro_ataque_activo()` en lugar de intentar acceder directamente al objeto del perfil.
+
+### Problemas Conocidos
+- **Bug de "Expulsión" del Jugador**: Continúa presente el comportamiento donde el jugador es "expulsado" cuando está rodeado por múltiples enemigos en movimiento. Se mantiene como próxima prioridad de investigación.
+
+### Próximos Pasos
+- Investigar y solucionar el bug de "expulsión" del jugador.
+- Considerar la implementación de un sistema de "peso" o "prioridad" para las entidades en las colisiones. 
+
+## [0.3.0] - 2025-05-19
+
+### Añadido
+- **Protocolos de Desarrollo Detallados**:
+    - Se creó el archivo `DEVELOPMENT_PROTOCOLS.md` que consolida y expande todas las guías de desarrollo, colaboración con IA, manejo de documentación, sistemas de logging, depuración, y convenciones del proyecto.
+    - Se definió un "Protocolo de Sincronización y Actualización de Documentación al Cierre de Sesión/Hito" dentro de `DEVELOPMENT_PROTOCOLS.md`.
+- **Cursor Rule para Asistentes IA**:
+    - Se generó el archivo `.cursor/rules/ai_development_protocol.mdc` con directrices específicas para la IA, basadas en los protocolos establecidos, para mejorar la comprensión del código y la autonomía informada. Incluye referencias directas (mdc:) a los archivos de documentación clave.
+- **Archivo de Notas de Desarrollo**:
+    - Se ha establecido la práctica de usar `dev_notes.md` para mantener un registro del estado del trabajo entre sesiones (se creará si no existe).
+
+### Mejorado
+- **Estructura de la Documentación Principal**:
+    - `README.md` fue significativamente simplificado para servir como una introducción general al proyecto, con enlaces prominentes a `DEVELOPMENT_PROTOCOLS.md` para detalles de desarrollo.
+    - Se migraron secciones extensas de `README.md` (Guía Esencial, Reglas de Desarrollo, Guía de Desarrollo, Protocolos de Depuración, etc.) al nuevo `DEVELOPMENT_PROTOCOLS.md`.
+- **Claridad en la Colaboración con IA**:
+    - Los protocolos ahora especifican claramente cómo la IA debe obtener contexto, interactuar con los archivos del proyecto, y mantener actualizada la documentación.
+
+### Cambiado
+- La fecha de las entradas anteriores en `CHANGELOG.md` que usaban "2025" (específicamente las versiones 0.2.1 y 0.2.2) ha sido actualizada a "2024" para reflejar el año correcto en que ocurrieron esos cambios, manteniendo la consistencia con el resto del historial del proyecto. 

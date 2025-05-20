@@ -1,4 +1,0 @@
-2025-05-19 16:52:14 - attack_profile_manager - [INFO] - Intentando cargar perfiles de ataque desde: config_ataque.json
-2025-05-19 16:52:14 - attack_profile_manager - [INFO] - Perfiles de ataque cargados desde config_ataque.json
-2025-05-19 16:52:14 - attack_profile_manager - [DEBUG] - Intento de seleccionar perfil de ataque: espada_predeterminada
-2025-05-19 16:52:14 - attack_profile_manager - [INFO] - Perfil activo cambiado a: 'espada_predeterminada'. Dur seg: 52.00ms. Num_seg: 5. Dur_total: 260

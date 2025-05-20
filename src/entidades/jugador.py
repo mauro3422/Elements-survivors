@@ -45,7 +45,10 @@ class Jugador(EntidadBase):
             settings.NOMBRE_PERFIL_ATAQUE_INICIAL
         )
         # --- Fin Gestor de Perfiles de Ataque ---
-
+        
+        # Inicializar el CollisionHandler (para gestionar colisiones)
+        self.collision_handler = CollisionHandler()
+        
         # Atributos específicos del Jugador
         self.ultima_direccion_mov_x = 1 
         self.ultima_direccion_mov_y = 0
@@ -82,18 +85,67 @@ class Jugador(EntidadBase):
 
     # --- Métodos de Movimiento y Colisión (específicos o usan CollisionHandler) ---
     def _mover_y_colisionar(self, dx, dy, obstaculos):
-        if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_jugador_col", False):
-            logger.debug(f"{self.nombre_log_entidad} Iniciando gestión de colisión con dx={dx}, dy={dy}. Hitbox actual: {self.hitbox.topleft}", extra={"categoria_log": "log_jugador_col"})
+        """
+        Intenta mover la entidad y maneja las colisiones.
+        Esta función llama al CollisionHandler y actualiza el rect y hitbox de la entidad.
+        Devuelve el delta_x_real y delta_y_real del movimiento del hitbox.
+        """
+        pos_original_hb_x, pos_original_hb_y = self.hitbox.x, self.hitbox.y
+        
+        # Convertir flotantes a enteros redondeados para el input de CollisionHandler
+        # Esto asegura que el CH siempre trabaje con movimientos discretos de píxeles.
+        dx_para_colision = int(round(dx))
+        dy_para_colision = int(round(dy))
 
-        CollisionHandler.gestionar_movimiento_y_colision(
-            self.hitbox, 
-            self.rect, 
-            self.hitbox_offset_x, 
-            self.hitbox_offset_y, 
-            dx, 
-            dy, 
-            obstaculos
-        )
+        if dx_para_colision != 0 or dy_para_colision != 0:
+            if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_jugador_mov", False):
+                logger.debug(f"Movimiento para CH: dx_int={dx_para_colision}, dy_int={dy_para_colision}. HB (antes CH): TL={self.hitbox.topleft}, Size={self.hitbox.size}", extra={"categoria_log": "log_jugador_mov"})
+
+            # Protegemos los prints con la variable DEBUG_PRINT_JUGADOR_MOV_DEBUG
+            if hasattr(settings, 'DEBUG_PRINT_JUGADOR_MOV_DEBUG') and settings.DEBUG_PRINT_JUGADOR_MOV_DEBUG:
+                print(f"DEBUG JUGADOR: ANTES de CH. self.hitbox.topleft = {self.hitbox.topleft}") # DEBUG PRINT
+            
+            nueva_pos_hb_x, nueva_pos_hb_y = self.collision_handler.gestionar_movimiento_y_colision(
+                self.hitbox.copy(),             # entidad_hitbox
+                self.rect.copy(),               # entidad_rect (usado para calcular offset con HB)
+                self.hitbox_offset_x,           # hitbox_offset_x
+                self.hitbox_offset_y,           # hitbox_offset_y
+                dx_para_colision,               # dx
+                dy_para_colision,               # dy
+                obstaculos                      # obstaculos
+            )
+            
+            # Protegemos los prints con la variable DEBUG_PRINT_JUGADOR_MOV_DEBUG
+            if hasattr(settings, 'DEBUG_PRINT_JUGADOR_MOV_DEBUG') and settings.DEBUG_PRINT_JUGADOR_MOV_DEBUG:
+                print(f"DEBUG JUGADOR: CH devolvió: ({nueva_pos_hb_x}, {nueva_pos_hb_y})") # DEBUG PRINT
+            
+            # Actualizar la posición del hitbox del jugador directamente
+            self.hitbox.topleft = (nueva_pos_hb_x, nueva_pos_hb_y)
+            
+            # Protegemos los prints con la variable DEBUG_PRINT_JUGADOR_MOV_DEBUG
+            if hasattr(settings, 'DEBUG_PRINT_JUGADOR_MOV_DEBUG') and settings.DEBUG_PRINT_JUGADOR_MOV_DEBUG:
+                print(f"DEBUG JUGADOR: DESPUÉS de asignar a self.hitbox.topleft. self.hitbox.topleft = {self.hitbox.topleft}") # DEBUG PRINT
+
+            if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_jugador_mov", False):
+                logger.debug(f"HB (después CH): TL={self.hitbox.topleft}, Size={self.hitbox.size}", extra={"categoria_log": "log_jugador_mov"})
+
+            # Actualizar self.rect basado en el nuevo self.hitbox.topleft y el offset
+            self.rect.x = self.hitbox.left - self.hitbox_offset_x
+            self.rect.y = self.hitbox.top - self.hitbox_offset_y
+            
+            # Sincronizar la posición global con la nueva posición del rect
+            # Esto es crucial si self.posicion_global se usa en otro lugar para lógica de juego o renderizado.
+            self.sincronizar_posicion_global_con_rect()
+
+        # Calcular el movimiento real del hitbox
+        delta_x_real = self.hitbox.x - pos_original_hb_x
+        delta_y_real = self.hitbox.y - pos_original_hb_y
+
+        if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_jugador_mov_verbose", False):
+            if dx_para_colision != 0 or dy_para_colision != 0 or delta_x_real != 0 or delta_y_real != 0 : # Loguear solo si hubo intento o resultado de mov.
+                logger.debug(f"Movimiento REALIZADO por HB: dx={delta_x_real}, dy={delta_y_real}. HB Final: {self.hitbox.topleft}. Rect Final: {self.rect.topleft}", extra={"categoria_log": "log_jugador_mov_verbose"})
+        
+        return delta_x_real, delta_y_real
 
     def actualizar_movimiento(self, teclas_presionadas, obstaculos, mundo_ancho, mundo_alto, delta_time):
         mov_x_input_raw = 0 
@@ -161,7 +213,31 @@ class Jugador(EntidadBase):
         
         if dx_para_colision != 0 or dy_para_colision != 0:
             if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_jugador_mov", False):
-                logger.debug(f"{self.nombre_log_entidad} Movimiento para CH: dx_int={dx_para_colision}, dy_int={dy_para_colision}. HB (antes CH): {self.hitbox.topleft}, PosFlotante: ({self.pos_x_flotante:.4f},{self.pos_y_flotante:.4f})", extra={"categoria_log": "log_jugador_mov"})
+                logger.debug(f"Movimiento para CH: dx_int={dx_para_colision}, dy_int={dy_para_colision}. HB (antes CH): TL={self.hitbox.topleft}, Size={self.hitbox.size}", extra={"categoria_log": "log_jugador_mov"})
+
+            # Protegemos el print con la variable DEBUG_PRINT_JUGADOR_MOV_DEBUG
+            if hasattr(settings, 'DEBUG_PRINT_JUGADOR_MOV_DEBUG') and settings.DEBUG_PRINT_JUGADOR_MOV_DEBUG:
+                print(f"DEBUG JUGADOR: ANTES de CH. self.hitbox.topleft = {self.hitbox.topleft}") # DEBUG PRINT
+            
+            nueva_pos_hb_x, nueva_pos_hb_y = self.collision_handler.gestionar_movimiento_y_colision(
+                self.hitbox.copy(),             # entidad_hitbox
+                self.rect.copy(),               # entidad_rect (usado para calcular offset con HB)
+                self.hitbox_offset_x,           # hitbox_offset_x
+                self.hitbox_offset_y,           # hitbox_offset_y
+                dx_para_colision,               # dx
+                dy_para_colision,               # dy
+                obstaculos                      # obstaculos - Corregido: usar obstaculos en lugar de obstaculos_colisionables
+            )
+            
+            # Protegemos el print con la variable DEBUG_PRINT_JUGADOR_MOV_DEBUG
+            if hasattr(settings, 'DEBUG_PRINT_JUGADOR_MOV_DEBUG') and settings.DEBUG_PRINT_JUGADOR_MOV_DEBUG:
+                print(f"DEBUG JUGADOR: CH devolvió: ({nueva_pos_hb_x}, {nueva_pos_hb_y})") # DEBUG PRINT
+            
+            self.hitbox.topleft = (nueva_pos_hb_x, nueva_pos_hb_y)
+            
+            # Protegemos el print con la variable DEBUG_PRINT_JUGADOR_MOV_DEBUG
+            if hasattr(settings, 'DEBUG_PRINT_JUGADOR_MOV_DEBUG') and settings.DEBUG_PRINT_JUGADOR_MOV_DEBUG:
+                print(f"DEBUG JUGADOR: DESPUÉS de asignar a self.hitbox.topleft. self.hitbox.topleft = {self.hitbox.topleft}") # DEBUG PRINT
 
             # Actualizar la última dirección de movimiento basada en el input procesado
             if dx_para_colision != 0: 
@@ -171,10 +247,6 @@ class Jugador(EntidadBase):
                 self.ultima_direccion_mov_x = 0
                 self.ultima_direccion_mov_y = 1 if dy_para_colision > 0 else -1
             
-            # Aplicar el movimiento y manejar colisiones
-            # El CollisionHandler modificará self.hitbox directamente
-            self._mover_y_colisionar(dx_para_colision, dy_para_colision, obstaculos)
-
             # Resincronizar las posiciones flotantes con la posición final del hitbox
             self.pos_x_flotante = float(self.hitbox.x)
             self.pos_y_flotante = float(self.hitbox.y)
@@ -195,40 +267,54 @@ class Jugador(EntidadBase):
 
     # --- Métodos de Ataque (usan AttackProfileManager) ---
     def atacar(self):
-        # print(f"DEBUG_JUGADOR: {self.nombre_log_entidad} Entrando a atacar().") # PRINT DESACTIVADO
+        # Protegemos el print con la variable DEBUG_PRINT_JUGADOR_ATAQUE_DEBUG
+        if hasattr(settings, 'DEBUG_PRINT_JUGADOR_ATAQUE_DEBUG') and settings.DEBUG_PRINT_JUGADOR_ATAQUE_DEBUG:
+            print(f"DEBUG_JUGADOR: {self.nombre_log_entidad} Entrando a atacar().")
         ahora = pygame.time.get_ticks()
         cooldown_mod_fallback = getattr(settings, 'ATAQUE_BASE_COOLDOWN_MODIFICADOR', 1.0)
-        perfil_actual = self.attack_profile_manager.get_active_profile()
-        if not perfil_actual:
-            # print(f"DEBUG_JUGADOR: {self.nombre_log_entidad} No hay perfil de ataque activo. Saliendo de atacar().") # PRINT DESACTIVADO
-            return
-
+        
+        # Corregimos el método usado para obtener el perfil activo
+        # perfil_actual = self.attack_profile_manager.get_active_profile()
+        # if not perfil_actual:
+        #     # print(f"DEBUG_JUGADOR: {self.nombre_log_entidad} No hay perfil de ataque activo. Saliendo de atacar().") # PRINT DESACTIVADO
+        #     return
+        
         # Aplicar modificador de cooldown del perfil, si existe, si no, usar el base del APM (1.0)
-        cooldown_modificador = perfil_actual.get('cooldown_modificador', cooldown_mod_fallback)
+        cooldown_modificador = self.attack_profile_manager.get_parametro_ataque_activo('cooldown_modificador', cooldown_mod_fallback)
         cooldown_efectivo = self.cooldown_general_ataque * cooldown_modificador
-        # print(f"DEBUG_JUGADOR: {self.nombre_log_entidad} Cooldown efectivo: {cooldown_efectivo}ms, Último ataque: {self.ultimo_ataque_realizado}, Ahora: {ahora}") # PRINT DESACTIVADO
+        
+        if hasattr(settings, 'DEBUG_PRINT_JUGADOR_ATAQUE_DEBUG') and settings.DEBUG_PRINT_JUGADOR_ATAQUE_DEBUG:
+            print(f"DEBUG_JUGADOR: {self.nombre_log_entidad} Cooldown efectivo: {cooldown_efectivo}ms, Último ataque: {self.ultimo_ataque_realizado}, Ahora: {ahora}")
 
         if ahora - self.ultimo_ataque_realizado > cooldown_efectivo:
             self.esta_atacando = True
             self.tiempo_inicio_ataque = ahora
             self.ultimo_ataque_realizado = ahora
             self.enemigos_golpeados_este_ataque.clear() 
-            # print(f"DEBUG_JUGADOR: {self.nombre_log_entidad} ATAQUE INICIADO. esta_atacando=True, Perfil: '{self.attack_profile_manager.nombre_perfil_activo}'") # PRINT DESACTIVADO
+            if hasattr(settings, 'DEBUG_PRINT_JUGADOR_ATAQUE_DEBUG') and settings.DEBUG_PRINT_JUGADOR_ATAQUE_DEBUG:
+                print(f"DEBUG_JUGADOR: {self.nombre_log_entidad} ATAQUE INICIADO. esta_atacando=True, Perfil: '{self.attack_profile_manager.nombre_perfil_ataque_activo}'")
         else:
-            # print(f"DEBUG_JUGADOR: {self.nombre_log_entidad} Ataque en cooldown. Saliendo de atacar().") # PRINT DESACTIVADO
+            if hasattr(settings, 'DEBUG_PRINT_JUGADOR_ATAQUE_DEBUG') and settings.DEBUG_PRINT_JUGADOR_ATAQUE_DEBUG:
+                print(f"DEBUG_JUGADOR: {self.nombre_log_entidad} Ataque en cooldown. Saliendo de atacar().")
             pass
 
     def actualizar_ataque(self, enemigos):
         if not self.esta_atacando:
             return
         
-        # print(f"DEBUG_JUGADOR: {self.nombre_log_entidad} Entrando a actualizar_ataque(). esta_atacando es True.") # PRINT DESACTIVADO
+        # Protegemos el print con la variable DEBUG_PRINT_JUGADOR_ATAQUE_DEBUG
+        if hasattr(settings, 'DEBUG_PRINT_JUGADOR_ATAQUE_DEBUG') and settings.DEBUG_PRINT_JUGADOR_ATAQUE_DEBUG:
+            print(f"DEBUG_JUGADOR: {self.nombre_log_entidad} Entrando a actualizar_ataque(). esta_atacando es True.")
 
-        perfil_actual = self.attack_profile_manager.get_active_profile()
-        if not perfil_actual:
-            # print(f"DEBUG_JUGADOR: {self.nombre_log_entidad} No hay perfil de ataque activo en actualizar_ataque. Terminando ataque.") # PRINT DESACTIVADO
-            self.esta_atacando = False
-            return
+        # Corregimos la forma en que obtenemos el perfil de ataque activo
+        # Ahora accedemos a cada parámetro individualmente usando el método correcto
+        # perfil_actual = self.attack_profile_manager.get_active_profile()
+        # if not perfil_actual:
+        #     # Protegemos el print con la variable DEBUG_PRINT_JUGADOR_ATAQUE_DEBUG
+        #     if hasattr(settings, 'DEBUG_PRINT_JUGADOR_ATAQUE_DEBUG') and settings.DEBUG_PRINT_JUGADOR_ATAQUE_DEBUG:
+        #         print(f"DEBUG_JUGADOR: {self.nombre_log_entidad} No hay perfil de ataque activo en actualizar_ataque. Terminando ataque.")
+        #     self.esta_atacando = False
+        #     return
 
         # Usar valores base de settings como fallback si no están en el perfil
         offset_distancia_base = getattr(settings, 'ATAQUE_BASE_OFFSET_DISTANCIA', 25.0)
@@ -237,23 +323,31 @@ class Jugador(EntidadBase):
         duracion_total_ms_base = getattr(settings, 'ATAQUE_BASE_DURACION_TOTAL_MS', 300.0)
         plantilla_angulos_base = getattr(settings, 'ATAQUE_BASE_PLANTILLA_ANGULOS_GRADOS', [0])
         
-        # Obtener parámetros del perfil, usando fallbacks si es necesario
-        offset_distancia = perfil_actual.get('offset_distancia', offset_distancia_base)
-        extension_valor = perfil_actual.get('extension', extension_base)
-        grosor_valor = perfil_actual.get('grosor', grosor_base)
-        duracion_total_ms = perfil_actual.get('duracion_total_ms', duracion_total_ms_base)
-        plantilla_angulos_grados = perfil_actual.get('plantilla_angulos_grados', plantilla_angulos_base)
+        # Obtener parámetros del perfil usando el método correcto
+        offset_distancia = self.attack_profile_manager.get_parametro_ataque_activo('offset_distancia', offset_distancia_base)
+        extension_valor = self.attack_profile_manager.get_parametro_ataque_activo('extension', extension_base)
+        grosor_valor = self.attack_profile_manager.get_parametro_ataque_activo('grosor', grosor_base)
+        duracion_total_ms = self.attack_profile_manager.get_parametro_ataque_activo('duracion_total_ms', duracion_total_ms_base)
+        plantilla_angulos_grados = self.attack_profile_manager.get_parametro_ataque_activo('plantilla_angulos_grados', plantilla_angulos_base)
 
-        # print(f"DEBUG_JUGADOR: {self.nombre_log_entidad} Params perfil ataque: Offset={offset_distancia}, Ext={extension_valor}, Grosor={grosor_valor}") # PRINT DESACTIVADO
+        # Protegemos el print con la variable DEBUG_PRINT_JUGADOR_ATAQUE_DEBUG
+        if hasattr(settings, 'DEBUG_PRINT_JUGADOR_ATAQUE_DEBUG') and settings.DEBUG_PRINT_JUGADOR_ATAQUE_DEBUG:
+            print(f"DEBUG_JUGADOR: {self.nombre_log_entidad} Params perfil ataque: Offset={offset_distancia}, Ext={extension_valor}, Grosor={grosor_valor}")
 
         ahora = pygame.time.get_ticks()
         tiempo_transcurrido_ataque = ahora - self.tiempo_inicio_ataque
-        # print(f"DEBUG_JUGADOR: {self.nombre_log_entidad} Duración ataque: {duracion_total_ms}ms, Tiempo inicio: {self.tiempo_inicio_ataque}, Ahora: {ahora}") # PRINT DESACTIVADO
+        
+        # Protegemos el print con la variable DEBUG_PRINT_JUGADOR_ATAQUE_DEBUG
+        if hasattr(settings, 'DEBUG_PRINT_JUGADOR_ATAQUE_DEBUG') and settings.DEBUG_PRINT_JUGADOR_ATAQUE_DEBUG:
+            print(f"DEBUG_JUGADOR: {self.nombre_log_entidad} Duración ataque: {duracion_total_ms}ms, Tiempo inicio: {self.tiempo_inicio_ataque}, Ahora: {ahora}")
 
         if tiempo_transcurrido_ataque > duracion_total_ms:
             self.esta_atacando = False
             self.hitbox_ataque_actual_rect.size = (0,0) # Resetear para que no se dibuje
-            # print(f"DEBUG_JUGADOR: {self.nombre_log_entidad} ATAQUE FINALIZADO por duración.") # PRINT DESACTIVADO
+            
+            # Protegemos el print con la variable DEBUG_PRINT_JUGADOR_ATAQUE_DEBUG
+            if hasattr(settings, 'DEBUG_PRINT_JUGADOR_ATAQUE_DEBUG') and settings.DEBUG_PRINT_JUGADOR_ATAQUE_DEBUG:
+                print(f"DEBUG_JUGADOR: {self.nombre_log_entidad} ATAQUE FINALIZADO por duración.")
             return
 
         # Calcular el ángulo base del ataque (hacia donde mira el jugador)
@@ -279,7 +373,7 @@ class Jugador(EntidadBase):
             ancho_total_hb,
             alto_total_hb
         )
-        # print(f"DEBUG_JUGADOR: {self.nombre_log_entidad} Hitbox ataque calculado: {self.hitbox_ataque_actual_rect}") # PRINT DESACTIVADO
+        
         if settings.DEBUG_PRINT_JUGADOR_ATAQUE_CALCULO:
             print(f"DEBUG_JUGADOR: {self.nombre_log_entidad} Hitbox ataque calculado: {self.hitbox_ataque_actual_rect}")
 
@@ -288,15 +382,21 @@ class Jugador(EntidadBase):
 
         for enemigo in enemigos:
             if enemigo not in self.enemigos_golpeados_este_ataque:
-                # print(f"DEBUG_JUGADOR: {self.nombre_log_entidad} Verificando colisión con {enemigo.nombre_log_entidad} (HB: {enemigo.hitbox})") # PRINT DESACTIVADO
+                # Protegemos el print con la variable DEBUG_PRINT_JUGADOR_ATAQUE_DEBUG
+                if hasattr(settings, 'DEBUG_PRINT_JUGADOR_ATAQUE_DEBUG') and settings.DEBUG_PRINT_JUGADOR_ATAQUE_DEBUG:
+                    print(f"DEBUG_JUGADOR: {self.nombre_log_entidad} Verificando colisión con {enemigo.nombre_log_entidad} (HB: {enemigo.hitbox})")
                 if self.hitbox_ataque_actual_rect.colliderect(enemigo.hitbox):
-                    dano_modificador_perfil = perfil_actual.get('dano_modificador', settings.ATAQUE_BASE_DANO_MODIFICADOR)
+                    dano_modificador_perfil = self.attack_profile_manager.get_parametro_ataque_activo('dano_modificador', settings.ATAQUE_BASE_DANO_MODIFICADOR)
                     dano_final = self.dano_base_ataque * dano_modificador_perfil
-                    # print(f"DEBUG_JUGADOR: {self.nombre_log_entidad} ¡GOLPEÓ a {enemigo.nombre_log_entidad}! Daño base: {self.dano_base_ataque}, Mod: {dano_modificador_perfil}, Daño final: {dano_final}") # PRINT DESACTIVADO
+                    
+                    # Protegemos el print con la variable DEBUG_PRINT_JUGADOR_ATAQUE_DEBUG
+                    if hasattr(settings, 'DEBUG_PRINT_JUGADOR_ATAQUE_DEBUG') and settings.DEBUG_PRINT_JUGADOR_ATAQUE_DEBUG:
+                        print(f"DEBUG_JUGADOR: {self.nombre_log_entidad} ¡GOLPEÓ a {enemigo.nombre_log_entidad}! Daño base: {self.dano_base_ataque}, Mod: {dano_modificador_perfil}, Daño final: {dano_final}")
                     enemigo.recibir_dano(dano_final, "ataque_jugador")
                     self.enemigos_golpeados_este_ataque.add(enemigo)
-                # else: # PRINT DESACTIVADO
-                    # print(f"DEBUG_JUGADOR: {self.nombre_log_entidad} NO colisión con {enemigo.nombre_log_entidad}") # PRINT DESACTIVADO
+                # else y print DESACTIVADO ahora están protegidos
+                elif hasattr(settings, 'DEBUG_PRINT_JUGADOR_ATAQUE_DEBUG') and settings.DEBUG_PRINT_JUGADOR_ATAQUE_DEBUG:
+                    print(f"DEBUG_JUGADOR: {self.nombre_log_entidad} NO colisión con {enemigo.nombre_log_entidad}")
 
     def update(self, teclas_presionadas, obstaculos_solidos, enemigos_sprites_para_ataque, mundo_ancho, mundo_alto, delta_time):
         if not self.ha_muerto:
@@ -313,9 +413,10 @@ class Jugador(EntidadBase):
         # Por ahora, la imagen y rect son manejados por el grupo de sprites y EntidadBase.
 
     def recibir_dano(self, cantidad, tipo_dano="generico"):
-        # print(f"DEBUG_JUGADOR: {self.nombre_log_entidad} Jugador.recibir_dano llamado con cantidad {cantidad}") # PRINT DESACTIVADO
-        if settings.DEBUG_PRINT_JUGADOR_RECIBIR_DANO_INFO:
+        # Protegemos el print con la variable DEBUG_PRINT_JUGADOR_RECIBIR_DANO_INFO
+        if hasattr(settings, 'DEBUG_PRINT_JUGADOR_RECIBIR_DANO_INFO') and settings.DEBUG_PRINT_JUGADOR_RECIBIR_DANO_INFO:
             print(f"DEBUG_JUGADOR: {self.nombre_log_entidad} Jugador.recibir_dano llamado con cantidad {cantidad}")
+        
         super().recibir_dano(cantidad, tipo_dano)
         if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_jugador_cmb", False):
             logger.debug(f"{self.nombre_log_entidad} recibió daño (post EntidadBase). Vida actual: {self.vida_actual}", extra={"categoria_log": "log_jugador_cmb"})

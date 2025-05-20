@@ -119,10 +119,17 @@ def setup_logging():
         for module_name in settings.MODULOS_CON_LOG_PROPIO:
             try:
                 module_logger = logging.getLogger(module_name)
-                module_logger.setLevel(numeric_log_level) 
-                log_file_path = os.path.join(SESSION_LOGS_DIR, f"{module_name}.log")
+                module_logger.setLevel(numeric_log_level)
+
+                # MODIFICACIÓN INICIO: Crear subcarpeta para cada módulo
+                module_log_dir = os.path.join(SESSION_LOGS_DIR, module_name)
+                if not os.path.exists(module_log_dir):
+                    os.makedirs(module_log_dir)
+                log_file_path = os.path.join(module_log_dir, f"{module_name}.log")
+                # MODIFICACIÓN FIN
+
                 file_handler = logging.handlers.RotatingFileHandler(
-                    log_file_path, mode='w', maxBytes=5*1024*1024, backupCount=3, encoding='utf-8'
+                    log_file_path, mode='a', maxBytes=28*1024, backupCount=10, encoding='utf-8'
                 )
                 file_handler.setFormatter(file_formatter)
                 file_handler.setLevel(numeric_log_level) 

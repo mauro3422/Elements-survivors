@@ -12,52 +12,61 @@ class CollisionHandler:
     def _resolver_solapamientos_estaticos_eje(entidad_hitbox, entidad_rect, hitbox_offset_x, hitbox_offset_y, obstaculos, eje, movimiento_input_en_eje):
         log_habilitado = settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_collision_handler", False)
 
-        # if not (settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_collision_handler", False)):
-            # Si la categoría está desactivada, esta función interna no necesita ejecutarse con logs.
-            # La lógica de resolución sí debe ejecutarse siempre.
-            # Considerar si los logs son esenciales para la función o si la función puede operar sin ellos.
-            # Por ahora, se asume que la función puede operar y solo se omiten los logs.
-        #    pass # Esto es solo para la condición del log, la lógica sigue
-
         if log_habilitado:
             # Reemplazar logger_ch por logger y añadir extra
-            logger.debug(f"    --- CH: Inicio _resolver_solapamientos_estaticos_eje ({eje}--- Input: {movimiento_input_en_eje}, HB_in: {entidad_hitbox.topleft}", extra={"categoria_log": "log_collision_handler"})
+            logger.debug(f"    --- CH: Inicio _resolver_solapamientos_estaticos_eje ({eje}) --- Input: {movimiento_input_en_eje}, HB_Ent_INICIAL_FUNCION: {entidad_hitbox.topleft}, HB_Ent_Size: {entidad_hitbox.size}", extra={"categoria_log": "log_collision_handler"})
+
         for pasada in range(settings.MAX_PASADAS_RESOLUCION_ESTATICA):
             colision_resuelta_en_pasada = False
             if log_habilitado:
                 # Reemplazar logger_ch por logger y añadir extra
-                logger.debug(f"      CH: Pasada {pasada + 1} res. estática eje {eje}", extra={"categoria_log": "log_collision_handler"})
+                logger.debug(f"      CH: Pasada {pasada + 1} res. estática eje {eje}. HB_Ent_Inicio_Pasada: {entidad_hitbox.topleft}", extra={"categoria_log": "log_collision_handler"})
 
             for i, obstaculo in enumerate(obstaculos):
                 rect_colision_obstaculo = obstaculo.hitbox if hasattr(obstaculo, 'hitbox') else obstaculo.rect
                 # Usar nombre_log_entidad si existe, sino un fallback descriptivo.
                 obst_id_log = getattr(obstaculo, 'nombre_log_entidad', f"{type(obstaculo).__name__}_idx{i}")
 
-                if entidad_hitbox.colliderect(rect_colision_obstaculo):
+                if log_habilitado:
+                    logger.debug(f"        CH_DETALLE: Eje {eje}, Pasada {pasada+1}. ANTES de colliderect con {obst_id_log}.\\n"
+                                 f"                  HB_Ent: TL={entidad_hitbox.topleft}, Size={entidad_hitbox.size}\\n"
+                                 f"                  HB_Obs ({obst_id_log}): TL={rect_colision_obstaculo.topleft}, Size={rect_colision_obstaculo.size}",
+                                 extra={"categoria_log": "log_collision_handler"})
+                
+                colisiona = entidad_hitbox.colliderect(rect_colision_obstaculo)
+                
+                if log_habilitado:
+                    logger.debug(f"        CH_DETALLE: Eje {eje}, Pasada {pasada+1}. {obst_id_log}. Resultado de colliderect: {colisiona}",
+                                 extra={"categoria_log": "log_collision_handler"})
+
+                if colisiona:
                     if log_habilitado:
                         # Reemplazar logger_ch por logger y añadir extra
-                        logger.debug(f"        CH: SOLAP. ESTÁTICO EJE {eje} con {obst_id_log} (Pasada {pasada+1}). HB_Ent: {entidad_hitbox.topleft}, HB_Obs: {rect_colision_obstaculo.topleft}", extra={"categoria_log": "log_collision_handler"})
+                        logger.debug(f"        CH: SOLAP. ESTÁTICO EJE {eje} con {obst_id_log} (Pasada {pasada+1}). HB_Ent_Al_Solapar: {entidad_hitbox.topleft}, HB_Obs: {rect_colision_obstaculo.topleft}", extra={"categoria_log": "log_collision_handler"})
                     
                     hitbox_modificado_este_obstaculo = False
                     if eje == 'x':
                         x_antes = entidad_hitbox.x
-                        # Determinar la dirección del solapamiento basado en los centros
-                        # Si el centro de la entidad está a la izquierda del centro del obstáculo,
-                        # el solapamiento probable es del lado derecho de la entidad con el lado izquierdo del obstáculo.
+                        if log_habilitado:
+                            logger.debug(f"          CH_DETALLE_AJUSTE_X: Entrando a lógica de ajuste X. HB_Ent.centerx={entidad_hitbox.centerx}, Obs.centerx={rect_colision_obstaculo.centerx}", extra={"categoria_log": "log_collision_handler"})
+
                         if entidad_hitbox.centerx < rect_colision_obstaculo.centerx:
                             overlap = entidad_hitbox.right - rect_colision_obstaculo.left
-                            if overlap > 0: # Hay solapamiento real en este lado
+                            if log_habilitado:
+                                logger.debug(f"            CH_DETALLE_AJUSTE_X (Entidad a IZQ de Obs): Overlap (Ent.R - Obs.L) = {overlap:.2f}. HB_Ent.right={entidad_hitbox.right}, Obs.left={rect_colision_obstaculo.left}", extra={"categoria_log": "log_collision_handler"})
+                            if overlap > 0:
                                 if log_habilitado:
                                     # Reemplazar logger_ch por logger y añadir extra
-                                    logger.debug(f"          CH: Estático EJE X vs {obst_id_log}: Entidad a la IZQ del Obs. Overlap (Ent.R - Obs.L): {overlap:.2f}. Ajustando Ent.Right.", extra={"categoria_log": "log_collision_handler"})
+                                    logger.debug(f"          CH: Estático EJE X vs {obst_id_log}: Entidad a la IZQ del Obs. Ajustando Ent.Right = Obs.Left ({rect_colision_obstaculo.left})", extra={"categoria_log": "log_collision_handler"})
                                 entidad_hitbox.right = rect_colision_obstaculo.left
-                        else: # El centro de la entidad está a la derecha (o coincidecon el centro del obstáculo
-                              # el solapamiento probable es del lado izquierdo de la entidad con el lado derecho del obstáculo.
+                        else:
                             overlap = rect_colision_obstaculo.right - entidad_hitbox.left
-                            if overlap > 0: # Hay solapamiento real en este lado
+                            if log_habilitado:
+                                logger.debug(f"            CH_DETALLE_AJUSTE_X (Entidad a DER de Obs): Overlap (Obs.R - Ent.L) = {overlap:.2f}. Obs.right={rect_colision_obstaculo.right}, HB_Ent.left={entidad_hitbox.left}", extra={"categoria_log": "log_collision_handler"})
+                            if overlap > 0:
                                 if log_habilitado:
                                     # Reemplazar logger_ch por logger y añadir extra
-                                    logger.debug(f"          CH: Estático EJE X vs {obst_id_log}: Entidad a la DER del Obs. Overlap (Obs.R - Ent.L): {overlap:.2f}. Ajustando Ent.Left.", extra={"categoria_log": "log_collision_handler"})
+                                    logger.debug(f"          CH: Estático EJE X vs {obst_id_log}: Entidad a la DER del Obs. Ajustando Ent.Left = Obs.Right ({rect_colision_obstaculo.right})", extra={"categoria_log": "log_collision_handler"})
                                 entidad_hitbox.left = rect_colision_obstaculo.right
                         
                         if entidad_hitbox.x != x_antes: 
@@ -68,20 +77,16 @@ class CollisionHandler:
                                 
                     elif eje == 'y':
                         y_antes = entidad_hitbox.y
-                        # Determinar la dirección del solapamiento basado en los centros
-                        # Si el centro de la entidad está arriba del centro del obstáculo,
-                        # el solapamiento probable es del lado inferior de la entidad con el lado superior del obstáculo.
                         if entidad_hitbox.centery < rect_colision_obstaculo.centery:
                             overlap = entidad_hitbox.bottom - rect_colision_obstaculo.top
-                            if overlap > 0: # Hay solapamiento real en este lado
+                            if overlap > 0:
                                 if log_habilitado:
                                     # Reemplazar logger_ch por logger y añadir extra
                                     logger.debug(f"          CH: Estático EJE Y vs {obst_id_log}: Entidad ARRIBA del Obs. Overlap (Ent.B - Obs.T): {overlap:.2f}. Ajustando Ent.Bottom.", extra={"categoria_log": "log_collision_handler"})
                                 entidad_hitbox.bottom = rect_colision_obstaculo.top
-                        else: # El centro de la entidad está abajo (o coincide) con el centro del obstáculo
-                              # el solapamiento probable es del lado superior de la entidad con el lado inferior del obstáculo.
+                        else:
                             overlap = rect_colision_obstaculo.bottom - entidad_hitbox.top
-                            if overlap > 0: # Hay solapamiento real en este lado
+                            if overlap > 0:
                                 if log_habilitado:
                                     # Reemplazar logger_ch por logger y añadir extra
                                     logger.debug(f"          CH: Estático EJE Y vs {obst_id_log}: Entidad ABAJO del Obs. Overlap (Obs.B - Ent.T): {overlap:.2f}. Ajustando Ent.Top.", extra={"categoria_log": "log_collision_handler"})
@@ -107,7 +112,7 @@ class CollisionHandler:
         
         if log_habilitado:
             # Reemplazar logger_ch por logger y añadir extra
-            logger.debug(f"    --- CH: Fin _resolver_solapamientos_estaticos_eje ({eje}) --- HB_out: {entidad_hitbox.topleft}", extra={"categoria_log": "log_collision_handler"})
+            logger.debug(f"    --- CH: Fin _resolver_solapamientos_estaticos_eje ({eje}) --- HB_Ent_FINAL_FUNCION: {entidad_hitbox.topleft}", extra={"categoria_log": "log_collision_handler"})
 
     @staticmethod
     def _aplicar_movimiento_y_colision_eje_x(entidad_hitbox, dx_aplicado, obstaculos):
@@ -283,9 +288,6 @@ class CollisionHandler:
     @staticmethod
     def gestionar_movimiento_y_colision(entidad_hitbox, entidad_rect, hitbox_offset_x, hitbox_offset_y, dx, dy, obstaculos):
         log_habilitado = settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_collision_handler", False)
-        # El logger ya no se pasa, CollisionHandler usa su propio logger_ch.
-        # (El comentario anterior es obsoleto, se usa `logger` ahora)
-        
         if log_habilitado:
             logger.debug(f"CH: Inicio gestionar_movimiento_y_colision. dx={dx:.4f}, dy={dy:.4f}. HB_in: {entidad_hitbox.topleft}, Rect_in: {entidad_rect.topleft}", extra={"categoria_log": "log_collision_handler"})
 
@@ -346,6 +348,9 @@ class CollisionHandler:
         
         if log_habilitado:
             logger.debug(f"CH: Fin gestionar_movimiento_y_colision. HB_out: {entidad_hitbox.topleft}, Rect_out: {entidad_rect.topleft}", extra={"categoria_log": "log_collision_handler"})
+        
+        # Devolver la posición final de la hitbox
+        return entidad_hitbox.x, entidad_hitbox.y
 
     @staticmethod
     def resolver_colisiones_dinamicas_entidad_a_entidad(entidad_actual, otra_entidad):

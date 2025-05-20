@@ -1,0 +1,3 @@
+2025-05-19 22:40:56 - enemigo - [DEBUG] - [Enemigo_2] Sin mov. entero para CH. HB: (403, 329), PosFlotante re-sincronizada a (403.00,329.00)
+2025-05-19 22:40:56 - enemigo - [DEBUG] - [Enemigo_1] --- Inicio Update IA --- Delta: 0.0160s. Pos ANTES: HB (603, 203), Rect (600, 200), Flot (603.00, 203.00)
+2025-05-19 22:40:56 - enemigo - [DEBUG] - [Enemigo_2] --- Inicio Update IA --- Delta: 0.0160s. Pos ANTES: HB (403, 329), Rect (400, 326), Flot (403.00, 329.00)

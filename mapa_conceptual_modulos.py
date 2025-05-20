@@ -36,8 +36,8 @@ MAPA_MODULOS_POR_CATEGORIA = {
         },
         {
             "nombre_modulo": "settings.py",
-            "categoria": "Core", # O podría ser "Config" si creamos esa carpeta específica.
-            "ruta_relativa": "settings.py", # Se actualizará a "src/config/settings.py" o similar.
+            "categoria": "Config", # Actualizado a categoría Config
+            "ruta_relativa": "src/config/settings.py", # Actualizada la ruta
             "responsabilidad_principal": "Contiene todas las constantes globales, configuraciones del juego (dimensiones de pantalla, FPS, rutas, categorías de log, etc.) y parámetros de balanceo del juego.",
             "interacciones_principales": {
                 "entrantes": ["Prácticamente todos los módulos del proyecto para acceder a configuraciones y constantes."],
@@ -50,7 +50,19 @@ MAPA_MODULOS_POR_CATEGORIA = {
             ],
             "notas_adicionales": "Archivo crítico para la configuración global. Se debe revisar y actualizar cuidadosamente."
         },
-        # Futuras entradas para config_logging.py, config.py, game_initializer.py aquí
+        {
+            "nombre_modulo": "config_logging.py",
+            "categoria": "Config", # Movido a categoría Config para agrupar con settings.py
+            "ruta_relativa": "src/config/config_logging.py",
+            "responsabilidad_principal": "Configura el sistema de logging de la aplicación, incluyendo handlers (RotatingFileHandler para archivos, StreamHandler para consola con colores), formateadores y filtros (CategoryFilter, DuplicateFilter). Es llamado por main.py al inicio.",
+            "interacciones_principales": {
+                "entrantes": ["main.py"],
+                "salientes": ["settings.py (para leer configuraciones de logging)"]
+            },
+            "componentes_clave_internos": ["Función setup_logging()", "Clase CategoryFilter", "Clase DuplicateFilter"],
+            "notas_adicionales": "Centraliza toda la configuración del sistema de logging. Los logs se guardan por sesión y por módulo."
+        }
+        # Futuras entradas para config.py, game_initializer.py aquí
     ],
     "Entidades": [
         {

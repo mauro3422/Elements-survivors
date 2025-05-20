@@ -45,11 +45,11 @@ ENEMIGO_DANO_CONTACTO_DEFAULT = 10 # Daño por defecto que inflige un enemigo po
 # --- Configuración del Zoom de la Cámara ---
 # Factor de zoom inicial. Un valor mayor significa más zoom (objetos más grandes, vista más cercana).
 # 1.0 = sin zoom. 2.0 = los objetos se ven el doble de grandes.
-FACTOR_ZOOM_INICIAL = 2.0
+FACTOR_ZOOM_INICIAL = 2.3
 # Zoom más alejado (ej: ve el doble de área que con zoom 2.0)
-FACTOR_ZOOM_MIN = 1.2
+FACTOR_ZOOM_MIN = 1.9
 # Zoom más cercano (ej: ve la mitad de área que con zoom 1.5)
-FACTOR_ZOOM_MAX = 2.5
+FACTOR_ZOOM_MAX = 3.0
 # Cuánto cambia el factor de zoom con cada "tick" de la rueda del mouse
 FACTOR_ZOOM_PASO = 0.1
 
@@ -87,76 +87,69 @@ COLOR_FONDO_DEFAULT = (100, 100, 100) # Gris oscuro, tomado de config.py
 COLOR_HUD_TEXTO = BLANCO # Usar el blanco ya definido
 
 # --- Rutas del Proyecto y Assets ---
-# `os.path.abspath(__file__)` obtiene la ruta absoluta completa del archivo actual (settings.py).
-# `os.path.dirname(...)` obtiene el directorio (carpeta) que contiene ese archivo.
-# Esto asegura que RUTA_BASE_PROYECTO siempre apunte a la carpeta raíz de tu juego.
 RUTA_BASE_PROYECTO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-# `os.path.join(...)` construye una ruta de manera inteligente, compatible con diferentes sistemas operativos.
-# Aquí, crea la ruta a la carpeta 'assets' que está dentro de la carpeta base del proyecto.
 RUTA_ASSETS = os.path.join(RUTA_BASE_PROYECTO, "assets")
-RUTA_DATOS_PERFILES_ATAQUE = os.path.join(RUTA_ASSETS, "data", "attack_profiles") # NUEVA CONSTANTE
-RUTA_NIVEL_1 = os.path.join(RUTA_ASSETS, "data", "niveles", "nivel_1.json") # RUTA PARA EL NIVEL 1
+RUTA_DATOS_PERFILES_ATAQUE = os.path.join(RUTA_ASSETS, "data", "attack_profiles")
+RUTA_NIVEL_1 = os.path.join(RUTA_ASSETS, "data", "niveles", "nivel_1.json")
 
 # --- Configuraciones de Depuración ---
-DEBUG_VER_HITBOXES = True # Poner a False para ocultar hitboxes/rects de depuración
-INCREMENTO_AJUSTE_DEBUG = 2 # Píxeles o unidades a cambiar con cada pulsación para debug
-INCREMENTO_DURACION_DEBUG = 10 # Milisegundos a cambiar para la duración del ataque
-ARCHIVO_CONFIG_ATAQUE = "config_ataque.json" # Archivo para guardar/cargar config de ataque
+DEBUG_VER_HITBOXES = False
+INCREMENTO_AJUSTE_DEBUG = 2
+INCREMENTO_DURACION_DEBUG = 10
+ARCHIVO_CONFIG_ATAQUE = "config_ataque.json"
 NOMBRE_PERFIL_ATAQUE_INICIAL = "espada_predeterminada"
-DEBUG_PRINT_GESTION_DANO = True # Activa/desactiva prints relacionados con la recepción y gestión de daño
-DEBUG_PRINT_ENTORNO = True # Activa/desactiva prints generales de la creación y estado de Obstaculos
-DEBUG_PRINT_ENTORNO_ANIM = False # Activa/desactiva prints de cada frame de animación de Obstaculos (muy verboso)
-DEBUG_PRINT_JUGADOR_ATAQUE_CALCULO = False # Activa/desactiva prints del cálculo del hitbox de ataque del jugador
-DEBUG_PRINT_JUGADOR_RECIBIR_DANO_INFO = False # Activa/desactiva prints cuando el jugador recibe daño
+DEBUG_PRINT_GESTION_DANO = False
+DEBUG_PRINT_ENTORNO = False
+DEBUG_PRINT_ENTORNO_ANIM = False
+DEBUG_PRINT_JUGADOR_ATAQUE_CALCULO = False
+DEBUG_PRINT_JUGADOR_RECIBIR_DANO_INFO = False
+DEBUG_PRINT_JUGADOR_MOV_DEBUG = False  # Controla prints directos del movimiento del jugador
+DEBUG_PRINT_JUGADOR_ATAQUE_DEBUG = False  # Controla prints directos del ataque del jugador
 
 # --- Configuración Global de Logs ---
-# Establecer en False para un output de log estándar (INFO) en la consola.
-MODO_DEBUG_LOGS = False
-LOG_LEVEL_VERBOSE = "DEBUG"  # Nivel de log cuando MODO_DEBUG_LOGS es True
-LOG_LEVEL_STANDARD = "INFO"  # Nivel de log cuando MODO_DEBUG_LOGS es False
-# La variable LOG_LEVEL que existía antes para el logger de main.py ya no es necesaria
-# ya que se determinará con MODO_DEBUG_LOGS.
+MODO_DEBUG_LOGS = False # MODO DEBUG DESACTIVADO
+LOG_LEVEL_VERBOSE = "DEBUG"
+LOG_LEVEL_STANDARD = "INFO"
 
 LOG_CATEGORIAS = {
-    "log_general": True,
+    "log_general": False,
     "log_assets": False,
-    "log_input": True,
-    "log_jugador_mov": True,
-    "log_jugador_col": True,
-    "log_jugador_cmb": True,
-    "log_jugador_general": True,
-    "log_enemigo_mov": True,
-    "log_enemigo_ia": True,
-    "log_enemigo_col": True,
+    "log_input": False,
+    "log_jugador_mov": False,
+    "log_jugador_col": False,
+    "log_jugador_cmb": False,
+    "log_jugador_general": False,
+    "log_enemigo_mov": False,
+    "log_enemigo_ia": False,
+    "log_enemigo_col": False,
     "log_enemigo_cmb": False,
-    "log_enemigo_general": True,
+    "log_enemigo_general": False,
     "log_animacion": False,
-    "log_camara": False,
-    "log_collision_handler": True,
-    "log_event_handler": True,
+    "log_camara": False, # Desactivado
+    "log_collision_handler": False,
+    "log_event_handler": False, # Desactivado
     "log_event_handler_verbose": False,
-    "log_gestor_estado": True,
+    "log_gestor_estado": False,
     "log_gestor_estado_detalle": False,
-    "log_render": True,
+    "log_render": False,
     "log_render_verbose": False,
     "log_render_hitbox": False,
     "log_camara_verbose": False,
-    "log_apm": True,
-    "log_initializer": True,
-    "log_entidad_base": True,
-    "log_gestor_nivel": True,
+    "log_apm": False,
+    "log_initializer": False,
+    "log_entidad_base": False,
+    "log_gestor_nivel": False,
     "log_gestor_nivel_detalle": False,
-    "log_entorno": True,
+    "log_entorno": False,
 }
 
 # Nueva constante para el filtro de duplicados
-LOG_DUPLICATE_MESSAGE_TIMEDELTA_MS = 50 # Milisegundos. Mensajes idénticos dentro de este tiempo se suprimen.
+LOG_DUPLICATE_MESSAGE_TIMEDELTA_MS = 50
 
 # Lista de nombres de loggers que tendrán su propio archivo de log en la carpeta 'logs/'
-# Estos nombres idealmente coincidirán con los nombres de los módulos (ej., "juego" para juego.py)
 MODULOS_CON_LOG_PROPIO = [
     "juego",
-    "main", # Para logs del script principal
+    "main",
     "renderer",
     "jugador",
     "enemigo",
@@ -168,166 +161,34 @@ MODULOS_CON_LOG_PROPIO = [
     "camara",
     "hud",
     "entidad_base",
-    "utils", # Si decidimos que utils también necesita logs específicos
+    "utils",
     "attack_profile_manager",
     "game_initializer",
     "entorno",
 ]
 
 # --- Configuración de Fuentes ---
-# Define los nombres de las fuentes a usar. 
-# Pueden ser nombres de fuentes del sistema (ej: "Arial", "Consolas")
-# o nombres de archivos .ttf/.otf (ej: "MyCustomFont.ttf").
-# Si es un nombre de archivo, DEBE estar ubicado en la carpeta assets/fonts/.
-NOMBRE_FUENTE_HUD = "Arial"  # Fuente para el HUD principal (ej: información del jugador)
-NOMBRE_FUENTE_DEBUG = "Consolas" # Fuente para información de depuración
+NOMBRE_FUENTE_HUD = "Arial"
+NOMBRE_FUENTE_DEBUG = "Consolas"
 TAMANO_FUENTE_HUD = 18
 TAMANO_FUENTE_DEBUG = 16
 
 # --- Configuraciones de Renderizado de Depuración ---
-HITBOX_COLOR_COLISION = ROJO # Ya definido
-HITBOX_COLOR_RECT_SPRITE = AZUL # Ya definido
-HITBOX_COLOR_ATAQUE = COLOR_ATAQUE_HITBOX # Ya definido (amarillo)
+HITBOX_COLOR_COLISION = ROJO
+HITBOX_COLOR_RECT_SPRITE = AZUL
+HITBOX_COLOR_ATAQUE = COLOR_ATAQUE_HITBOX
 
 GROSOR_HITBOX_COLISION_DEBUG = 1
-GROSOR_RECT_SPRITE_DEBUG = 1 # Para el rect del sprite si se dibuja separado del hitbox
+GROSOR_RECT_SPRITE_DEBUG = 1
 GROSOR_HITBOX_ATAQUE_DEBUG = 2
 
 # --- Configuraciones de Layout del HUD de Depuración ---
 HUD_PADDING_X = 10
 HUD_PADDING_Y = 10
 HUD_LINE_HEIGHT = 20
-HUD_ESPACIO_ENTRE_SECCIONES = 25 # Espacio entre la info general y la lista de categorías
+HUD_ESPACIO_ENTRE_SECCIONES = 25
 
 # --- Constantes de Gameplay/Física ---
-UMBRAL_MOV_FLOTANTE_ENTIDAD = 0.0001 # Para evitar micro-movimientos por errores de precisión flotante
-FACTOR_UMBRAL_TELETRANSPORTACION = 1.5 # Factor para calcular el umbral de detección de teletransportación
-MAX_PASADAS_RESOLUCION_ESTATICA = 2 # Número máximo de pasadas para resolver solapamientos estáticos
-
-# Corrección: Obtener la ruta del directorio que contiene 'src' (es decir, la raíz del proyecto)
-# Asumiendo que settings.py está en src/config/settings.py
-RUTA_BASE_PROYECTO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-print(f"Ruta base del proyecto configurada en settings: {RUTA_BASE_PROYECTO}")
-
-# Dimensiones de la pantalla y FPS
-ANCHO_PANTALLA = 800
-ALTO_PANTALLA = 600
-FPS = 60
-TILE_SIZE = 32 # Tamaño de los tiles, si se usa un sistema de grillas
-
-# Colores básicos
-BLANCO = (255, 255, 255)
-NEGRO = (0, 0, 0)
-ROJO = (255, 0, 0)
-VERDE = (0, 255, 0)
-AZUL = (0, 0, 255)
-ROJO_ERROR_ASSET = (255, 0, 128) # Un color distintivo para assets faltantes
-
-# Rutas a assets (Imágenes, Sonidos, Fuentes, Datos JSON, etc.)
-RUTA_ASSETS = os.path.join(RUTA_BASE_PROYECTO, "assets")
-RUTA_IMAGENES = os.path.join(RUTA_ASSETS, "images")
-RUTA_SONIDOS = os.path.join(RUTA_ASSETS, "sounds")
-RUTA_FUENTES = os.path.join(RUTA_ASSETS, "fonts")
-RUTA_DATOS = os.path.join(RUTA_ASSETS, "data")
-RUTA_PERFILES_ATAQUE = os.path.join(RUTA_DATOS, "attack_profiles")
-print(f"Assets path: {RUTA_ASSETS}")
-print(f"Attack profiles path: {RUTA_PERFILES_ATAQUE}")
-
-# Configuraciones de Logging Detallado (Control por Categorías)
-MODO_DEBUG_LOGS = False # True para activar logs de DEBUG según categorías, False para INFO global
-
-# Mapeo de categorías de log a su estado (True para activado, False para desactivado)
-# Solo se aplica si MODO_DEBUG_LOGS es True.
-# Si MODO_DEBUG_LOGS es False, el nivel global será INFO y estas categorías no tendrán efecto individualmente
-# para logs de nivel DEBUG, aunque sí podrían usarse para filtrar logs de nivel INFO o superior si la
-# configuración de logging lo permite (actualmente no está configurado así).
-LOG_CATEGORIAS = {
-    "log_general": True,
-    "log_asset_manager": True,
-    "log_entidad_base": True, 
-    "log_jugador": True,
-    "log_enemigo": True,
-    "log_entorno": True,
-    "log_collision_handler": True,
-    "log_attack_profile_manager": True,
-    "log_game_initializer": True,
-    "log_gestor_estado": True, 
-    "log_hud": True,
-    "log_renderer": True,
-    "log_camara": True,
-    "log_game_loop": True, # Para el bucle principal en juego.py
-    "log_event_handler": True,
-    "log_event_handler_verbose": False,
-    # ... añadir más categorías según sea necesario
-}
-
-# Módulos que deben tener su propio logger con un nivel específico si MODO_DEBUG_LOGS es True.
-# El formato es "nombre_modulo_o_logger": "NIVEL_LOGGING" (ej. "DEBUG", "INFO")
-# Esto es más para un control ultra-fino si fuera necesario, no se usa activamente ahora.
-MODULOS_CON_LOG_PROPIO = {
-    # "mi_modulo_especial": "DEBUG",
-}
-
-# --- Configuraciones del Juego ---
-TITULO_VENTANA = "Mi Juego Pygame"
-
-# --- Configuraciones del Jugador ---
-JUGADOR_VELOCIDAD = 200  # Pixeles por segundo
-JUGADOR_VIDA_MAXIMA = 100
-JUGADOR_DANO_BASE_ATAQUE = 10 # Daño base que se usa si el perfil no especifica uno.
-JUGADOR_HITBOX_OFFSET_X = 5
-JUGADOR_HITBOX_OFFSET_Y = 20 # Para que el hitbox esté más abajo, en los pies
-JUGADOR_HITBOX_WIDTH_RATIO = 0.6 # 60% del ancho del rect original
-JUGADOR_HITBOX_HEIGHT_RATIO = 0.5 # 50% del alto del rect original, desde el offset
-# Cooldowns para acciones del jugador (en milisegundos)
-JUGADOR_COOLDOWN_ATAQUE_MS = 500 # Cooldown base del ataque del jugador
-
-# --- Configuraciones de Enemigos ---
-ENEMIGO_VELOCIDAD = 100
-ENEMIGO_VIDA_MAXIMA = 50
-ENEMIGO_HITBOX_OFFSET_X = 0 # Centrado por defecto en enemigo.py
-ENEMIGO_HITBOX_OFFSET_Y = 0 # Centrado por defecto en enemigo.py
-ENEMIGO_DANO_ATAQUE = 5
-ENEMIGO_RANGO_AGRO = 200  # Rango en el que el enemigo detecta al jugador
-ENEMIGO_DIST_MIN_JUGADOR = TILE_SIZE // 2 # Distancia mínima que el enemigo intenta mantener del jugador
-
-# --- Configuraciones de Colisiones ---
-DEBUG_VER_HITBOXES = True  # True para dibujar hitboxes, False para ocultarlos
-MAX_PASADAS_RESOLUCION_ESTATICA = 5 # Número de pasadas para resolver colisiones estáticas
-FACTOR_UMBRAL_TELETRANSPORTACION = 2.0 # Factor para detectar teletransportaciones (ej: 2.0 = dos veces el tamaño de la entidad)
-
-# --- Configuraciones de Entorno (Obstáculos, etc.) ---
-ARBOL_ESCALA = 0.75
-ARBOL_HITBOX_OFFSET_X = 5
-ARBOL_HITBOX_OFFSET_Y = 10 
-ARBOL_HITBOX_WIDTH_RATIO = 0.7 # 70% del ancho escalado
-ARBOL_HITBOX_HEIGHT_RATIO = 0.4 # 40% del alto escalado, en la parte inferior
-
-# --- Configuraciones de Cámara y Renderizado ---
-CAMARA_SUAVIZADO = 0.07 # Factor de suavizado para el movimiento de la cámara (más bajo = más suave)
-FACTOR_ZOOM_INICIAL = 1.0
-FACTOR_ZOOM_PASO = 0.1
-FACTOR_ZOOM_MIN = 0.5
-FACTOR_ZOOM_MAX = 2.0
-
-# --- Configuraciones de Debug Print Variables (Control de prints específicos) ---
-# Estas variables controlan la salida de sentencias print() específicas para depuración.
-# Son independientes del sistema de logging y permiten una depuración rápida y puntual.
-DEBUG_PRINT_GENERAL = False
-DEBUG_PRINT_GESTION_DANO = False
-DEBUG_PRINT_ENTORNO = False # Para logs de creación y configuración de entidades de entorno
-DEBUG_PRINT_ENTORNO_ANIM = False # Para logs de animación de entidades de entorno
-# Añadir más según sea necesario
-
-# --- Configuraciones de HUD ---
-HUD_MARGEN_BORDE = 10
-HUD_ESPACIADO_ELEMENTO = 5
-HUD_ALTURA_BARRA_VIDA = 15
-HUD_ANCHO_BARRA_VIDA = 150
-HUD_COLOR_VIDA = VERDE
-HUD_COLOR_VIDA_FONDO = ROJO
-HUD_COLOR_TEXTO = BLANCO
-# Configuración de fuente para el HUD (None para usar la fuente por defecto de Pygame)
-# HUD_NOMBRE_FUENTE = "arial" # Ejemplo: "arial", "comicsansms"
-HUD_NOMBRE_FUENTE = None # Para usar la fuente por defecto de Pygame
-HUD_TAMANO_FUENTE = 20
+UMBRAL_MOV_FLOTANTE_ENTIDAD = 0.0001
+FACTOR_UMBRAL_TELETRANSPORTACION = 1.5
+MAX_PASADAS_RESOLUCION_ESTATICA = 2

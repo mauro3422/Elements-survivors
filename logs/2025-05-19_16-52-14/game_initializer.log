@@ -1,4 +1,0 @@
-2025-05-19 16:52:14 - game_initializer - [DEBUG] - GameInitializer: Creando grupos de sprites y elementos del juego.
-2025-05-19 16:52:14 - game_initializer - [INFO] - GameInitializer: Jugador creado en (400,300).
-2025-05-19 16:52:14 - game_initializer - [INFO] - GameInitializer: Elementos del nivel cargados: 3 obstáculos, 2 enemigos.
-2025-05-19 16:52:14 - game_initializer - [INFO] - GameInitializer: Cámara y HUD creados.

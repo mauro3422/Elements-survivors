@@ -1,0 +1,7 @@
+2025-05-19 22:37:49 - collision_handler - [DEBUG] -       CH: Fase 2 (Y): dy_aplicado=-2.0000. HB.y original=331, HB.y post-int-trunc=329
+2025-05-19 22:37:49 - collision_handler - [DEBUG] -     --- CH: Fin _aplicar_movimiento_y_colision_eje_y --- HB_out Y: 329.00
+2025-05-19 22:37:49 - collision_handler - [DEBUG] -   CH: Fase 2 - Fin. Posición HB post-mov: (403, 329)
+2025-05-19 22:37:49 - collision_handler - [DEBUG] -     --- CH: Inicio _verificar_y_revertir_colision_post_fase2 --- HB_in: (403, 329)
+2025-05-19 22:37:49 - collision_handler - [DEBUG] -     --- CH: Fin _verificar_y_revertir_colision_post_fase2 --- HB_out: (403, 329), ReversionGlobal: False
+2025-05-19 22:37:49 - collision_handler - [DEBUG] -   CH: Fase 3 - Fin. Hubo reversión: False. Posición HB final: (403, 329)
+2025-05-19 22:37:49 - collision_handler - [DEBUG] - CH: Fin gestionar_movimiento_y_colision. HB_out: (403, 329), Rect_out: (400, 326)

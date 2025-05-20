@@ -46,7 +46,7 @@ class Juego:
         if settings.MODO_DEBUG_LOGS:
             logger.debug("GestorNivel instanciado.", extra={"categoria_log": "log_general"})
 
-        self.factor_zoom_actual = settings.FACTOR_ZOOM_MIN 
+        self.factor_zoom_actual = settings.FACTOR_ZOOM_INICIAL
         
         # En su lugar, llamamos a la función del nuevo módulo
         (self.jugador, self.obstaculos, self.enemigos, self.todos_los_sprites,

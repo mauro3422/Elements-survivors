@@ -1,0 +1,169 @@
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -     --- CH: Fin _resolver_solapamientos_estaticos_eje (y) --- HB_Ent_FINAL_FUNCION: (298, 140)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -   CH: Fase 1 - Fin. Posición segura HB: (298, 140)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -     --- CH: Inicio _aplicar_movimiento_y_colision_eje_x --- dx: -1, HB_in: (298, 140)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -       CH: Fase 2 (X): dx_aplicado=-1.0000. HB.x original=298, HB.x post-int-trunc=297
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -     --- CH: Fin _aplicar_movimiento_y_colision_eje_x --- HB_out X: 297.00
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -     --- CH: Inicio _aplicar_movimiento_y_colision_eje_y --- dy: 1, HB_in: (297, 140)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -       CH: Fase 2 (Y): dy_aplicado=1.0000. HB.y original=140, HB.y post-int-trunc=141
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -       CH: Fase 2 (Y): Colisión Y detectada con [Arbol_0] después de mov. tentativo. HB_Ent: (297, 141), HB_Obs: (305, 160)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -   CH: Fase 2 - Fin. Posición HB post-mov: (297, 140)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -     --- CH: Inicio _verificar_y_revertir_colision_post_fase2 --- HB_in: (297, 140)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -     --- CH: Fin _verificar_y_revertir_colision_post_fase2 --- HB_out: (297, 140), ReversionGlobal: False
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -   CH: Fase 3 - Fin. Hubo reversión: False. Posición HB final: (297, 140)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] - CH: Fin gestionar_movimiento_y_colision. HB_out: (297, 140), Rect_out: (294, 137)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] - CH: Inicio gestionar_movimiento_y_colision. dx=3.0000, dy=0.0000. HB_in: (281, 165), Rect_in: (277, 159)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -     --- CH: Inicio _resolver_solapamientos_estaticos_eje (x) --- Input: 3, HB_Ent_INICIAL_FUNCION: (281, 165), HB_Ent_Size: (24, 22)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -         CH_DETALLE: Eje x, Pasada 1. ANTES de colliderect con [Enemigo_1].\n                  HB_Ent: TL=(281, 165), Size=(24, 22)\n                  HB_Obs ([Enemigo_1]): TL=(340, 138), Size=(26, 20)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -         CH_DETALLE: Eje x, Pasada 1. ANTES de colliderect con [Enemigo_2].\n                  HB_Ent: TL=(281, 165), Size=(24, 22)\n                  HB_Obs ([Enemigo_2]): TL=(297, 140), Size=(26, 20)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -         CH_DETALLE: Eje y, Pasada 1. ANTES de colliderect con [Enemigo_1].\n                  HB_Ent: TL=(281, 165), Size=(24, 22)\n                  HB_Obs ([Enemigo_1]): TL=(340, 138), Size=(26, 20)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -         CH_DETALLE: Eje y, Pasada 1. ANTES de colliderect con [Enemigo_2].\n                  HB_Ent: TL=(281, 165), Size=(24, 22)\n                  HB_Obs ([Enemigo_2]): TL=(297, 140), Size=(26, 20)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -     --- CH: Inicio _aplicar_movimiento_y_colision_eje_x --- dx: 3, HB_in: (281, 165)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -       CH: Fase 2 (X): dx_aplicado=3.0000. HB.x original=281, HB.x post-int-trunc=284
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -       CH: Fase 2 (X): Colisión X detectada con [Arbol_0] después de mov. tentativo. HB_Ent: (284, 165), HB_Obs: (305, 160)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -     --- CH: Fin _aplicar_movimiento_y_colision_eje_y --- HB_out Y: 165.00
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -   CH: Fase 2 - Fin. Posición HB post-mov: (281, 165)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -     --- CH: Inicio _verificar_y_revertir_colision_post_fase2 --- HB_in: (281, 165)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -     --- CH: Fin _verificar_y_revertir_colision_post_fase2 --- HB_out: (281, 165), ReversionGlobal: False
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -   CH: Fase 3 - Fin. Hubo reversión: False. Posición HB final: (281, 165)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] - CH: Fin gestionar_movimiento_y_colision. HB_out: (281, 165), Rect_out: (277, 159)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] - CH: Inicio gestionar_movimiento_y_colision. dx=-2.0000, dy=1.0000. HB_in: (340, 138), Rect_in: (337, 135)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -     --- CH: Inicio _resolver_solapamientos_estaticos_eje (x) --- Input: -2, HB_Ent_INICIAL_FUNCION: (340, 138), HB_Ent_Size: (26, 20)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -       CH: Pasada 1 res. estática eje x. HB_Ent_Inicio_Pasada: (340, 138)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -         CH_DETALLE: Eje x, Pasada 1. ANTES de colliderect con [Arbol_0].\n                  HB_Ent: TL=(340, 138), Size=(26, 20)\n                  HB_Obs ([Arbol_0]): TL=(305, 160), Size=(35, 25)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -         CH_DETALLE: Eje x, Pasada 1. ANTES de colliderect con [Arbol_1].\n                  HB_Ent: TL=(340, 138), Size=(26, 20)\n                  HB_Obs ([Arbol_1]): TL=(505, 310), Size=(35, 25)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -         CH_DETALLE: Eje x, Pasada 1. ANTES de colliderect con [Arbol_2].\n                  HB_Ent: TL=(340, 138), Size=(26, 20)\n                  HB_Obs ([Arbol_2]): TL=(105, 410), Size=(35, 25)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -         CH_DETALLE: Eje x, Pasada 1. ANTES de colliderect con [Enemigo_2].\n                  HB_Ent: TL=(340, 138), Size=(26, 20)\n                  HB_Obs ([Enemigo_2]): TL=(297, 140), Size=(26, 20)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -     --- CH: Fin _resolver_solapamientos_estaticos_eje (x) --- HB_Ent_FINAL_FUNCION: (340, 138)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -     --- CH: Inicio _resolver_solapamientos_estaticos_eje (y) --- Input: 1, HB_Ent_INICIAL_FUNCION: (340, 138), HB_Ent_Size: (26, 20)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -       CH: Pasada 1 res. estática eje y. HB_Ent_Inicio_Pasada: (340, 138)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -         CH_DETALLE: Eje y, Pasada 1. ANTES de colliderect con [Arbol_0].\n                  HB_Ent: TL=(340, 138), Size=(26, 20)\n                  HB_Obs ([Arbol_0]): TL=(305, 160), Size=(35, 25)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -         CH_DETALLE: Eje y, Pasada 1. ANTES de colliderect con [Arbol_1].\n                  HB_Ent: TL=(340, 138), Size=(26, 20)\n                  HB_Obs ([Arbol_1]): TL=(505, 310), Size=(35, 25)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -         CH_DETALLE: Eje y, Pasada 1. ANTES de colliderect con [Arbol_2].\n                  HB_Ent: TL=(340, 138), Size=(26, 20)\n                  HB_Obs ([Arbol_2]): TL=(105, 410), Size=(35, 25)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -         CH_DETALLE: Eje y, Pasada 1. ANTES de colliderect con [Enemigo_2].\n                  HB_Ent: TL=(340, 138), Size=(26, 20)\n                  HB_Obs ([Enemigo_2]): TL=(297, 140), Size=(26, 20)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -     --- CH: Fin _resolver_solapamientos_estaticos_eje (y) --- HB_Ent_FINAL_FUNCION: (340, 138)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -   CH: Fase 1 - Fin. Posición segura HB: (340, 138)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -     --- CH: Inicio _aplicar_movimiento_y_colision_eje_x --- dx: -2, HB_in: (340, 138)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -       CH: Fase 2 (X): dx_aplicado=-2.0000. HB.x original=340, HB.x post-int-trunc=338
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -     --- CH: Fin _aplicar_movimiento_y_colision_eje_x --- HB_out X: 338.00
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -     --- CH: Inicio _aplicar_movimiento_y_colision_eje_y --- dy: 1, HB_in: (338, 138)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -       CH: Fase 2 (Y): dy_aplicado=1.0000. HB.y original=138, HB.y post-int-trunc=139
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -     --- CH: Fin _aplicar_movimiento_y_colision_eje_y --- HB_out Y: 139.00
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -   CH: Fase 2 - Fin. Posición HB post-mov: (338, 139)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -     --- CH: Inicio _verificar_y_revertir_colision_post_fase2 --- HB_in: (338, 139)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -     --- CH: Fin _verificar_y_revertir_colision_post_fase2 --- HB_out: (338, 139), ReversionGlobal: False
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -   CH: Fase 3 - Fin. Hubo reversión: False. Posición HB final: (338, 139)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] - CH: Fin gestionar_movimiento_y_colision. HB_out: (338, 139), Rect_out: (335, 136)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] - CH: Inicio gestionar_movimiento_y_colision. dx=-1.0000, dy=2.0000. HB_in: (297, 140), Rect_in: (294, 137)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -     --- CH: Inicio _resolver_solapamientos_estaticos_eje (x) --- Input: -1, HB_Ent_INICIAL_FUNCION: (297, 140), HB_Ent_Size: (26, 20)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -       CH: Pasada 1 res. estática eje x. HB_Ent_Inicio_Pasada: (297, 140)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -         CH_DETALLE: Eje x, Pasada 1. ANTES de colliderect con [Arbol_0].\n                  HB_Ent: TL=(297, 140), Size=(26, 20)\n                  HB_Obs ([Arbol_0]): TL=(305, 160), Size=(35, 25)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -         CH_DETALLE: Eje x, Pasada 1. ANTES de colliderect con [Arbol_1].\n                  HB_Ent: TL=(297, 140), Size=(26, 20)\n                  HB_Obs ([Arbol_1]): TL=(505, 310), Size=(35, 25)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -         CH_DETALLE: Eje x, Pasada 1. ANTES de colliderect con [Arbol_2].\n                  HB_Ent: TL=(297, 140), Size=(26, 20)\n                  HB_Obs ([Arbol_2]): TL=(105, 410), Size=(35, 25)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -         CH_DETALLE: Eje x, Pasada 1. ANTES de colliderect con [Enemigo_1].\n                  HB_Ent: TL=(297, 140), Size=(26, 20)\n                  HB_Obs ([Enemigo_1]): TL=(338, 139), Size=(26, 20)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -     --- CH: Fin _resolver_solapamientos_estaticos_eje (x) --- HB_Ent_FINAL_FUNCION: (297, 140)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -     --- CH: Inicio _resolver_solapamientos_estaticos_eje (y) --- Input: 2, HB_Ent_INICIAL_FUNCION: (297, 140), HB_Ent_Size: (26, 20)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -       CH: Pasada 1 res. estática eje y. HB_Ent_Inicio_Pasada: (297, 140)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -         CH_DETALLE: Eje y, Pasada 1. ANTES de colliderect con [Arbol_0].\n                  HB_Ent: TL=(297, 140), Size=(26, 20)\n                  HB_Obs ([Arbol_0]): TL=(305, 160), Size=(35, 25)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -         CH_DETALLE: Eje y, Pasada 1. [Arbol_0]. Resultado de colliderect: False
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -         CH_DETALLE: Eje y, Pasada 1. ANTES de colliderect con [Arbol_1].\n                  HB_Ent: TL=(297, 140), Size=(26, 20)\n                  HB_Obs ([Arbol_1]): TL=(505, 310), Size=(35, 25)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -         CH_DETALLE: Eje y, Pasada 1. ANTES de colliderect con [Arbol_2].\n                  HB_Ent: TL=(297, 140), Size=(26, 20)\n                  HB_Obs ([Arbol_2]): TL=(105, 410), Size=(35, 25)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -         CH_DETALLE: Eje y, Pasada 1. ANTES de colliderect con [Enemigo_1].\n                  HB_Ent: TL=(297, 140), Size=(26, 20)\n                  HB_Obs ([Enemigo_1]): TL=(338, 139), Size=(26, 20)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -     --- CH: Fin _resolver_solapamientos_estaticos_eje (y) --- HB_Ent_FINAL_FUNCION: (297, 140)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -   CH: Fase 1 - Fin. Posición segura HB: (297, 140)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -     --- CH: Inicio _aplicar_movimiento_y_colision_eje_x --- dx: -1, HB_in: (297, 140)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -       CH: Fase 2 (X): dx_aplicado=-1.0000. HB.x original=297, HB.x post-int-trunc=296
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -     --- CH: Fin _aplicar_movimiento_y_colision_eje_x --- HB_out X: 296.00
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -     --- CH: Inicio _aplicar_movimiento_y_colision_eje_y --- dy: 2, HB_in: (296, 140)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -       CH: Fase 2 (Y): Colisión Y detectada con [Arbol_0] después de mov. tentativo. HB_Ent: (296, 142), HB_Obs: (305, 160)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -   CH: Fase 2 - Fin. Posición HB post-mov: (296, 140)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -     --- CH: Inicio _verificar_y_revertir_colision_post_fase2 --- HB_in: (296, 140)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -     --- CH: Fin _verificar_y_revertir_colision_post_fase2 --- HB_out: (296, 140), ReversionGlobal: False
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -   CH: Fase 3 - Fin. Hubo reversión: False. Posición HB final: (296, 140)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] - CH: Fin gestionar_movimiento_y_colision. HB_out: (296, 140), Rect_out: (293, 137)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] - CH: Inicio gestionar_movimiento_y_colision. dx=-2.0000, dy=1.0000. HB_in: (338, 139), Rect_in: (335, 136)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -     --- CH: Inicio _resolver_solapamientos_estaticos_eje (x) --- Input: -2, HB_Ent_INICIAL_FUNCION: (338, 139), HB_Ent_Size: (26, 20)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -       CH: Pasada 1 res. estática eje x. HB_Ent_Inicio_Pasada: (338, 139)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -         CH_DETALLE: Eje x, Pasada 1. ANTES de colliderect con [Arbol_0].\n                  HB_Ent: TL=(338, 139), Size=(26, 20)\n                  HB_Obs ([Arbol_0]): TL=(305, 160), Size=(35, 25)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -         CH_DETALLE: Eje x, Pasada 1. [Arbol_0]. Resultado de colliderect: False
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -         CH_DETALLE: Eje x, Pasada 1. ANTES de colliderect con [Arbol_1].\n                  HB_Ent: TL=(338, 139), Size=(26, 20)\n                  HB_Obs ([Arbol_1]): TL=(505, 310), Size=(35, 25)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -         CH_DETALLE: Eje x, Pasada 1. [Arbol_1]. Resultado de colliderect: False
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -         CH_DETALLE: Eje x, Pasada 1. ANTES de colliderect con [Arbol_2].\n                  HB_Ent: TL=(338, 139), Size=(26, 20)\n                  HB_Obs ([Arbol_2]): TL=(105, 410), Size=(35, 25)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -         CH_DETALLE: Eje x, Pasada 1. [Arbol_2]. Resultado de colliderect: False
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -         CH_DETALLE: Eje x, Pasada 1. ANTES de colliderect con [Enemigo_2].\n                  HB_Ent: TL=(338, 139), Size=(26, 20)\n                  HB_Obs ([Enemigo_2]): TL=(296, 140), Size=(26, 20)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -         CH_DETALLE: Eje x, Pasada 1. [Enemigo_2]. Resultado de colliderect: False
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -       CH: No más solapamientos estáticos eje x en pasada 1. Saliendo.
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -     --- CH: Fin _resolver_solapamientos_estaticos_eje (x) --- HB_Ent_FINAL_FUNCION: (338, 139)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -   CH: Fase 1 - Resolviendo solapamientos estáticos (Eje Y)...
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -     --- CH: Inicio _resolver_solapamientos_estaticos_eje (y) --- Input: 1, HB_Ent_INICIAL_FUNCION: (338, 139), HB_Ent_Size: (26, 20)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -       CH: Pasada 1 res. estática eje y. HB_Ent_Inicio_Pasada: (338, 139)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -         CH_DETALLE: Eje y, Pasada 1. ANTES de colliderect con [Arbol_0].\n                  HB_Ent: TL=(338, 139), Size=(26, 20)\n                  HB_Obs ([Arbol_0]): TL=(305, 160), Size=(35, 25)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -         CH_DETALLE: Eje y, Pasada 1. ANTES de colliderect con [Arbol_1].\n                  HB_Ent: TL=(338, 139), Size=(26, 20)\n                  HB_Obs ([Arbol_1]): TL=(505, 310), Size=(35, 25)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -         CH_DETALLE: Eje y, Pasada 1. [Arbol_1]. Resultado de colliderect: False
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -         CH_DETALLE: Eje y, Pasada 1. ANTES de colliderect con [Arbol_2].\n                  HB_Ent: TL=(338, 139), Size=(26, 20)\n                  HB_Obs ([Arbol_2]): TL=(105, 410), Size=(35, 25)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -         CH_DETALLE: Eje y, Pasada 1. [Arbol_2]. Resultado de colliderect: False
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -         CH_DETALLE: Eje y, Pasada 1. ANTES de colliderect con [Enemigo_2].\n                  HB_Ent: TL=(338, 139), Size=(26, 20)\n                  HB_Obs ([Enemigo_2]): TL=(296, 140), Size=(26, 20)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -         CH_DETALLE: Eje y, Pasada 1. [Enemigo_2]. Resultado de colliderect: False
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -       CH: No más solapamientos estáticos eje y en pasada 1. Saliendo.
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -     --- CH: Fin _resolver_solapamientos_estaticos_eje (y) --- HB_Ent_FINAL_FUNCION: (338, 139)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -   CH: Fase 1 - Fin. Posición segura HB: (338, 139)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -     --- CH: Inicio _aplicar_movimiento_y_colision_eje_x --- dx: -2, HB_in: (338, 139)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -       CH: Fase 2 (X): dx_aplicado=-2.0000. HB.x original=338, HB.x post-int-trunc=336
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -     --- CH: Fin _aplicar_movimiento_y_colision_eje_x --- HB_out X: 336.00
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -     --- CH: Inicio _aplicar_movimiento_y_colision_eje_y --- dy: 1, HB_in: (336, 139)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -       CH: Fase 2 (Y): dy_aplicado=1.0000. HB.y original=139, HB.y post-int-trunc=140
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -     --- CH: Fin _aplicar_movimiento_y_colision_eje_y --- HB_out Y: 140.00
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -   CH: Fase 2 - Fin. Posición HB post-mov: (336, 140)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -     --- CH: Inicio _verificar_y_revertir_colision_post_fase2 --- HB_in: (336, 140)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -     --- CH: Fin _verificar_y_revertir_colision_post_fase2 --- HB_out: (336, 140), ReversionGlobal: False
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -   CH: Fase 3 - Fin. Hubo reversión: False. Posición HB final: (336, 140)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] - CH: Fin gestionar_movimiento_y_colision. HB_out: (336, 140), Rect_out: (333, 137)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] - CH: Inicio gestionar_movimiento_y_colision. dx=-1.0000, dy=2.0000. HB_in: (296, 140), Rect_in: (293, 137)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -     --- CH: Inicio _resolver_solapamientos_estaticos_eje (x) --- Input: -1, HB_Ent_INICIAL_FUNCION: (296, 140), HB_Ent_Size: (26, 20)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -       CH: Pasada 1 res. estática eje x. HB_Ent_Inicio_Pasada: (296, 140)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -         CH_DETALLE: Eje x, Pasada 1. ANTES de colliderect con [Arbol_0].\n                  HB_Ent: TL=(296, 140), Size=(26, 20)\n                  HB_Obs ([Arbol_0]): TL=(305, 160), Size=(35, 25)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -         CH_DETALLE: Eje x, Pasada 1. ANTES de colliderect con [Arbol_1].\n                  HB_Ent: TL=(296, 140), Size=(26, 20)\n                  HB_Obs ([Arbol_1]): TL=(505, 310), Size=(35, 25)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -         CH_DETALLE: Eje x, Pasada 1. ANTES de colliderect con [Arbol_2].\n                  HB_Ent: TL=(296, 140), Size=(26, 20)\n                  HB_Obs ([Arbol_2]): TL=(105, 410), Size=(35, 25)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -         CH_DETALLE: Eje x, Pasada 1. ANTES de colliderect con [Enemigo_1].\n                  HB_Ent: TL=(296, 140), Size=(26, 20)\n                  HB_Obs ([Enemigo_1]): TL=(336, 140), Size=(26, 20)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -         CH_DETALLE: Eje x, Pasada 1. [Enemigo_1]. Resultado de colliderect: False
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -     --- CH: Fin _resolver_solapamientos_estaticos_eje (x) --- HB_Ent_FINAL_FUNCION: (296, 140)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -     --- CH: Inicio _resolver_solapamientos_estaticos_eje (y) --- Input: 2, HB_Ent_INICIAL_FUNCION: (296, 140), HB_Ent_Size: (26, 20)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -       CH: Pasada 1 res. estática eje y. HB_Ent_Inicio_Pasada: (296, 140)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -         CH_DETALLE: Eje y, Pasada 1. ANTES de colliderect con [Arbol_0].\n                  HB_Ent: TL=(296, 140), Size=(26, 20)\n                  HB_Obs ([Arbol_0]): TL=(305, 160), Size=(35, 25)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -         CH_DETALLE: Eje y, Pasada 1. ANTES de colliderect con [Arbol_1].\n                  HB_Ent: TL=(296, 140), Size=(26, 20)\n                  HB_Obs ([Arbol_1]): TL=(505, 310), Size=(35, 25)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -         CH_DETALLE: Eje y, Pasada 1. ANTES de colliderect con [Arbol_2].\n                  HB_Ent: TL=(296, 140), Size=(26, 20)\n                  HB_Obs ([Arbol_2]): TL=(105, 410), Size=(35, 25)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -         CH_DETALLE: Eje y, Pasada 1. ANTES de colliderect con [Enemigo_1].\n                  HB_Ent: TL=(296, 140), Size=(26, 20)\n                  HB_Obs ([Enemigo_1]): TL=(336, 140), Size=(26, 20)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -         CH_DETALLE: Eje y, Pasada 1. [Enemigo_1]. Resultado de colliderect: False
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -     --- CH: Fin _resolver_solapamientos_estaticos_eje (y) --- HB_Ent_FINAL_FUNCION: (296, 140)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -   CH: Fase 1 - Fin. Posición segura HB: (296, 140)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -     --- CH: Inicio _aplicar_movimiento_y_colision_eje_x --- dx: -1, HB_in: (296, 140)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -       CH: Fase 2 (X): dx_aplicado=-1.0000. HB.x original=296, HB.x post-int-trunc=295
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -     --- CH: Fin _aplicar_movimiento_y_colision_eje_x --- HB_out X: 295.00
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -     --- CH: Inicio _aplicar_movimiento_y_colision_eje_y --- dy: 2, HB_in: (295, 140)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -       CH: Fase 2 (Y): dy_aplicado=2.0000. HB.y original=140, HB.y post-int-trunc=142
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -       CH: Fase 2 (Y): Colisión Y detectada con [Arbol_0] después de mov. tentativo. HB_Ent: (295, 142), HB_Obs: (305, 160)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -         CH: Fase 2 (Y): Ajustado. Entidad mov. ABAJO. HB_Ent.bottom = Obs.top (160.00)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -   CH: Fase 2 - Fin. Posición HB post-mov: (295, 140)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -     --- CH: Inicio _verificar_y_revertir_colision_post_fase2 --- HB_in: (295, 140)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -     --- CH: Fin _verificar_y_revertir_colision_post_fase2 --- HB_out: (295, 140), ReversionGlobal: False
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -   CH: Fase 3 - Fin. Hubo reversión: False. Posición HB final: (295, 140)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] - CH: Fin gestionar_movimiento_y_colision. HB_out: (295, 140), Rect_out: (292, 137)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] - CH: Inicio gestionar_movimiento_y_colision. dx=-2.0000, dy=1.0000. HB_in: (336, 140), Rect_in: (333, 137)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -   CH: Fase 1 - Resolviendo solapamientos estáticos (Eje X)...
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -     --- CH: Inicio _resolver_solapamientos_estaticos_eje (x) --- Input: -2, HB_Ent_INICIAL_FUNCION: (336, 140), HB_Ent_Size: (26, 20)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -       CH: Pasada 1 res. estática eje x. HB_Ent_Inicio_Pasada: (336, 140)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -         CH_DETALLE: Eje x, Pasada 1. ANTES de colliderect con [Arbol_0].\n                  HB_Ent: TL=(336, 140), Size=(26, 20)\n                  HB_Obs ([Arbol_0]): TL=(305, 160), Size=(35, 25)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -         CH_DETALLE: Eje x, Pasada 1. ANTES de colliderect con [Arbol_1].\n                  HB_Ent: TL=(336, 140), Size=(26, 20)\n                  HB_Obs ([Arbol_1]): TL=(505, 310), Size=(35, 25)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -         CH_DETALLE: Eje x, Pasada 1. ANTES de colliderect con [Arbol_2].\n                  HB_Ent: TL=(336, 140), Size=(26, 20)\n                  HB_Obs ([Arbol_2]): TL=(105, 410), Size=(35, 25)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -         CH_DETALLE: Eje x, Pasada 1. ANTES de colliderect con [Enemigo_2].\n                  HB_Ent: TL=(336, 140), Size=(26, 20)\n                  HB_Obs ([Enemigo_2]): TL=(295, 140), Size=(26, 20)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -     --- CH: Fin _resolver_solapamientos_estaticos_eje (x) --- HB_Ent_FINAL_FUNCION: (336, 140)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -     --- CH: Inicio _resolver_solapamientos_estaticos_eje (y) --- Input: 1, HB_Ent_INICIAL_FUNCION: (336, 140), HB_Ent_Size: (26, 20)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -       CH: Pasada 1 res. estática eje y. HB_Ent_Inicio_Pasada: (336, 140)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -         CH_DETALLE: Eje y, Pasada 1. ANTES de colliderect con [Arbol_0].\n                  HB_Ent: TL=(336, 140), Size=(26, 20)\n                  HB_Obs ([Arbol_0]): TL=(305, 160), Size=(35, 25)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -         CH_DETALLE: Eje y, Pasada 1. ANTES de colliderect con [Arbol_1].\n                  HB_Ent: TL=(336, 140), Size=(26, 20)\n                  HB_Obs ([Arbol_1]): TL=(505, 310), Size=(35, 25)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -         CH_DETALLE: Eje y, Pasada 1. ANTES de colliderect con [Arbol_2].\n                  HB_Ent: TL=(336, 140), Size=(26, 20)\n                  HB_Obs ([Arbol_2]): TL=(105, 410), Size=(35, 25)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -         CH_DETALLE: Eje y, Pasada 1. ANTES de colliderect con [Enemigo_2].\n                  HB_Ent: TL=(336, 140), Size=(26, 20)\n                  HB_Obs ([Enemigo_2]): TL=(295, 140), Size=(26, 20)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -     --- CH: Fin _resolver_solapamientos_estaticos_eje (y) --- HB_Ent_FINAL_FUNCION: (336, 140)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -   CH: Fase 1 - Fin. Posición segura HB: (336, 140)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -   CH: Fase 2 - Aplicando movimiento y colisión (Eje X)...
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -     --- CH: Inicio _aplicar_movimiento_y_colision_eje_x --- dx: -2, HB_in: (336, 140)
+2025-05-19 22:41:55 - collision_handler - [DEBUG] -       CH: Fase 2 (X): dx_aplicado=-2.0000. HB.x original=336, HB.x post-int-trunc=334

@@ -47,104 +47,112 @@ class GestorEventos:
         factor_zoom_actual = self.juego_ref.factor_zoom_actual
 
         for event in eventos_pygame:
-            if log_ev_verbose_enabled:
-                logger.debug(f"Evento: {event}", extra={"categoria_log": "log_event_handler_verbose"})
+            try:
+                if log_ev_verbose_enabled:
+                    logger.debug(f"Evento: {event}", extra={"categoria_log": "log_event_handler_verbose"})
 
-            if event.type == pygame.QUIT:
-                self.solicitud_salir = True
-                if log_ev_handler_enabled:
-                    logger.info("GestorEventos: Solicitud de SALIR recibida (QUIT).", extra={"categoria_log": "log_event_handler"})
-            
-            if hasattr(self.hud, 'manejar_input_hud'):
-                self.hud.manejar_input_hud(event) 
-
-            if event.type == pygame.MOUSEWHEEL: 
-                delta_zoom = settings.FACTOR_ZOOM_PASO if event.y > 0 else -settings.FACTOR_ZOOM_PASO
-                nuevo_factor_zoom = max(settings.FACTOR_ZOOM_MIN, min(factor_zoom_actual + delta_zoom, settings.FACTOR_ZOOM_MAX))
-                if nuevo_factor_zoom != factor_zoom_actual: # Solo actualizar si realmente cambió
-                    self.juego_ref.actualizar_factor_zoom(nuevo_factor_zoom)
-                    if log_ev_handler_enabled:
-                        logger.debug(f"GestorEventos: MOUSEWHEEL. Zoom actual: {factor_zoom_actual:.2f}, Solicitado nuevo: {nuevo_factor_zoom:.2f}", extra={"categoria_log": "log_event_handler"})
-
-            if event.type == pygame.KEYDOWN:
-                if log_ev_handler_enabled:
-                    logger.debug(f"GestorEventos: KEYDOWN {pygame.key.name(event.key)} ({event.key})", extra={"categoria_log": "log_event_handler"})
-
-                if event.key == pygame.K_ESCAPE:
+                if event.type == pygame.QUIT:
                     self.solicitud_salir = True
                     if log_ev_handler_enabled:
-                        logger.info("GestorEventos: Solicitud de SALIR recibida (ESCAPE).", extra={"categoria_log": "log_event_handler"})
+                        logger.info("GestorEventos: Solicitud de SALIR recibida (QUIT).", extra={"categoria_log": "log_event_handler"})
                 
-                if event.key == pygame.K_SPACE: 
-                    if self.jugador:
-                        self.jugador.atacar()
+                if hasattr(self.hud, 'manejar_input_hud'):
+                    self.hud.manejar_input_hud(event) 
+
+                if event.type == pygame.MOUSEWHEEL: 
+                    delta_zoom = settings.FACTOR_ZOOM_PASO if event.y > 0 else -settings.FACTOR_ZOOM_PASO
+                    calculo_nuevo_zoom = factor_zoom_actual + delta_zoom # Calculamos el zoom deseado
+                    nuevo_factor_zoom = max(settings.FACTOR_ZOOM_MIN, min(calculo_nuevo_zoom, settings.FACTOR_ZOOM_MAX)) # Aplicamos límites
+                    
+                    if nuevo_factor_zoom != factor_zoom_actual: # Solo actualizar si realmente cambió
+                        self.juego_ref.actualizar_factor_zoom(nuevo_factor_zoom)
+                        factor_zoom_actual = nuevo_factor_zoom # ACTUALIZAMOS LA VARIABLE LOCAL
                         if log_ev_handler_enabled:
-                            logger.debug("GestorEventos: K_SPACE (Atacar jugador) procesado.", extra={"categoria_log": "log_event_handler"})
-                    else:
-                        if log_ev_handler_enabled:
-                            logger.warning("GestorEventos: K_SPACE presionado, pero no hay instancia de jugador.", extra={"categoria_log": "log_event_handler"})
+                            logger.debug(f"GestorEventos: MOUSEWHEEL. Zoom actual: {factor_zoom_actual:.2f}, Solicitado nuevo: {calculo_nuevo_zoom:.2f}, Aplicado: {nuevo_factor_zoom:.2f}", extra={"categoria_log": "log_event_handler"})
 
-
-                if self.jugador and hasattr(self.jugador, 'attack_profile_manager'):
-                    apm = self.jugador.attack_profile_manager
-                    nombres_perfiles = apm.get_nombres_perfiles_disponibles()
-
-                    if not nombres_perfiles:
-                        if log_ev_handler_enabled:
-                            logger.warning("GestorEventos: No hay perfiles de ataque disponibles para cambiar.", extra={"categoria_log": "log_event_handler"})
-                    else:
-                        try:
-                            indice_actual = nombres_perfiles.index(apm.nombre_perfil_ataque_activo)
-                        except ValueError:
-                            if log_ev_handler_enabled:
-                                logger.warning(f"GestorEventos: Perfil activo '{apm.nombre_perfil_ataque_activo}' no en lista. Seleccionando el primero.", extra={"categoria_log": "log_event_handler"})
-                            apm.seleccionar_perfil_ataque(nombres_perfiles[0])
-                            indice_actual = 0 # Asumir el primero
-
-                        nuevo_indice = indice_actual
-                        if event.key == pygame.K_PAGEUP:
-                            nuevo_indice = (indice_actual - 1 + len(nombres_perfiles)) % len(nombres_perfiles)
-                            apm.seleccionar_perfil_ataque(nombres_perfiles[nuevo_indice])
-                            if log_ev_handler_enabled:
-                                logger.debug(f"GestorEventos: K_PAGEUP. Nuevo perfil ataque: {apm.nombre_perfil_ataque_activo}", extra={"categoria_log": "log_event_handler"})
-                        
-                        elif event.key == pygame.K_PAGEDOWN:
-                            nuevo_indice = (indice_actual + 1) % len(nombres_perfiles)
-                            apm.seleccionar_perfil_ataque(nombres_perfiles[nuevo_indice])
-                            if log_ev_handler_enabled:
-                                logger.debug(f"GestorEventos: K_PAGEDOWN. Nuevo perfil ataque: {apm.nombre_perfil_ataque_activo}", extra={"categoria_log": "log_event_handler"})
-
-                    param_map = {
-                        pygame.K_F1: ("offset_distancia", 0.1), pygame.K_F2: ("offset_distancia", -0.1),
-                        pygame.K_F3: ("extension", 1), pygame.K_F4: ("extension", -1),
-                        pygame.K_F5: ("dano_modificador", 0.1), pygame.K_F6: ("dano_modificador", -0.1),
-                        pygame.K_F7: ("cooldown_modificador", 0.05), pygame.K_F8: ("cooldown_modificador", -0.05),
-                        pygame.K_F9: ("duracion_total_ms", 50), pygame.K_F10: ("duracion_total_ms", -50),
-                    }
-                    if event.key in param_map:
-                        param_name, delta = param_map[event.key]
-                        try:
-                            current_value = float(apm.get_parametro_ataque_activo(param_name, 0.0)) 
-                            new_value = current_value + delta
-                            
-                            if param_name == "dano_modificador" and new_value < 0: new_value = 0.0
-                            if param_name == "cooldown_modificador" and new_value < 0: new_value = 0.0
-                            if param_name == "duracion_total_ms" and new_value < 50: new_value = 50
-                            if param_name == "offset_distancia" and new_value < 0: new_value = 0.0
-                            if param_name == "extension" and new_value < 1: new_value = 1.0
-
-                            apm.set_parametro_ataque_activo(param_name, new_value)
-                            if log_ev_handler_enabled: 
-                                logger.debug(f"GestorEventos: {pygame.key.name(event.key)}. Param '{param_name}' -> {new_value:.2f}", extra={"categoria_log": "log_event_handler"})
-                        except ValueError as e:
-                            logger.error(f"GestorEventos Error: F-Key Convert '{param_name}' a float. Valor era: {apm.get_parametro_ataque_activo(param_name)}. Error: {e}", extra={"categoria_log": "log_event_handler"})
-                        except AttributeError:
-                            logger.error(f"GestorEventos Error: F-Key APM no disponible en jugador.", extra={"categoria_log": "log_event_handler"})
-                        except Exception as e:
-                            logger.error(f"GestorEventos Error: F-Key '{param_name}' mod: {e}", extra={"categoria_log": "log_event_handler"})
-                elif event.key >= pygame.K_F1 and event.key <= pygame.K_F10 : 
+                if event.type == pygame.KEYDOWN:
                     if log_ev_handler_enabled:
-                        logger.warning(f"GestorEventos: {pygame.key.name(event.key)} presionado, pero no hay jugador o attack_profile_manager.", extra={"categoria_log": "log_event_handler"})
+                        logger.debug(f"GestorEventos: KEYDOWN {pygame.key.name(event.key)} ({event.key})", extra={"categoria_log": "log_event_handler"})
+
+                    if event.key == pygame.K_ESCAPE:
+                        self.solicitud_salir = True
+                        if log_ev_handler_enabled:
+                            logger.info("GestorEventos: Solicitud de SALIR recibida (ESCAPE).", extra={"categoria_log": "log_event_handler"})
+                    
+                    if event.key == pygame.K_SPACE: 
+                        if self.jugador:
+                            self.jugador.atacar()
+                            if log_ev_handler_enabled:
+                                logger.debug("GestorEventos: K_SPACE (Atacar jugador) procesado.", extra={"categoria_log": "log_event_handler"})
+                        else:
+                            if log_ev_handler_enabled:
+                                logger.warning("GestorEventos: K_SPACE presionado, pero no hay instancia de jugador.", extra={"categoria_log": "log_event_handler"})
+
+
+                    if self.jugador and hasattr(self.jugador, 'attack_profile_manager'):
+                        apm = self.jugador.attack_profile_manager
+                        nombres_perfiles = apm.get_nombres_perfiles_disponibles()
+
+                        if not nombres_perfiles:
+                            if log_ev_handler_enabled:
+                                logger.warning("GestorEventos: No hay perfiles de ataque disponibles para cambiar.", extra={"categoria_log": "log_event_handler"})
+                        else:
+                            try:
+                                indice_actual = nombres_perfiles.index(apm.nombre_perfil_ataque_activo)
+                            except ValueError:
+                                if log_ev_handler_enabled:
+                                    logger.warning(f"GestorEventos: Perfil activo '{apm.nombre_perfil_ataque_activo}' no en lista. Seleccionando el primero.", extra={"categoria_log": "log_event_handler"})
+                                apm.seleccionar_perfil_ataque(nombres_perfiles[0])
+                                indice_actual = 0 # Asumir el primero
+
+                            nuevo_indice = indice_actual
+                            if event.key == pygame.K_PAGEUP:
+                                nuevo_indice = (indice_actual - 1 + len(nombres_perfiles)) % len(nombres_perfiles)
+                                apm.seleccionar_perfil_ataque(nombres_perfiles[nuevo_indice])
+                                if log_ev_handler_enabled:
+                                    logger.debug(f"GestorEventos: K_PAGEUP. Nuevo perfil ataque: {apm.nombre_perfil_ataque_activo}", extra={"categoria_log": "log_event_handler"})
+                            
+                            elif event.key == pygame.K_PAGEDOWN:
+                                nuevo_indice = (indice_actual + 1) % len(nombres_perfiles)
+                                apm.seleccionar_perfil_ataque(nombres_perfiles[nuevo_indice])
+                                if log_ev_handler_enabled:
+                                    logger.debug(f"GestorEventos: K_PAGEDOWN. Nuevo perfil ataque: {apm.nombre_perfil_ataque_activo}", extra={"categoria_log": "log_event_handler"})
+
+                        param_map = {
+                            pygame.K_F1: ("offset_distancia", 0.1), pygame.K_F2: ("offset_distancia", -0.1),
+                            pygame.K_F3: ("extension", 1), pygame.K_F4: ("extension", -1),
+                            pygame.K_F5: ("dano_modificador", 0.1), pygame.K_F6: ("dano_modificador", -0.1),
+                            pygame.K_F7: ("cooldown_modificador", 0.05), pygame.K_F8: ("cooldown_modificador", -0.05),
+                            pygame.K_F9: ("duracion_total_ms", 50), pygame.K_F10: ("duracion_total_ms", -50),
+                        }
+                        if event.key in param_map:
+                            param_name, delta = param_map[event.key]
+                            try:
+                                current_value = float(apm.get_parametro_ataque_activo(param_name, 0.0)) 
+                                new_value = current_value + delta
+                                
+                                if param_name == "dano_modificador" and new_value < 0: new_value = 0.0
+                                if param_name == "cooldown_modificador" and new_value < 0: new_value = 0.0
+                                if param_name == "duracion_total_ms" and new_value < 50: new_value = 50
+                                if param_name == "offset_distancia" and new_value < 0: new_value = 0.0
+                                if param_name == "extension" and new_value < 1: new_value = 1.0
+
+                                apm.set_parametro_ataque_activo(param_name, new_value)
+                                if log_ev_handler_enabled: 
+                                    logger.debug(f"GestorEventos: {pygame.key.name(event.key)}. Param '{param_name}' -> {new_value:.2f}", extra={"categoria_log": "log_event_handler"})
+                            except ValueError as e:
+                                logger.error(f"GestorEventos Error: F-Key Convert '{param_name}' a float. Valor era: {apm.get_parametro_ataque_activo(param_name)}. Error: {e}", extra={"categoria_log": "log_event_handler"})
+                            except AttributeError:
+                                logger.error(f"GestorEventos Error: F-Key APM no disponible en jugador.", extra={"categoria_log": "log_event_handler"})
+                            except Exception as e:
+                                logger.error(f"GestorEventos Error: F-Key '{param_name}' mod: {e}", extra={"categoria_log": "log_event_handler"})
+                    elif event.key >= pygame.K_F1 and event.key <= pygame.K_F10 : 
+                        if log_ev_handler_enabled:
+                            logger.warning(f"GestorEventos: {pygame.key.name(event.key)} presionado, pero no hay jugador o attack_profile_manager.", extra={"categoria_log": "log_event_handler"})
+            except Exception as e:
+                logger.error(f"GestorEventos Error no manejado al procesar evento {event}: {e}", extra={"categoria_log": "log_event_handler", "skip_duplicate_check": True})
+                import traceback
+                logger.error(f"Traza de error: {traceback.format_exc()}", extra={"categoria_log": "log_event_handler", "skip_duplicate_check": True})
 
     def debe_salir(self):
         """Chequea si se ha solicitado salir del juego."""

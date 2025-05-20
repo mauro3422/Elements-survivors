@@ -54,8 +54,22 @@
 
 ## En Progreso
 - [ ] Mejorar el sistema de colisiones
+    - [x] Corregido bug mayor de teletransporte del jugador al colisionar con obstáculos (relacionado con `ajuste_final_y`).
+    - [ ] Investigar y solucionar bug donde el jugador es 'expulsado' o experimenta un desplazamiento anómalo cuando es rodeado por múltiples enemigos que se mueven hacia él (posible problema en resolución de múltiples colisiones o lógica de empuje). (Prioridad Alta)
+    - [ ] (Idea a futuro) Considerar la implementación de un sistema de 'peso' o 'prioridad' para las entidades para gestionar colisiones complejas de forma más robusta.
 - [ ] Refinar el sistema de animaciones
 - [ ] Optimizar el sistema de eventos
+
+### Bugs Críticos Recientes
+- [x] Investigar y solucionar bug que causa que el juego se cierre inesperadamente al presionar una tecla. (Prioridad Máxima - Bloqueante) - Solucionado en versión 0.2.2 protegiendo los prints de depuración y corrigiendo errores en el manejo del perfil de ataque.
+
+## Documentación y Protocolos
+- [x] Reestructurar documentación principal (README.md, DEVELOPMENT_PROTOCOLS.md).
+- [x] Definir Protocolo de Sincronización y Actualización de Documentación.
+- [x] Crear Cursor Rule para Asistentes IA (.cursor/rules/ai_development_protocol.mdc).
+- [ ] Completar la documentación de cada módulo con docstrings.
+- [ ] Crear diagramas de flujo para los sistemas principales.
+- [ ] Añadir ejemplos de uso para cada sistema.
 
 ## Completado
 - [x] Estructura base del proyecto
