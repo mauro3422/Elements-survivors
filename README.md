@@ -2,15 +2,26 @@
 
 **Nota Importante:** Este README es un documento vivo y evoluciona con el proyecto. Se actualizará continuamente para reflejar los cambios más recientes en la arquitectura, funcionalidades clave, y las mejores prácticas aprendidas. Se espera que futuras IAs y desarrolladores consulten y contribuyan a este documento.
 
-## Pautas de Colaboración y Desarrollo Detalladas
+## Pautas de Colaboración y Desarrollo: Guía de Inicio Rápido
 
-**Para asegurar una colaboración efectiva, un desarrollo coherente y el mantenimiento de la calidad del código, todas las guías, reglas, protocolos de depuración, convenciones y procedimientos de contribución se han centralizado en un documento dedicado.**
+**Para asegurar una colaboración efectiva, un desarrollo coherente y el mantenimiento de la calidad del proyecto, es fundamental que todos los colaboradores (humanos y asistentes IA) sigan estos pasos iniciales para familiarizarse con el proyecto:**
 
-**Por favor, consulta el archivo [`DEVELOPMENT_PROTOCOLS.md`](DEVELOPMENT_PROTOCOLS.md) para obtener toda la información detallada sobre cómo trabajar en este proyecto.**
+1.  **Lee este `README.md` completamente:** Entiende la descripción general del proyecto, su estructura básica y cómo empezar a utilizarlo.
+2.  **Consulta `DEVELOPMENT_PROTOCOLS.md`:** Este es el documento central que contiene todas las guías detalladas, reglas, protocolos de depuración, convenciones de código y procedimientos de contribución. Su lectura y comprensión son **obligatorias** antes de realizar cualquier trabajo. Puedes encontrarlo aquí: [`DEVELOPMENT_PROTOCOLS.md`](DEVELOPMENT_PROTOCOLS.md).
+3.  **Estudia `mapa_conceptual_modulos.py` PROFUNDAMENTE:** Este archivo es tu **mapa mental y visual principal** del proyecto. Describe los módulos clave, sus responsabilidades, cómo interactúan, y los componentes internos más importantes. Su consulta y comprensión son **cruciales y continuas** para navegar la arquitectura del código, entender dónde residen las funcionalidades y cómo se conectan las diferentes partes del juego. Es una herramienta viva que debe reflejar el estado actual del proyecto.
+4.  **Explora la Estructura del Proyecto:** Familiarízate con la organización de las carpetas principales:
+    *   `src/`: Contiene todo el código fuente del juego.
+    *   `assets/`: Alberga todos los recursos gráficos, de sonido y datos.
+    *   `docs/`: (Si existe) Para documentación adicional detallada.
+5.  **Revisa `TODO.md` y `CHANGELOG.md`:** Estos archivos te darán una idea de las tareas pendientes, bugs conocidos y el historial de cambios y versiones del proyecto.
+6.  **Inspecciona `dev_notes.md`:** Contiene notas de desarrollo relevantes, estado actual, y problemas pendientes que pueden no estar en `TODO.md`. Es especialmente útil para la continuidad entre sesiones.
+7.  **Consulta `docs/PERFORMANCE_OPTIMIZATION_PROTOCOLS.md`:** Si tu tarea involucra optimización de rendimiento, este documento es tu guía principal.
 
-Este documento (`README.md`) ahora se enfoca en la descripción general del proyecto, su estructura y cómo empezar a utilizarlo.
+Una vez familiarizado con estos documentos, puedes proceder a explorar el código fuente en `src/`.
 
 ## Diccionario de Código / Mapa Conceptual de Módulos
+
+**El archivo `mapa_conceptual_modulos.py` es una herramienta fundamental y de consulta constante para todos los desarrolladores (humanos y IA). Actúa como un glosario interactivo y un mapa visual de la arquitectura del proyecto, siendo esencial para una comprensión rápida y precisa de cómo está estructurado el juego y dónde encontrar cada pieza de funcionalidad.**
 
 *   **Propósito:** Esta sección describe un archivo complementario, `mapa_conceptual_modulos.py`, que sirve como un glosario o "mapa conceptual" de los principales módulos, clases y sistemas del juego. Su objetivo es proporcionar una visión general rápida que facilite la incorporación de nuevos colaboradores y la comprensión de la arquitectura del código.
 *   **Ubicación y Formato:** El mapa conceptual detallado se encuentra en el archivo `mapa_conceptual_modulos.py`, ubicado en la raíz del proyecto. Este archivo Python contiene un diccionario principal llamado `MAPA_MODULOS_POR_CATEGORIA`. Las claves de este diccionario son cadenas que representan las categorías lógicas del proyecto (ej. "Core", "Entidades", "Sistemas"), que idealmente se alinearán con la estructura de carpetas del código fuente (ej. `src/core`, `src/entidades`). El valor asociado a cada clave de categoría es una lista de diccionarios, donde cada diccionario representa un módulo específico y típicamente incluye claves como:
@@ -89,4 +100,129 @@ Este documento (`README.md`) ahora se enfoca en la descripción general del proy
 3. **Ejecución**:
    ```bash
    python main.py
-   ``` 
+   ```
+
+# Sistema de Colisiones - Juego 2D
+## Registro de Cambios y Problemas
+
+### Problema Principal
+El sistema de empuje de las gallinas (enemigos) al jugador presenta inconsistencias:
+- ✅ Funciona correctamente en el eje X
+- ❌ No funciona en el eje Y
+- ✅ Se detectan colisiones correctamente
+- ✅ Los logs muestran actividad en el eje X
+- ❌ No hay registros de empuje en el eje Y
+
+### Cambios Realizados
+
+#### 1. Sistema de Empuje
+- Modificación del factor de empuje:
+  - Eje X: 1.5
+  - Eje Y: 2.0 (aumentado para mayor efecto vertical)
+
+#### 2. Correcciones en `collision_handler.py`
+- Eliminación de condiciones `if empuje > 0` en el eje Y
+- Eliminación de modificación inmediata del hitbox en colisiones Y
+- Corrección de errores de tipeo (`rect_colision_obstulo` → `rect_colision_obstaculo`)
+- Unificación del manejo de empuje entre ejes X e Y
+
+### Problemas Pendientes
+
+1. **Empuje Vertical**
+   - El empuje en el eje Y sigue sin funcionar correctamente
+   - Posible interferencia con la gravedad o salto del jugador
+
+2. **Errores de Tipeo**
+   - Se encontraron inconsistencias en nombres de variables
+   - Necesario revisar todo el código para unificar nomenclatura
+
+### Próximos Pasos
+
+1. **Revisión de Logs**
+   - Implementar logs más detallados para el eje Y
+   - Verificar que los logs estén habilitados correctamente
+
+2. **Pruebas de Colisión**
+   - Crear casos de prueba específicos para colisiones verticales
+   - Verificar interacción entre empuje y otros movimientos verticales
+
+3. **Optimizaciones**
+   - Revisar y optimizar el cálculo de empuje
+   - Considerar ajustes en los factores de empuje según feedback
+
+### Notas Técnicas
+
+- Los logs están configurados a través de `settings.MODO_DEBUG_LOGS`
+- El sistema usa `pygame.Rect` para hitboxes
+- Las colisiones se manejan en dos fases:
+  1. Resolución de solapamientos estáticos
+  2. Aplicación de movimiento y colisiones dinámicas
+
+### Configuración de Debug
+
+Para habilitar los logs detallados:
+```python
+settings.MODO_DEBUG_LOGS = True
+settings.LOG_CATEGORIAS["log_collision_handler"] = True
+```
+
+### Expectativas de Colaboración con Asistente IA (Tipo Cursor)
+
+Para una colaboración más efectiva y eficiente con un asistente de IA avanzado (como el que estás usando ahora):
+
+*   **Autonomía Basada en Documentación:** Se espera que el asistente IA lea, comprenda y siga proactivamente las directrices de los archivos `README.md`, `DEVELOPMENT_PROTOCOLS.md`, y cualquier otro documento de protocolo referenciado (como `docs/PERFORMANCE_OPTIMIZATION_PROTOCOLS.md`).
+*   **Análisis Proactivo:** Ante una tarea general (ej. "analiza el rendimiento", "busca bugs"), el asistente debe tomar la iniciativa de consultar los documentos relevantes para guiar su análisis y flujo de trabajo sin necesidad de preguntas intermedias si la información ya está disponible.
+*   **Ejecución de Comandos y Herramientas:** El asistente tiene la capacidad de proponer la ejecución de comandos de terminal (por ejemplo, para instalar dependencias, ejecutar scripts, o realizar verificaciones). Es importante entender que, dependiendo de la configuración del entorno del usuario, la aprobación y ejecución de estos comandos puede ser automática. El asistente debe tener esto en cuenta y asegurarse de que los comandos propuestos son seguros y directamente relevantes para la tarea en curso.
+*   **Comunicación Post-Tarea:** Después de completar una tarea (ej. análisis de un archivo, implementación de una función, aplicación de una corrección), el asistente debe resumir brevemente:
+    1.  **Qué hizo:** Una descripción concisa de la acción realizada.
+    2.  **Cómo lo hizo/Protocolos Seguidos:** Referencia a los protocolos o guías específicas que siguió (ej. "según la sección X de `DEVELOPMENT_PROTOCOLS.md`", "aplicando el método Y de `PERFORMANCE_OPTIMIZATION_PROTOCOLS.md`").
+    3.  **Hallazgos Clave/Observaciones:** Puntos más importantes detectados (ej. "se encontró una posible fuga de memoria en Z", "la función X es un cuello de botella").
+    4.  **Siguientes Pasos Propuestos (si aplica):** Recomendaciones basadas en los hallazgos.
+*   **Claridad en Instrucciones:** Si el asistente IA no sigue un protocolo o parece no entender una instrucción que se considera clara en la documentación, es una señal para revisar y mejorar la claridad de la documentación misma.
+
+### Protocolo de Inicialización de Contexto para Asistentes IA
+
+**CRÍTICO: Al iniciar una nueva conversación o reanudar después de un reinicio del IDE**, el asistente IA DEBE realizar la siguiente secuencia de inicialización de contexto:
+
+1.  **Lectura Inmediata de Estado Actual:**
+    *   `dev_notes.md`: Para entender el estado más reciente del desarrollo, problemas en curso, y contexto de la última sesión.
+    *   `CHANGELOG.md`: Para conocer los últimos cambios implementados y su impacto.
+    *   `TODO.md`: Para identificar las tareas pendientes y sus prioridades.
+
+2.  **Análisis y Síntesis:**
+    *   Identificar problemas críticos o bloqueantes.
+    *   Determinar el contexto de la última sesión de trabajo.
+    *   Establecer las prioridades actuales basadas en la documentación.
+
+3.  **Comunicación del Contexto:**
+    *   Informar brevemente sobre los hallazgos clave de la lectura.
+    *   Destacar cualquier problema crítico identificado.
+    *   Proponer los siguientes pasos basados en las prioridades encontradas.
+
+Este protocolo es OBLIGATORIO y debe ejecutarse automáticamente al inicio de cada nueva conversación o después de un reinicio del IDE, incluso antes de recibir instrucciones específicas del usuario. El objetivo es mantener la continuidad del desarrollo y asegurar que todas las decisiones y acciones se tomen con pleno conocimiento del contexto actual del proyecto.
+
+## Guía de Inicio Rápido y Análisis Inicial (Para Colaboradores y Asistente IA)
+
+1.  **Comienza aquí (`README.md`):** Entiende el propósito general del proyecto, la estructura básica y las herramientas principales.
+2.  **Consulta `DEVELOPMENT_PROTOCOLS.md`:** Este es el documento central que contiene todas las guías detalladas, reglas, protocolos de depuración, convenciones de código y procedimientos de contribución. Su lectura y comprensión son **obligatorias** antes de realizar cualquier trabajo. Puedes encontrarlo aquí: [`DEVELOPMENT_PROTOCOLS.md`](DEVELOPMENT_PROTOCOLS.md).
+3.  **Estudia `mapa_conceptual_modulos.py`:** Este archivo es un glosario/mapa conceptual que describe los módulos principales, sus responsabilidades e interacciones. Es crucial para entender la arquitectura del código.
+4.  **Explora la Estructura del Proyecto:** Familiarízate con la organización de las carpetas principales:
+    *   `src/`: Contiene todo el código fuente del juego.
+    *   `assets/`: Alberga todos los recursos gráficos, de sonido y datos.
+    *   `docs/`: Contiene documentación adicional detallada, incluyendo:
+        *   `PERFORMANCE_OPTIMIZATION_PROTOCOLS.md`: Guía para diagnosticar y solucionar problemas de rendimiento.
+    *   `logs/`: (Si existe) Donde se guardan los archivos de log.
+    *   `tests/`: (Si existe) Para pruebas unitarias y de integración.
+5.  **Revisa `TODO.md` y `CHANGELOG.md`:** Para ponerte al día sobre el estado actual, las tareas pendientes, los bugs conocidos y el historial de cambios.
+6.  **Inspecciona `dev_notes.md`:** Contiene notas de desarrollo importantes, problemas conocidos, ideas y recordatorios que pueden no estar formalizados en `TODO.md`. Es vital para entender el contexto de desarrollo actual y los desafíos recientes. **Mantenerlo actualizado y vigilado.**
+7.  **Analiza `main.py` y el Núcleo del Juego:** Revisa `main.py` y los archivos principales en `src/core/` (especialmente `juego.py` o su equivalente como `game_loop.py`) para entender el flujo principal y la inicialización.
+8.  **Revisa los Sistemas Clave:** Inspecciona los archivos en `src/sistemas/` para entender cómo se gestionan los eventos, estados, colisiones, niveles, etc.
+9.  **Revisa los Módulos de Utilidades:** Inspecciona los archivos en `src/utils/` (como `asset_manager.py`, `config_loader.py`) para ver cómo se manejan las tareas comunes.
+
+### Depuración y Diagnóstico de Problemas
+
+Para investigar bugs o problemas de rendimiento, el proyecto cuenta con un sistema de logging configurable y herramientas de depuración. Es crucial utilizar estos sistemas de manera efectiva.
+
+*   **Logging Selectivo:** La clave para un diagnóstico eficiente es activar solo los logs relevantes. Consulta la sección **"6.3. Debugging Selectivo con LOG_CATEGORIAS"** y **"6.4. Análisis de Logs de Sesión"** en [`DEVELOPMENT_PROTOCOLS.md`](DEVELOPMENT_PROTOCOLS.md) para aprender a controlar las categorías de log desde `src/config/settings.py`.
+*   **Diagnóstico de Rendimiento:** Para problemas de optimización, además del logging selectivo (ver sección **"6.5. Aplicación al Diagnóstico de Rendimiento"** en [`DEVELOPMENT_PROTOCOLS.md`](DEVELOPMENT_PROTOCOLS.md)), consulta la guía detallada en [`docs/PERFORMANCE_OPTIMIZATION_PROTOCOLS.md`](docs/PERFORMANCE_OPTIMIZATION_PROTOCOLS.md).
+*   **Otros Protocolos de Depuración:** Revisa la sección **"Protocolos de Depuración y Documentación"** en [`DEVELOPMENT_PROTOCOLS.md`](DEVELOPMENT_PROTOCOLS.md).

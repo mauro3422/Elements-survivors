@@ -1,0 +1,52 @@
+---
+description: Cuando la tarea implica modificar la estructura del proyecto o entender las interacciones entre módulos.
+globs: 
+alwaysApply: false
+---
+# Protocolo de Uso y Mantenimiento del Mapa Conceptual de Módulos
+
+El archivo `[mapa_conceptual_modulos.py](mdc:mapa_conceptual_modulos.py)` es una herramienta **CRUCIAL y VITAL** para entender la arquitectura de este proyecto. Actúa como tu mapa mental y visual. Su correcta utilización y mantenimiento son obligatorios.
+
+## 1. Consulta Obligatoria del Mapa Conceptual
+
+**ANTES de realizar cualquiera de las siguientes acciones, DEBES consultar `[mapa_conceptual_modulos.py](mdc:mapa_conceptual_modulos.py)`:**
+
+*   **Analizar o modificar código existente:** Para entender el rol del módulo, sus responsabilidades, y sus interacciones con otros componentes.
+*   **Planificar nueva funcionalidad o refactorizaciones:** Para identificar dónde encajará el nuevo código, qué módulos existentes se verán afectados, y cómo se integrará.
+*   **Investigar bugs o problemas de flujo:** Para rastrear dependencias y entender cómo los datos o el control fluyen entre módulos.
+*   **Responder a preguntas sobre la arquitectura o la ubicación de funcionalidades.**
+
+**El objetivo de la consulta es:**
+*   Confirmar la `ruta_relativa` del/los módulo/s en cuestión.
+*   Entender la `responsabilidad_principal` de cada módulo implicado.
+*   Analizar las `interacciones_principales` (entrantes y salientes) para prever impactos.
+*   Revisar los `componentes_clave_internos` listados si necesitas profundizar en un módulo.
+
+## 2. Actualización Obligatoria del Mapa Conceptual
+
+**DEBES proponer y aplicar actualizaciones a `[mapa_conceptual_modulos.py](mdc:mapa_conceptual_modulos.py)` como parte integral de cualquier conjunto de cambios (commit/pull request) que introduzca las siguientes modificaciones:**
+
+*   **Adición de un nuevo módulo principal** al proyecto.
+*   **Eliminación de un módulo principal** existente.
+*   **Refactorización significativa de un módulo existente** que altere:
+    *   Su `responsabilidad_principal`.
+    *   Sus `interacciones_principales` con otros módulos de forma notable (nuevas dependencias importantes, eliminación de dependencias clave).
+    *   Sus `componentes_clave_internos` si estos representan un cambio fundamental en la estructura interna visible o conceptual del módulo.
+
+**Al actualizar, asegúrate de que la información sea concisa y precisa, enfocándote en:**
+*   La **responsabilidad principal** (¿Qué hace el módulo?).
+*   Sus **interacciones clave** (¿Con qué otros módulos principales se conecta y cómo?).
+*   Reflejar con precisión la `ruta_relativa` si el módulo se mueve.
+
+**No es necesario listar todas las funciones o detalles menores.** El objetivo es mantener una visión general conceptual actualizada, tal como se describe en la sección "Diccionario de Código / Mapa Conceptual de Módulos" del `[README.md](mdc:README.md)`.
+
+## 3. Proceso de Actualización
+
+1.  Identifica la necesidad de actualizar el mapa basado en los criterios anteriores.
+2.  Realiza los cambios necesarios directamente en el archivo `[mapa_conceptual_modulos.py](mdc:mapa_conceptual_modulos.py)`.
+3.  Incluye la actualización del mapa conceptual en el mismo conjunto de cambios/propuesta de edición que el código modificado.
+4.  Comunica explícitamente que el mapa conceptual ha sido actualizado como parte de tus cambios.
+
+**El incumplimiento de la consulta o actualización de este archivo puede llevar a malentendidos arquitectónicos, retrabajo y errores.**
+
+

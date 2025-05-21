@@ -1,0 +1,57 @@
+---
+description: Al implementar nuevo código, corregir bugs o realizar refactorizaciones que requieran verificación.
+globs: 
+alwaysApply: false
+---
+# Protocolo de Ciclo de Desarrollo y Verificación Obligatoria
+
+Este protocolo detalla el ciclo de trabajo estándar que debes seguir al implementar cambios, nuevas funcionalidades o correcciones en el código fuente. El objetivo es asegurar la calidad, la detección temprana de errores y la coherencia con los objetivos de la tarea.
+
+## 1. Análisis y Planificación de la Tarea
+
+*   **Comprensión Clara:** Asegúrate de entender completamente los requisitos de la tarea asignada.
+*   **Consulta de Documentación Relevante:**
+    *   Utiliza tu contexto base (proporcionado por la regla `project_core_documents_always_context.mdc`) para revisar secciones pertinentes de `[README.md](mdc:README.md)`, `[DEVELOPMENT_PROTOCOLS.md](mdc:DEVELOPMENT_PROTOCOLS.md)`, y `[mapa_conceptual_modulos.py](mdc:mapa_conceptual_modulos.py)`.
+    *   Si la tarea es específica (ej. optimización), consulta documentos especializados como `[docs/PERFORMANCE_OPTIMIZATION_PROTOCOLS.md](mdc:docs/PERFORMANCE_OPTIMIZATION_PROTOCOLS.md)`.
+*   **Identificación de Archivos Afectados:** Determina qué archivos y módulos se verán impactados por los cambios.
+*   **Plan de Implementación Breve:** Esboza mentalmente o comunica los pasos principales para la implementación.
+
+## 2. Implementación del Código
+
+*   **Adherencia a Convenciones:** Sigue las convenciones de código (nombrado, estilo, etc.) y los patrones de diseño establecidos en el proyecto (referenciados en `[DEVELOPMENT_PROTOCOLS.md](mdc:DEVELOPMENT_PROTOCOLS.md)`).
+*   **Modularidad y Claridad:** Escribe código claro, bien comentado (especialmente lógica compleja) y modular.
+*   **Sistema de Logging:** Integra el sistema de logging (`[src/config/config_logging.py](mdc:src/config/config_logging.py)`) de forma adecuada, utilizando las `LOG_CATEGORIAS` definidas en `[src/config/settings.py](mdc:src/config/settings.py)`. Evita `print()` directos para información persistente o diagnósticos importantes.
+*   **Actualización del Mapa Conceptual (si aplica):** Si los cambios son arquitectónicamente significativos, recuerda seguir el `mapa_conceptual_usage_protocol.mdc`.
+
+## 3. Verificación Obligatoria Post-Implementación
+
+**Este es un paso CRUCIAL y NO DEBE OMITIRSE después de cualquier cambio de código significativo (nuevas funciones, refactorizaciones importantes, corrección de bugs complejos).**
+
+*   **Ejecución del Juego:**
+    *   Ejecuta el juego usando el comando principal: `python main.py`.
+    *   Observa la consola en busca de errores inmediatos o excepciones durante el inicio y la ejecución.
+*   **Prueba Funcional Breve:** Realiza una prueba funcional básica relacionada directamente con los cambios implementados. Si arreglaste un bug de ataque, intenta atacar. Si añadiste un nuevo enemigo, verifica que aparezca y se comporte como se espera (mínimamente).
+*   **Revisión de Logs Relevantes:**
+    *   Activa las `LOG_CATEGORIAS` pertinentes en `[src/config/settings.py](mdc:src/config/settings.py)` para la funcionalidad que has modificado.
+    *   Revisa los archivos de log generados en la carpeta `logs/` (la más reciente) para confirmar que el comportamiento es el esperado y para detectar errores sutiles o advertencias.
+    *   Presta especial atención a cualquier `ERROR` o `CRITICAL` log.
+
+## 4. Iteración (Si es Necesario)
+
+*   Si la verificación revela errores, excepciones o comportamientos inesperados:
+    *   Vuelve al paso 1 (Análisis) para entender la causa del problema.
+    *   Corrige el código (Paso 2).
+    *   Repite la Verificación Obligatoria (Paso 3).
+*   Continúa este ciclo hasta que la funcionalidad implementada opere correctamente y sin errores evidentes.
+
+## 5. Limpieza de Código Relacionado (Opcional pero Recomendado)
+
+*   Durante o después de la implementación, si identificas código obsoleto directamente relacionado con tu tarea (ej. variables de depuración antiguas que ya no son necesarias, funciones comentadas que no se usarán), propon su eliminación.
+
+## 6. Comunicación de Resultados
+
+*   Una vez completada y verificada la tarea, comunica los resultados siguiendo las pautas del `documentation_and_communication_protocol.mdc` (o la sección correspondiente en `[README.md](mdc:README.md)` / `[DEVELOPMENT_PROTOCOLS.md](mdc:DEVELOPMENT_PROTOCOLS.md)`).
+
+Este protocolo tiene como objetivo principal reducir la introducción de regresiones y asegurar que los cambios sean funcionales antes de considerarlos "completos".
+
+

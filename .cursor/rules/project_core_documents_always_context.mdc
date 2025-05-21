@@ -1,0 +1,22 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Documentos Fundamentales del Proyecto (Siempre en Contexto)
+
+Los siguientes archivos son cruciales para entender la estructura, el flujo de trabajo y las convenciones de este proyecto. Debes tenerlos en cuenta en todas tus interacciones y decisiones:
+
+1.  **Mapa Conceptual de Módulos**:
+    -   Archivo: `[mapa_conceptual_modulos.py](mdc:mapa_conceptual_modulos.py)`
+    -   Contiene la arquitectura de alto nivel, responsabilidades de los módulos y sus interacciones.
+    -   Referencia constante y base para el entendimiento del código.
+
+2.  **Protocolos de Desarrollo**:
+    -   Archivo: `[DEVELOPMENT_PROTOCOLS.md](mdc:DEVELOPMENT_PROTOCOLS.md)`
+    -   Contiene las guías y metodologías para el desarrollo, debugging, logging y comunicación en este proyecto.
+    -   Sigue estos protocolos rigurosamente.
+
+Mantener estos documentos como referencia constante es esencial para la coherencia y la eficiencia del desarrollo. El no cumplimiento de estos protocolos puede llevar a errores y retrabajo.
+
+

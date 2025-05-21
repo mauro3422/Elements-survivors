@@ -1,0 +1,61 @@
+---
+description: Al finalizar una tarea para actualizar la documentación de seguimiento y comunicar los resultados.
+globs: 
+alwaysApply: false
+---
+# Protocolo de Documentación de Seguimiento y Comunicación de Tareas
+
+Este protocolo establece las directrices para mantener actualizada la documentación de seguimiento del proyecto y para comunicar de manera efectiva los resultados de las tareas completadas. El objetivo es asegurar la transparencia, la trazabilidad de los cambios y una colaboración fluida.
+
+## 1. Actualización de Documentos de Seguimiento
+
+Al completar una tarea, realizar cambios significativos o alcanzar un hito, DEBES proponer o realizar actualizaciones en los siguientes archivos según corresponda:
+
+*   **`[CHANGELOG.md](mdc:CHANGELOG.md)`:**
+    *   **Cuándo actualizar:** Después de implementar cualquier cambio que afecte la funcionalidad, corrija un bug notable, o añada una nueva característica visible o importante.
+    *   **Qué incluir:** Una entrada clara y concisa bajo la versión o fecha correspondiente, describiendo el cambio. Sigue el formato existente en el archivo.
+    *   **Ejemplo:** `- Añadida la entidad 'NuevoEnemigo' con comportamiento de patrulla.`
+    *   **Ejemplo:** `- Corregido bug que causaba que el jugador atravesara paredes en el nivel 2.`
+
+*   **`[TODO.md](mdc:TODO.md)`:**
+    *   **Cuándo actualizar:**
+        *   Cuando una tarea listada se haya completado.
+        *   Cuando surjan nuevas tareas, subtareas o bugs identificados durante tu trabajo actual que deban ser registrados para el futuro.
+    *   **Qué hacer:** Marca las tareas completadas (ej. con `[x]`) o elimina/mueve a una sección de "Completadas" según la estructura del archivo. Añade nuevas tareas con una descripción clara.
+
+*   **`[dev_notes.md](mdc:dev_notes.md)`:**
+    *   **Cuándo actualizar:** Al final de una sesión de trabajo, después de una investigación extensa, o cuando haya información contextual importante que deba registrarse para la continuidad (tuya o de otros colaboradores).
+    *   **Qué incluir:**
+        *   Resumen de las tareas principales abordadas durante la sesión.
+        *   Observaciones importantes, hipótesis, o problemas encontrados que requieran más investigación.
+        *   Configuraciones de depuración temporales que se dejaron activas (y por qué).
+        *   Ideas o próximos pasos tentativos para la siguiente sesión.
+    *   El objetivo es que este archivo sirva como un "diario de desarrollo" útil.
+
+## 2. Comunicación de Resultados de Tareas Completadas
+
+Al finalizar una tarea o un conjunto significativo de cambios (y después de haber realizado la verificación según el `development_lifecycle_and_verification_protocol.mdc`), DEBES comunicar tus acciones y hallazgos. Esta comunicación debe seguir la estructura esperada en la sección "Expectativas de Colaboración con Asistente IA" del `[README.md](mdc:README.md)`:
+
+1.  **Qué se Hizo:**
+    *   Una descripción concisa de la acción principal realizada o el objetivo de la tarea completada.
+    *   Ejemplo: *"Se refactorizó `src/sistemas/collision_handler.py` para usar el nuevo sistema de logging por categorías."*
+    *   Ejemplo: *"Se implementó la funcionalidad de ataque especial para el jugador."*
+
+2.  **Cómo se Hizo / Protocolos Seguidos:**
+    *   Menciona brevemente los protocolos o guías clave que seguiste.
+    *   Ejemplo: *"Se siguieron las directrices de `DEVELOPMENT_PROTOCOLS.md` para la refactorización y el `mapa_conceptual_usage_protocol.mdc` para actualizar el mapa conceptual."*
+    *   Ejemplo: *"La implementación se verificó según el `development_lifecycle_and_verification_protocol.mdc`."*
+
+3.  **Hallazgos Clave / Observaciones Importantes:**
+    *   Cualquier descubrimiento significativo, problema potencial detectado, o comportamiento inesperado observado durante la tarea.
+    *   Ejemplo: *"Se observó que la función `calcular_daño()` tiene una complejidad ciclomática alta y podría ser un candidato para futura refactorización."*
+    *   Ejemplo: *"Durante la prueba, el nuevo enemigo 'X' a veces no detecta al jugador si se aproxima por detrás. Se ha añadido una nota en `dev_notes.md` para investigarlo."*
+
+4.  **Siguientes Pasos Propuestos (si aplica):**
+    *   Si tu trabajo revela la necesidad de acciones futuras claras, sugierelas.
+    *   Ejemplo: *"Se propone crear tests unitarios para la nueva clase `GestorAtaqueEspecial`."*
+    *   Ejemplo: *"Se recomienda revisar la configuración de `LOG_CATEGORIAS` para el módulo de IA enemiga, ya que actualmente es muy verboso."*
+
+**La comunicación clara y estructurada es fundamental para la colaboración efectiva y para mantener a todos informados sobre el progreso y el estado del proyecto.**
+
+

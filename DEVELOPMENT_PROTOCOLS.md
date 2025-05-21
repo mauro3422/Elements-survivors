@@ -4,6 +4,22 @@ Este documento detalla las pautas, protocolos y convenciones para el desarrollo 
 
 **Nota Importante:** Este documento, al igual que el `README.md` principal y el `CHANGELOG.md`, es un **documento vivo**. Debe ser consultado regularmente y actualizado colaborativamente si los protocolos de desarrollo, las convenciones del proyecto o las mejores prácticas de colaboración evolucionan.
 
+## 1. Introducción y Filosofía
+
+Este documento es la guía central y **obligatoria** para cualquier desarrollo dentro del proyecto "Juego Pygame Modular". Su objetivo es asegurar la coherencia, calidad, mantenibilidad y facilitar la colaboración entre todos los desarrolladores (incluyendo asistentes IA).
+
+**Principios Clave:**
+*   **Claridad y Legibilidad:** El código debe ser fácil de entender.
+*   **Modularidad:** Componentes bien definidos y débilmente acoplados.
+*   **Consistencia:** Seguir las convenciones establecidas en este documento.
+*   **Documentación:** Comentarios y documentación donde sea necesario (ver sección específica).
+*   **Pruebas:** (Futuro) Fomentar la creación de pruebas para asegurar la estabilidad.
+
+**Documentos Complementarios Importantes:**
+*   **`README.md`**: Para la visión general del proyecto y la guía de inicio rápido.
+*   **`mapa_conceptual_modulos.py`**: Para entender la arquitectura y responsabilidades de los módulos.
+*   **`docs/PERFORMANCE_OPTIMIZATION_PROTOCOLS.md`**: Guía específica para el diagnóstico y optimización de problemas de rendimiento. Consultar este documento ante cualquier tarea relacionada con la mejora del rendimiento.
+
 ## Guía Esencial para Colaboradores (IA y Humanos)
 
 Esta sección es fundamental para cualquier colaborador, ya sea una IA o un desarrollador humano. Su propósito es asegurar la coherencia, mantenibilidad y comprensión del proyecto a medida que evoluciona.
@@ -17,8 +33,38 @@ Esta sección es fundamental para cualquier colaborador, ya sea una IA o un desa
         *   **Proporcionar Contexto Inicial:** Guiar al asistente para que consulte activamente las secciones relevantes de esta documentación (este archivo, README principal, CHANGELOG, `mapa_conceptual_modulos.py`, `TODO.md`, plantillas de código, etc.) al inicio de una nueva sesión o al retomar el trabajo. Esto asegura que sus acciones estén alineadas con el estado y las convenciones del proyecto.
         *   **Fomentar la Autonomía Informada:** Una vez otorgado el permiso general para trabajar en el proyecto y con el contexto adecuado, permitir que el asistente utilice la información disponible (como `mapa_conceptual_modulos.py`) para acceder a archivos y realizar acciones relevantes sin requerir confirmación explícita para cada paso individual, siempre que esté dentro del alcance de la tarea actual. El objetivo es una colaboración fluida y eficiente.
         *   **Solicitar Resúmenes de Acciones:** Al finalizar tareas significativas o antes de devolver el control, pedir al asistente un resumen de las acciones realizadas, los archivos modificados y los cambios aplicados. Esto ayuda a mantener un seguimiento claro del progreso.
-        *   **Verificar Adherencia a Convenciones:** Confirmar que el asistente sigue las estructuras de datos definidas, utiliza correctamente las variables globales de `settings.py` para configuraciones y control de depuración (ej. `DEBUG_PRINT_X`), y comunica si está reutilizando código existente o introduciendo nuevos patrones. El asistente debe justificar sus decisiones si se desvía de las convenciones establecidas.
+        *   **Verificar Adherencia a Convenciones:** Confirmar que el asistente sigue las estructuras de datos definidas, utiliza correctamente las variables globales de `settings.py` para configuraciones y control de depuración (ej. `LOG_CATEGORIAS`, `MODO_DEBUG_LOGS`), y comunica si está reutilizando código existente o introduciendo nuevos patrones. El asistente debe justificar sus decisiones si se desvía de las convenciones establecidas.
 *   **Comunicación y Comprensión:** Antes de añadir nueva funcionalidad o modificar sistemas existentes, asegúrate de entender cómo encaja en el panorama general del proyecto.
+
+### Ciclo de Depuración Reactivo y Proactivo
+
+Cuando se enfrenta a un error reportado, un comportamiento inesperado del juego, o después de realizar cambios significativos (especialmente en la lógica central o el sistema de logging), el colaborador (IA o humano) debe seguir un ciclo de depuración que incluya:
+
+1.  **Consulta de Logs (Post-Ejecución)**: Inmediatamente después de que el juego se ejecute (y falle, se cierre inesperadamente, o simplemente para verificar cambios), el primer paso es revisar los archivos de log relevantes de la última sesión. Esto incluye `main.log`, `juego.log`, y cualquier log específico de módulo (ej. `jugador.log`, `enemigo.log`, `entidad_base.log`) que pueda ser pertinente.
+2.  **Análisis de Errores y Advertencias**: Buscar mensajes de `ERROR` o `CRITICAL` que puedan indicar la causa raíz de un problema. Los mensajes `WARNING` también pueden ofrecer pistas.
+3.  **Evaluación de la Información del Log**:
+    *   Si los logs proporcionan una traza de error clara (como un `AttributeError` o `ImportError`), proceder a investigar y corregir el código fuente directamente.
+    *   Si los logs están "limpios" o no muestran la causa del problema, considerar si las categorías de log activas son suficientes.
+4.  **Ajuste Iterativo de Logging (Si es Necesario)**: Si se necesita más detalle, identificar qué `LOG_CATEGORIAS` en `settings.py` podrían ser relevantes para la parte del código que se sospecha está causando el problema y activarlas. Luego, volver a ejecutar el juego para generar logs más detallados. Considerar también el uso temporal de `"log_debug_temporal": True` para aislar trazas muy específicas.
+5.  **Formulación de Hipótesis y Acción**: Basándose en el análisis de los logs y el código, formular una hipótesis sobre la causa del problema y proponer una solución o un siguiente paso de depuración (ej. añadir más logging específico, inspeccionar variables, etc.).
+6.  **Verificación**: Después de aplicar una corrección, ejecutar el juego nuevamente y revisar los logs para confirmar que el problema se ha resuelto y no se han introducido nuevos errores.
+7.  **Limpieza de Configuración de Logging (Post-Depuración)**: Una vez que el problema se ha resuelto y verificado, es importante **revisar y desactivar** cualquier `LOG_CATEGORIAS` específica que se haya activado temporalmente en `settings.py` para la depuración. El objetivo es mantener la configuración de logging por defecto lo menos verbosa posible para el desarrollo normal y evitar una sobrecarga innecesaria de logs. Restaurar los niveles de log a su estado estándar ayuda a mantener la relevancia de los logs y puede contribuir a un mejor rendimiento del entorno de desarrollo al procesar la salida.
+
+Este enfoque proactivo y reactivo hacia el análisis de logs es fundamental para una depuración eficiente y para mantener la estabilidad del proyecto.
+
+### Comunicación y Feedback Post-Tarea (Especialmente para Colaboración con IA)
+
+Al finalizar una tarea o un conjunto de cambios significativos, el colaborador (especialmente si es un asistente IA) debe:
+
+1.  **Resumir las Acciones Realizadas:** Detallar los archivos modificados, las nuevas funcionalidades añadidas o los bugs corregidos, y los principales cambios lógicos implementados.
+2.  **Informar sobre el Cumplimiento de Protocolos:** Confirmar explícitamente cómo se siguieron los protocolos de desarrollo relevantes durante la tarea. Esto incluye, pero no se limita a:
+    *   **Logging y Depuración:** Explicar cómo se implementaron o ajustaron los logs y prints de depuración, asegurando que siguen las convenciones de categorías, niveles y control de activación (ej. `LOG_CATEGORIAS`, `MODO_DEBUG_LOGS`, `DEBUG_PRINT_VARIABLES`).
+    *   **Estructura de Código y Reutilización:** Mencionar si se reutilizó código existente, se extendieron clases base, o si se introdujeron nuevos patrones (justificando estos últimos si es necesario).
+    *   **Documentación y Archivos de Proyecto:** Indicar si se actualizaron documentos relevantes como `README.md`, `CHANGELOG.md`, `mapa_conceptual_modulos.py`, o `settings.py` según los cambios realizados.
+    *   **Manejo de Errores y Casos Límite:** (Si aplica) Describir brevemente cómo se consideraron y manejaron los posibles errores o casos límite en la nueva lógica.
+3.  **Justificar Desviaciones:** Si por alguna razón justificada fue necesario desviarse de un protocolo establecido, explicar el motivo y la alternativa implementada.
+
+Este feedback proactivo ayuda a mantener la transparencia, facilita la revisión y asegura que el proyecto evoluciona de manera coherente y alineada con las directrices establecidas.
 
 **Reglas de Desarrollo:**
 
@@ -42,6 +88,9 @@ Esta sección es fundamental para cualquier colaborador, ya sea una IA o un desa
 4.  **Logging y Depuración:**
     *   Para el logging estructurado, utilizar el sistema definido en `config_logging.py` y las categorías en `settings.LOG_CATEGORIAS`. Emitir logs con `logger.extra={'categoria_log': 'mi_categoria'}`.
     *   Para prints de depuración temporales o específicos, utilizar el sistema de variables `DEBUG_PRINT_VARIABLES` definido en `settings.py` (ej. `if settings.DEBUG_PRINT_MI_PARTE: print(...)`). Esto permite un control centralizado.
+5.  **Limpieza de Código Obsoleto Durante Modificaciones**:
+    *   Durante tareas de refactorización, modificación o revisión de código, si se identifica código obsoleto, redundante o que ya no se utiliza (ej. antiguas variables de control de `print`s que han sido reemplazadas por el sistema de logging, funciones comentadas sin justificación clara para su futura reactivación), este debe ser eliminado para mantener la limpieza y claridad del código base.
+    *   Si hay dudas sobre si un código es realmente obsoleto (por ejemplo, si una función comentada podría ser útil en el futuro o está pendiente de una revisión más profunda), se debe investigar su propósito original o consultar antes de su eliminación definitiva. El objetivo es evitar la acumulación de código "muerto" que dificulte la comprensión y el mantenimiento del proyecto.
 
 **Mantenimiento de Continuidad de Sesión:**
 
@@ -60,8 +109,18 @@ Esta sección es fundamental para cualquier colaborador, ya sea una IA o un desa
 
 1. **Sistema de Logging (Refactorizado V. 0.2.0)**:
    - **Filosofía**: El sistema de logging está diseñado para ser centralizado, configurable y ofrecer control granular sobre los mensajes, facilitando tanto el desarrollo como la depuración.
+     - **Revisión Activa y Verificación Autónoma**: Es crucial no solo configurar el logging, sino también **revisar activamente** la configuración actual en `settings.py` (incluyendo el estado de `MODO_DEBUG_LOGS`, las `LOG_CATEGORIAS` y la configuración de filtros como `LOG_DUPLICATE_MESSAGE_TIMEDELTA_MS`) antes de asumir un comportamiento específico. Tras una ejecución, especialmente si se están depurando problemas o se han realizado cambios en el logging, se debe **verificar autónomamente los archivos de log generados** para confirmar que los mensajes esperados se están registrando correctamente y que los filtros funcionan según lo previsto. Esta verificación proactiva es esencial para un diagnóstico eficiente.
    - **Configuración Central**: Toda la configuración del sistema de logging reside en `config_logging.py`. Esto incluye la definición de formateadores (para consola y archivos), handlers (stream para consola con `colorlog`, y `RotatingFileHandler` para archivos), y filtros (`CategoryFilter`, `DuplicateFilter`).
    - **Obtención de Loggers**: Cada módulo debe obtener su logger específico usando `logger = logging.getLogger("nombre_del_modulo")`. Por ejemplo, en `jugador.py` se usa `logging.getLogger("jugador")`. Esto permite que los logs se asocien correctamente con su origen.
+
+   - **Momento Crítico: `setup_logging()` Antes de Cualquier Uso del Logger**:
+     - Es absolutamente crucial que la función `config_logging.setup_logging()` se ejecute **antes** de que cualquier módulo del proyecto intente obtener y usar un logger (ej. `logger = logging.getLogger("mi_modulo")` seguido de `logger.info(...)`).
+     - Si un módulo se importa y define un logger a nivel de módulo (es decir, fuera de cualquier función o clase, en el ámbito global del módulo) y luego intenta usar ese logger inmediatamente a ese mismo nivel global, estos mensajes de log se emitirán **antes** de que `setup_logging()` haya configurado los handlers (como el `StreamHandler` para la consola o los `FileHandler` para archivos), formatos y filtros.
+     - **Consecuencia**: Los mensajes emitidos antes de `setup_logging()` pueden no aparecer en la consola o en los archivos de log esperados, o pueden usar una configuración de logging por defecto de Python que no se alinea con la del proyecto (ej. niveles diferentes, sin colores, sin filtros de categoría).
+     - **Práctica Recomendada**: 
+         1. Asegurar que `config_logging.setup_logging()` se llame lo más temprano posible en el punto de entrada principal de la aplicación (ej. al inicio de `main.py`, antes de la importación de módulos del juego que usen logging).
+         2. Evitar realizar llamadas de logging (ej. `logger.info()`, `logger.debug()`) a nivel global de un módulo durante su importación. Si se define `logger = logging.getLogger("mi_modulo")` a nivel global, la primera *llamada* a `logger.info()` (o similar) debería ocurrir dentro de una función o método que se ejecute después de que `setup_logging()` haya completado su trabajo.
+
    - **Logs por Módulo y Sesión**: 
      - Los logs de los módulos listados en `settings.MODULOS_CON_LOG_PROPIO` se guardan en archivos individuales dentro de una carpeta de sesión (ej. `logs/YYYY-MM-DD_HH-MM-SS/nombre_del_modulo.log`).
      - Los logs de módulos no listados allí (o si el handler específico falla) van a un archivo `general.log` dentro de la misma carpeta de sesión.
@@ -100,6 +159,12 @@ Esta sección es fundamental para cualquier colaborador, ya sea una IA o un desa
      # }
      # MODULOS_CON_LOG_PROPIO = [..., "mi_modulo", ...]
      ```
+
+   - **Consistencia en Nombres de Categorías de Log:**
+     - Al definir y utilizar categorías de log (manejadas en `src/config/settings.py` bajo `LOG_CATEGORIAS` y consumidas por `CategoryFilter` en `src/config/config_logging.py`), es crucial asegurar la consistencia absoluta en los nombres de las claves.
+     - Un error común puede ser una discrepancia entre el nombre de la clave definido en `settings.LOG_CATEGORIAS` (ej: `"log_mi_modulo_especifico"`) y el nombre utilizado en el código al registrar un mensaje con `extra={"categoria_log": "log_modulo_especifico"}` (nótese la falta del `_mi_` en el segundo caso).
+     - Si la clave proporcionada en `extra` no coincide exactamente con una clave existente en `settings.LOG_CATEGORIAS`, el `CategoryFilter` (según su implementación actual) podría bloquear el mensaje silenciosamente, incluso si la intención era que la categoría estuviera activa.
+     - **Recomendación:** Al añadir o modificar categorías de log, verifica dos veces que la cadena de texto de la clave sea idéntica en `settings.py` y en todas sus usos dentro del código. Considera usar constantes para los nombres de las categorías si el proyecto crece mucho, aunque por ahora la verificación manual es suficiente.
 
    - **Prints de Depuración Controlados por Variables Globales (Debug Prints)**:
      - **Propósito**: Además del sistema de logging formal, el proyecto utiliza un mecanismo simple para activar/desactivar `print()`s específicos para depuración rápida y localizada sin necesidad de modificar constantemente el código o la configuración del logger. Esto es útil para trazas temporales mientras se desarrolla o depura una funcionalidad concreta.
@@ -403,7 +468,7 @@ Después de implementar una corrección de bug o una nueva característica, es c
 2.  **Ciclo Iterativo de Corrección y Prueba**:
     *   Si las pruebas revelan problemas, volver al "Flujo de Trabajo para la Depuración" (activando logs/prints, analizando el código) para identificar y corregir la nueva causa.
     *   Repetir la ejecución de `main.py` y las pruebas específicas hasta que la funcionalidad se verifique como correcta.
-    *   **Rol de la IA en las Pruebas:** El asistente IA puede ser instruido para ejecutar `main.py` (si el entorno de colaboración lo permite y la IA tiene esa capacidad), analizar la salida (incluyendo errores de consola o comportamiento descrito por el usuario) e informar los resultados. La IA también puede asistir en los ciclos de depuración y corrección basados en los resultados de las pruebas.
+    *   **Rol de la IA en las Pruebas:** El desarrollador humano ejecuta el juego (ej. `python main.py`). El asistente IA **no puede ejecutar el juego directamente**. Sin embargo, la IA **puede proponer el comando de ejecución** (que el usuario luego aprueba y corre). La **salida de la consola** de dicha ejecución se muestra automáticamente a la IA, permitiéndole analizarla junto con los archivos de log y el feedback descriptivo del usuario sobre el comportamiento visual. La IA puede así asistir en los ciclos de depuración y corrección. (Ver también la sección "Interacción con Asistentes IA para Ejecución y Pruebas" en `README.md` para un flujo de trabajo detallado).
 
 3.  **Pruebas de Regresión (Recomendado)**:
     *   Antes de finalizar un conjunto de cambios importantes, realizar pruebas más amplias para asegurar que otras áreas del juego no se han visto afectadas negativamente.
@@ -536,3 +601,125 @@ Este protocolo se activa cuando el usuario indica el final de una sesión de tra
         *   Discutir y acordar nuevos protocolos o modificaciones significativas a los existentes.
         *   Períodos extensos de trabajo productivo donde se han acumulado varios cambios o decisiones no documentadas.
     *   El asistente evaluará la "importancia" y el "volumen" del trabajo realizado para proponer una sincronización, con el objetivo de mantener la documentación fresca y el contexto compartido.
+
+## 5. Gestión de Errores y Excepciones
+
+*   **Captura Específica:** Evitar bloques `except Exception:` genéricos siempre que sea posible. Capturar las excepciones específicas que se esperan.
+*   **Logging Detallado:** Al capturar una excepción, loguear suficiente información para diagnosticar el problema, incluyendo `exc_info=True` para obtener la traza de la pila.
+*   **Manejo Propio vs. Propagación:** Decidir si un error puede ser manejado localmente o si debe ser propagado para que un módulo superior lo maneje.
+
+## 6. Sistema de Logging
+
+El proyecto utiliza el módulo `logging` de Python para un registro estructurado y configurable de eventos.
+
+### 6.1. Configuración Centralizada
+
+La configuración principal del logging se encuentra en `src/config/config_logging.py` y los settings que la controlan en `src/config/settings.py`.
+
+*   **`MODO_DEBUG_LOGS`**: Un interruptor global en `settings.py` para activar (`True`) o desactivar (`False`) los logs de nivel DEBUG. Los logs INFO y superiores siempre se registran si la categoría específica está habilitada.
+*   **`LOG_CATEGORIAS`**: Un diccionario en `settings.py` que permite habilitar (`True`) o deshabilitar (`False`) el logging para módulos o funcionalidades específicas. El nombre de la clave en este diccionario (ej: `"log_jugador"`, `"log_collision_handler"`) debe coincidir con el `extra={"categoria_log": "nombre_categoria"}` usado al emitir el log.
+*   **Archivos de Log por Sesión y Módulo**:
+    *   Cada vez que se ejecuta el juego, se crea una nueva carpeta de sesión con timestamp en `logs/` (ej: `logs/YYYY-MM-DD_HH-MM-SS/`).
+    *   Dentro de cada carpeta de sesión, se crean subcarpetas para cada módulo listado en `MODULOS_CON_LOG_PROPIO` en `settings.py` (ej: `main/main.log`, `juego/juego.log`).
+
+### 6.2. Emisión de Logs
+
+*   Obtener un logger específico para el módulo: `logger = logging.getLogger(__name__)` o `logger = logging.getLogger("nombre_modulo_custom")`.
+*   Usar los niveles de log apropiados: `logger.debug()`, `logger.info()`, `logger.warning()`, `logger.error()`, `logger.critical()`.
+*   **Incluir `extra={"categoria_log": "nombre_de_categoria_en_settings"}`** en cada llamada al logger para permitir el filtrado por categoría.
+
+### 6.3. Debugging Selectivo con `LOG_CATEGORIAS` (¡MUY IMPORTANTE!)
+
+Una de las herramientas más poderosas para la depuración es la capacidad de activar solo los logs que son relevantes para el problema que se está investigando.
+
+**Procedimiento:**
+
+1.  **Identificar Módulos Sospechosos:** Determinar qué partes del código podrían estar involucradas en el bug o comportamiento inesperado.
+2.  **Modificar `src/config/settings.py`**:
+    *   Asegurarse de que `MODO_DEBUG_LOGS = True` si se necesitan mensajes DEBUG.
+    *   En el diccionario `LOG_CATEGORIAS`, establecer en `True` las categorías correspondientes a los módulos/funcionalidades que se quieren investigar (ej: `"log_renderer": True`, `"log_enemigo_ia": True`).
+    *   **Establecer en `False` la mayoría de las otras categorías**, especialmente aquellas que generan mucho "ruido" (logs muy frecuentes que no son relevantes para el problema actual). Esto hará que los archivos de log sean más pequeños y fáciles de analizar.
+3.  **Ejecutar el Juego:** Replicar el problema.
+4.  **Analizar los Logs Enfocados:** Revisar los archivos de log generados. Ahora deberían contener principalmente información de las áreas de interés.
+
+Esta técnica reduce drásticamente la cantidad de información a revisar y acelera significativamente el proceso de diagnóstico.
+
+### 6.4. Análisis de Logs de Sesión
+
+Al investigar un problema utilizando los logs:
+
+1.  **Directorio de Sesión Más Reciente:** Navegar a la carpeta `logs/` y localizar la subcarpeta con el timestamp más reciente. Esta corresponde a la última ejecución del juego.
+2.  **Archivos de Log Relevantes:** Dentro de la carpeta de sesión, identificar los archivos `.log` de los módulos que se activaron mediante `LOG_CATEGORIAS` (o aquellos que se sospecha que son relevantes). Por ejemplo, si se está depurando un problema de colisiones, se revisaría `collision_handler/collision_handler.log`.
+3.  **Revisión Progresiva (para el Asistente IA):**
+    *   Si un archivo de log es extenso (más de ~200-250 líneas), el asistente IA solo podrá ver una porción a la vez.
+    *   El asistente debe indicar si el archivo es más largo que lo mostrado.
+    *   El usuario puede solicitar al asistente que lea partes anteriores o siguientes del archivo si es necesario.
+    *   No asumir que la porción inicial de un log contiene toda la información relevante si el archivo es grande.
+4.  **Comparación con Sesiones Anteriores (si es necesario):** Si un log parece anómalamente pequeño, vacío, o si se sospecha que un comportamiento ha cambiado, puede ser útil comparar los logs de la sesión actual con los de sesiones anteriores para identificar diferencias.
+
+### 6.5. Aplicación al Diagnóstico de Rendimiento
+
+El sistema de logging, combinado con el debugging selectivo, es una herramienta valiosa no solo para bugs funcionales sino también para investigar problemas de rendimiento (FPS bajos, tirones, tiempos de carga excesivos).
+
+**Estrategia General:**
+
+1.  **Identificar Síntomas:** ¿El juego va lento en general? ¿Hay caídas de FPS en momentos específicos (ej. al cargar un nivel, durante combates intensos, con muchos objetos en pantalla)? ¿Los tiempos de carga iniciales o entre niveles son muy largos?
+2.  **Consultar Protocolos de Optimización:** Antes de una inmersión profunda en los logs, revisa el documento `docs/PERFORMANCE_OPTIMIZATION_PROTOCOLS.md`. Este archivo contiene una guía más estructurada sobre cómo abordar la optimización del rendimiento, incluyendo el uso de profilers y otras técnicas específicas. El análisis de logs es una de las herramientas dentro de ese proceso.
+3.  **Activar Categorías Relevantes:** En `src/config/settings.py`, activa las `LOG_CATEGORIAS` que puedan ofrecer pistas sobre el cuello de botella:
+    *   `"log_juego"`: Para ver la duración de los ciclos del bucle principal, tiempos de `update` y `draw`.
+    *   `"log_renderer"` (si existe o se crea una categoría específica para el renderizado): Para tiempos de dibujado de diferentes capas o tipos de entidades.
+    *   `"log_asset_manager"`: Para tiempos de carga de imágenes, sonidos, fuentes.
+    *   `"log_gestor_nivel"`: Para tiempos de carga y creación de niveles.
+    *   `"log_collision_handler"`: Si se sospecha que las colisiones intensivas están ralentizando el juego.
+    *   `"log_entidad_ia"` (o similar): Si la IA de muchos enemigos parece ser la causa.
+    *   **Desactiva** las categorías que no sean relevantes para minimizar el ruido.
+4.  **Analizar Timestamps y Frecuencia:**
+    *   Busca en los logs operaciones que tarden consistentemente mucho tiempo. Los timestamps entre mensajes pueden revelar cuánto tarda una sección de código.
+    *   Observa la frecuencia de ciertos logs. ¿Hay algún sistema que esté logueando excesivamente por segundo, indicando una actividad muy intensa?
+5.  **Correlacionar con el Juego:** Ejecuta el juego e intenta reproducir las condiciones donde ocurre la ralentización. Luego, revisa los logs correspondientes a esos momentos.
+6.  **Iterar:** Basándote en los hallazgos, puedes refinar las categorías de log activadas, añadir más logs específicos (protegidos por `LOG_CATEGORIAS`) en áreas sospechosas, o pasar a herramientas más especializadas como un profiler si los logs no son suficientes.
+
+Recuerda que los logs son una pieza del rompecabezas. Para un análisis de rendimiento exhaustivo, considera los pasos detallados en `docs/PERFORMANCE_OPTIMIZATION_PROTOCOLS.md`.
+
+## 7. Control de Versiones (Git)
+
+## X. GESTIÓN DE INTERRUPCIONES Y CONTINUIDAD DEL DESARROLLO
+
+### X.1. Protocolo ante Ralentización o Fallo del IDE/Entorno de Desarrollo
+
+**Objetivo:** Minimizar la pérdida de trabajo y contexto, y asegurar una reanudación eficiente de las tareas después de una interrupción causada por problemas con el entorno de desarrollo (IDE lento, cuelgues, necesidad de reinicio del sistema, etc.).
+
+**Pasos a Seguir:**
+
+1.  **Prioridad: No Perder Trabajo No Guardado:**
+    *   Si es posible, intentar guardar todos los archivos modificados y no guardados.
+    *   Si el entorno está completamente colgado, este paso podría no ser viable. Proceder al siguiente.
+
+2.  **Documentar el Estado Actual en `[dev_notes.md](mdc:dev_notes.md)`:**
+    *   Crear una nueva entrada con la fecha y hora.
+    *   **Motivo de la interrupción:** Ej. "IDE extremadamente lento, se requiere reinicio.", "Cursor/IDE se colgó."
+    *   **Tarea en curso:** Descripción breve de la tarea o el problema que se estaba abordando.
+        *   Ej: "Refactorizando `player.py` para el nuevo sistema de logging."
+        *   Ej: "Investigando bug de colisión reportado en `TODO #123`."
+    *   **Últimas acciones realizadas:** ¿Qué se estaba haciendo justo antes de la interrupción?
+        *   Ej: "A punto de probar cambios en la función `update_estado()`."
+        *   Ej: "Analizando logs de la última ejecución."
+    *   **Próximos pasos inmediatos planeados (antes de la interrupción):**
+        *   Ej: "Siguiente paso era ejecutar `python main.py` para verificar."
+    *   **Estado de archivos clave o configuraciones temporales:**
+        *   Archivos modificados pendientes de guardar/commitear (si se recuerdan).
+        *   Cualquier configuración temporal en `[src/config/settings.py](mdc:src/config/settings.py)` (ej. `LOG_CATEGORIAS` específicas activadas para depuración).
+        *   Ramas de Git activas, si es relevante.
+    *   **Asistente IA (si aplica):** Mencionar si se estaba trabajando con un asistente IA y cuál era el contexto de la conversación, para facilitar la reanudación con el asistente.
+
+3.  **Proceder con el Reinicio:**
+    *   Cerrar el IDE.
+    *   Reiniciar el IDE o el sistema operativo, según sea necesario.
+
+4.  **Reanudación del Trabajo:**
+    *   Una vez que el entorno esté estable, **consultar inmediatamente la última entrada en `[dev_notes.md](mdc:dev_notes.md)`** para retomar el contexto.
+    *   Restaurar cualquier configuración temporal que se haya anotado (ej. `LOG_CATEGORIAS`).
+    *   Continuar con los "próximos pasos" identificados.
+    *   Si se estaba trabajando con un asistente IA, proporcionarle un resumen breve basado en `dev_notes.md` para reanudar la colaboración.
+
+**Este protocolo es crucial para la eficiencia y para evitar la frustración de perder el hilo del trabajo debido a problemas técnicos del entorno.**
