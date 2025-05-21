@@ -1,8 +1,0 @@
-2025-05-19 21:26:01 - enemigo - [DEBUG] - [Enemigo_2] --- Inicio Update IA --- Delta: 0.0160s. Pos ANTES: HB (403, 381), Rect (400, 378), Flot (403.00, 381.00)
-2025-05-19 21:26:01 - enemigo - [DEBUG] - [Enemigo_2] Target (centro (416, 317)), Dist: 74.00. Mi Centro HB: (416, 391)
-2025-05-19 21:26:01 - enemigo - [DEBUG] - [Enemigo_2] Pos flotante (post-IA y delta): (403.0000, 379.8800)
-2025-05-19 21:26:01 - enemigo - [DEBUG] - [Enemigo_2] Solicita movimiento a CH (deltas enteros): dx_int=0, dy_int=-2. HB Actual: (403, 381) (Flotantes totales: dx=0.0000, dy=-1.1200)
-2025-05-19 21:26:01 - enemigo - [DEBUG] - [Enemigo_2] Inicia _mover_y_colisionar_con_obstaculos. dx_int=0, dy_int=-2. HB Actual: (403, 381)
-2025-05-19 21:26:01 - enemigo - [DEBUG] - [Enemigo_2] Hitbox recentrado (enemigo): (416, 389) (Rect center: (416, 389))
-2025-05-19 21:26:01 - enemigo - [DEBUG] - [Enemigo_2] _mover_y_colisionar: HB Antes CH: (403,381), HB Despues CH y Sinc: (403,379), Rect: (400, 376), PosFlotante: (403.00,379.00)
-2025-05-19 21:26:01 - enemigo - [DEBUG] - [Enemigo_2] Posición DESPUÉS de mov/col: HB (403, 379), Rect (400, 376), Flot (403.00, 379.00)

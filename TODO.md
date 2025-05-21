@@ -1,5 +1,28 @@
 # Lista de Tareas Pendientes
 
+## Prioridad CRÍTICA
+1. 🐛 **[BUG - COLISIONES]** Resolver bug "Expulsión del Jugador"
+   - **Descripción**: El jugador es "expulsado" o experimenta un desplazamiento anómalo cuando está rodeado por múltiples enemigos que se mueven hacia él.
+   - **Hipótesis**: Problema en la resolución de múltiples colisiones simultáneas o lógica de empuje acumulado en `collision_handler.py`.
+   - [ ] Revisar `collision_handler.py`, `jugador.py`, `enemigo.py`.
+   - [ ] Analizar logs existentes o generar nuevos logs específicos.
+   - [ ] Aplicar estrategias de depuración detallada.
+
+## Prioridad Alta (En Pausa Temporal)
+1. 🔥 **[RENDIMIENTO]** Investigar y resolver degradación de rendimiento del IDE
+   - [x] Añadir memory_profiler a requirements.txt
+   - [ ] Resolver incompatibilidad con Pygame en Python 3.13.1 (TAREA PAUSADA)
+     - [ ] Buscar wheel compatible para Python 3.13
+     - [ ] Si no se encuentra, realizar downgrade a Python 3.11.x
+   - [ ] Implementar profiling de memoria (TAREA PAUSADA)
+   - [ ] Revisar gestión de recursos de Pygame (TAREA PAUSADA)
+   - [ ] Optimizar ciclo de cierre del juego (TAREA PAUSADA)
+   - [ ] Crear PERFORMANCE_METRICS.md para seguimiento (TAREA PAUSADA)
+
+2. 🐛 **[BUG]** Resolver problema de empuje en colisiones
+   - Corregir comportamiento en eje Y
+   - Optimizar manejo de colisiones múltiples
+
 ## Prioridad Alta
 
 ### Sistema de Juego
@@ -53,12 +76,17 @@
 - [ ] Añadir sistema de clima y día/noche
 
 ## En Progreso
+- [ ] **[BUG - COLISIONES]** Bug "Expulsión del Jugador" (Actualmente en investigación - Prioridad CRÍTICA)
 - [ ] Mejorar el sistema de colisiones
     - [x] Corregido bug mayor de teletransporte del jugador al colisionar con obstáculos (relacionado con `ajuste_final_y`).
-    - [ ] Investigar y solucionar bug donde el jugador es 'expulsado' o experimenta un desplazamiento anómalo cuando es rodeado por múltiples enemigos que se mueven hacia él (posible problema en resolución de múltiples colisiones o lógica de empuje). (Prioridad Alta)
+    - [ ] Investigar y solucionar bug donde el jugador es 'expulsado' o experimenta un desplazamiento anómalo cuando es rodeado por múltiples enemigos que se mueven hacia él (posible problema en resolución de múltiples colisiones o lógica de empuje). (AHORA EN PRIORIDAD CRÍTICA)
     - [ ] (Idea a futuro) Considerar la implementación de un sistema de 'peso' o 'prioridad' para las entidades para gestionar colisiones complejas de forma más robusta.
 - [ ] Refinar el sistema de animaciones
 - [ ] Optimizar el sistema de eventos
+- [ ] Implementación inicial de herramientas de profiling (EN PAUSA)
+    - [x] Investigación y selección de memory_profiler
+    - [x] Documentación de problemas de compatibilidad
+    - [ ] Resolución de dependencias (Bloqueado por Pygame/Python 3.13.1 - EN PAUSA)
 
 ### Bugs Críticos Recientes
 - [x] Investigar y solucionar bug que causa que el juego se cierre inesperadamente al presionar una tecla. (Prioridad Máxima - Bloqueante) - Solucionado en versión 0.2.2 protegiendo los prints de depuración y corrigiendo errores en el manejo del perfil de ataque.
