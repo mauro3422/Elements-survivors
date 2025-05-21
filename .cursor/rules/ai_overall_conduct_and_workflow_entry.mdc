@@ -1,0 +1,83 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Protocolo General de Conducta y Flujo de Trabajo para la IA
+
+Este documento establece los principios fundamentales que deben guiar tu conducta y flujo de trabajo al colaborar en este proyecto. Actúa como un punto de entrada que te orientará hacia la documentación y los protocolos más detallados según sea necesario.
+
+## 0. @CRITICAL: Protocolo de Inicialización de Contexto
+
+**ANTES de cualquier interacción o al reanudar después de un reinicio**, DEBES ejecutar el Protocolo de Inicialización de Contexto descrito en `[README.md](mdc:README.md)` (sección "Protocolo de Inicialización de Contexto para Asistentes IA"). Este protocolo requiere:
+
+1. Lectura inmediata de:
+   - `[dev_notes.md](mdc:dev_notes.md)` → Estado actual y contexto de la última sesión
+   - `[CHANGELOG.md](mdc:CHANGELOG.md)` → Últimos cambios implementados
+   - `[TODO.md](mdc:TODO.md)` → Tareas pendientes y prioridades
+
+2. Análisis y comunicación del contexto encontrado ANTES de proceder con cualquier otra tarea.
+
+3. **Verificación Final de Inicialización:** Al finalizar los pasos anteriores, se debe presentar el siguiente checklist al usuario:
+
+   ---
+   **Checklist de Inicialización de Contexto Completado:**
+
+   *   [ ] Lectura de `dev_notes.md` (Indicar ÉXITO/FALLO y breve resumen si es necesario)
+   *   [ ] Lectura de `CHANGELOG.md` (Indicar ÉXITO/FALLO y breve resumen si es necesario)
+   *   [ ] Lectura de `TODO.md` (Indicar ÉXITO/FALLO y breve resumen si es necesario)
+   *   [ ] Análisis y comunicación del contexto general (Indicar ÉXITO/FALLO)
+   *   [ ] Documentos centrales del proyecto (`mapa_conceptual_modulos.py`, `DEVELOPMENT_PROTOCOLS.md`, etc.) cargados y considerados en contexto (Indicar ÉXITO/FALLO).
+   ---
+
+   Este checklist sirve para confirmar la correcta ejecución del protocolo y para que el usuario esté al tanto de cualquier problema encontrado durante la inicialización.
+
+La ejecución de este protocolo es OBLIGATORIA y debe realizarse de forma PROACTIVA, sin esperar instrucciones específicas del usuario.
+
+## 1. Principio Fundamental: Autonomía Basada en Documentación
+
+*   **Contexto Continuo:** Recuerda que los documentos clave (`[README.md](mdc:README.md)`, `[DEVELOPMENT_PROTOCOLS.md](mdc:DEVELOPMENT_PROTOCOLS.md)`, `[mapa_conceptual_modulos.py](mdc:mapa_conceptual_modulos.py)`, `[src/config/settings.py](mdc:src/config/settings.py)`) están siempre en tu contexto base gracias a la regla `project_core_documents_always_context.mdc`. **Debes utilizar activamente la información contenida en ellos.**
+*   **Consulta Proactiva:** Antes de realizar cualquier acción o al iniciar una nueva tarea, consulta proactivamente estos documentos para entender los requisitos, la arquitectura, las convenciones y los protocolos establecidos. Las respuestas a muchas de tus preguntas potenciales ya se encuentran allí.
+*   **Adherencia Estricta a `[DEVELOPMENT_PROTOCOLS.md](mdc:DEVELOPMENT_PROTOCOLS.md)`:** Este documento es la fuente de verdad para todas las reglas de desarrollo, colaboración, convenciones de código, y procedimientos detallados. Debes seguir sus directrices rigurosamente.
+
+## 2. Preparación Específica para la Tarea
+
+*   **Análisis del Requisito:** Asegúrate de comprender claramente la tarea o el problema que se te ha asignado.
+*   **Lectura de Código Relevante:** Antes de proponer o aplicar cambios, lee proactivamente el código fuente de los módulos directamente implicados en la tarea. Utiliza `[mapa_conceptual_modulos.py](mdc:mapa_conceptual_modulos.py)` para identificar estos módulos y sus interacciones. El objetivo es que tengas un entendimiento profundo del código existente relevante.
+
+## 3. Aplicación de Protocolos Específicos del Proyecto
+
+Dependiendo de la naturaleza de la tarea, serás guiado (o deberás buscar activamente la guía) hacia protocolos más específicos. Recuerda que estos protocolos están diseñados para asegurar la calidad y la coherencia:
+
+*   **Cambios Arquitectónicos o Estructurales:**
+    *   Sigue el `mapa_conceptual_usage_protocol.mdc` para la consulta y actualización del mapa conceptual.
+*   **Implementación de Código, Correcciones, Nuevas Funcionalidades:**
+    *   Aplica el `development_lifecycle_and_verification_protocol.mdc`, que incluye la verificación obligatoria mediante la ejecución del juego.
+*   **Actualización de Documentación de Seguimiento y Comunicación:**
+    *   Utiliza el `documentation_and_communication_protocol.mdc` para mantener al día `[CHANGELOG.md](mdc:CHANGELOG.md)`, `[TODO.md](mdc:TODO.md)`, `[dev_notes.md](mdc:dev_notes.md)` y para reportar tus resultados.
+
+## 4. Gestión de Configuraciones y Constantes
+
+*   **Fuente Única de Verdad:** Todas las constantes globales, configuraciones del juego, rutas (excepto `RUTA_BASE_PROYECTO`), y `LOG_CATEGORIAS` deben residir y gestionarse exclusivamente en `[src/config/settings.py](mdc:src/config/settings.py)`.
+*   **Convención:** Los nombres deben ser en `MAYUSCULAS_CON_GUIONES_BAJOS`.
+*   **Reutilización:** Antes de añadir una nueva configuración, verifica si una existente puede ser reutilizada o modificada.
+
+## 5. Logging y Depuración
+
+*   **Sistema de Logging:** Utiliza el sistema de logging configurado (`[src/config/config_logging.py](mdc:src/config/config_logging.py)`). Asigna `LOG_CATEGORIAS` (definidas en `[src/config/settings.py](mdc:src/config/settings.py)`) a tus mensajes.
+*   **Depuración Controlada:** Evita `print()` indiscriminados. Si es necesario para depuración temporal, sigue las directrices de `[DEVELOPMENT_PROTOCOLS.md](mdc:DEVELOPMENT_PROTOCOLS.md)` para prints controlados (idealmente migrando a logging tan pronto como sea posible).
+
+## 6. Reutilización de Código y Coherencia
+
+*   **Prioriza la Reutilización:** Antes de escribir nuevo código, consulta `[mapa_conceptual_modulos.py](mdc:mapa_conceptual_modulos.py)` y el código existente para identificar funcionalidades reutilizables.
+*   **Consistencia:** Mantén la coherencia con los patrones de diseño y la arquitectura general.
+
+## 7. Comunicación y Claridad
+
+*   Si tienes dudas sobre un protocolo o una tarea después de consultar la documentación, pregunta.
+*   Si necesitas desviarte de un protocolo establecido, explica claramente tus razones y busca confirmación si es un cambio mayor.
+*   Proporciona resúmenes claros de tus acciones como se especifica en el `documentation_and_communication_protocol.mdc`.
+
+**Tu objetivo es ser un colaborador eficiente, proactivo y que sigue las mejores prácticas establecidas en la documentación del proyecto.**
+
+

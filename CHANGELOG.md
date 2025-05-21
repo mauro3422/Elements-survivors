@@ -1,5 +1,19 @@
 # Registro de Cambios (CHANGELOG)
 
+## [20-05-2025] - Mejoras en Procesos de Desarrollo y Colaboración con IA
+
+*   **Refactorización Completa del Sistema de Cursor Rules para la IA:**
+    *   Se eliminaron 5 reglas antiguas y redundantes.
+    *   Se crearon 5 nuevas reglas modulares y enfocadas para guiar el flujo de trabajo de la IA:
+        *   `project_core_documents_always_context.mdc`: Asegura que los documentos clave estén siempre en el contexto de la IA (`alwaysApply: true`).
+        *   `ai_overall_conduct_and_workflow_entry.mdc`: Define la conducta general y el punto de entrada al flujo de trabajo de la IA (`alwaysApply: true`).
+        *   `mapa_conceptual_usage_protocol.mdc`: Protocolo para el uso y actualización del mapa conceptual.
+        *   `development_lifecycle_and_verification_protocol.mdc`: Establece el ciclo de desarrollo con verificación obligatoria.
+        *   `documentation_and_communication_protocol.mdc`: Guía la actualización de documentos de seguimiento y la comunicación de tareas.
+    *   Esta refactorización tiene como objetivo mejorar la claridad, eficiencia y consistencia de la colaboración con el asistente IA.
+*   **Nuevo Protocolo de Continuidad:**
+    *   Se añadió a `DEVELOPMENT_PROTOCOLS.md` (Sección X) un "Protocolo ante Ralentización o Fallo del IDE/Entorno de Desarrollo" para minimizar la pérdida de contexto y facilitar la reanudación del trabajo.
+
 ## [0.1.0] - 2024-03-XX
 
 ### Añadido
@@ -196,3 +210,62 @@
 
 ### Cambiado
 - La fecha de las entradas anteriores en `CHANGELOG.md` que usaban "2025" (específicamente las versiones 0.2.1 y 0.2.2) ha sido actualizada a "2024" para reflejar el año correcto en que ocurrieron esos cambios, manteniendo la consistencia con el resto del historial del proyecto. 
+
+## [0.3.1] - 2025-05-20 17:30
+
+### Añadido
+- Se agregó memory_profiler a requirements.txt para diagnóstico de problemas de rendimiento.
+- Se inició la creación de un sistema de profiling para diagnóstico de rendimiento.
+
+### Problemas Identificados y Documentados
+- Incompatibilidad detectada entre Pygame y Python 3.13.1 debido a la ausencia de distutils.msvccompiler.
+- Se documentaron tres soluciones potenciales:
+  1. Downgrade a Python 3.11.x (recomendado para estabilidad)
+  2. Búsqueda de wheel compatible de Pygame para Python 3.13
+  3. Instalación de setuptools (solución menos probable)
+
+### Mejorado
+- Se actualizó dev_notes.md para mantener un mejor registro del estado actual del desarrollo y problemas críticos.
+- Se limpió información duplicada en la documentación.
+
+### Próximos Pasos Documentados
+- Resolver la incompatibilidad de dependencias para proceder con el profiling de memoria.
+- Implementar herramientas de diagnóstico de rendimiento una vez resueltas las dependencias.
+- Crear PERFORMANCE_METRICS.md para seguimiento sistemático del rendimiento.
+
+## [0.3.2] - 2025-05-20 (Fecha Actual de la Conversación)
+
+### Cambiado
+- **Re-priorización de Tareas**: Se ha re-priorizado el trabajo para centrarse en la resolución del bug crítico "Expulsión del Jugador" (problema de colisiones múltiples).
+- La investigación sobre problemas de rendimiento del IDE y la implementación de `memory_profiler` se han puesto temporalmente en pausa.
+
+### Actualización de Documentación
+- `dev_notes.md`: Actualizado extensamente para reflejar el nuevo enfoque en el bug de colisiones y archivar el contexto de la tarea de rendimiento del IDE.
+- `TODO.md`: Actualizado para reflejar la nueva priorización de tareas.
+- `CHANGELOG.md`: Actualizado para documentar esta re-priorización.
+
+### Próximos Pasos
+- Diagnosticar y solucionar el bug de "Expulsión del Jugador".
+- Revisar y actualizar `README.md`, `DEVELOPMENT_PROTOCOLS.md`, y `mapa_conceptual_modulos.py` según sea necesario para el contexto actual. 
+
+## [2025-05-20] - Definición Inicial de la Visión del Juego y Protocolos
+
+### Añadido
+- **Documento de Visión del Juego (`docs/DESIGN_VISION.md`):**
+    - Creado el archivo inicial para la visión de diseño del juego.
+    - Poblado con ideas fundamentales sobre:
+        - Sistema de combate elemental dinámico (Tierra, Fuego, Agua/Hielo, Aire) inspirado en la filosofía de "bending" (Avatar-like).
+        - Interacciones elementales y fuentes de poder.
+        - Mecánicas de impacto físico (peso/fuerza) para habilidades y colisiones.
+        - Mecánica de resistencia activa a empujes.
+        - Roles y sensaciones distintivas para cada tipo de maestro elemental.
+        - Dirección artística "pixel perfect" 2D con perspectiva cenital/isométrica.
+    - Establecidas las fechas de creación y última actualización.
+- **Protocolo de Inicialización Mejorado:**
+    - Actualizada la regla `.cursor/rules/ai_overall_conduct_and_workflow_entry.mdc` para incluir un checklist de verificación al finalizar el protocolo de inicialización de la IA.
+
+### Cambiado
+- No aplica para esta entrada (principalmente adiciones).
+
+### Solucionado
+- No aplica para esta entrada. 
