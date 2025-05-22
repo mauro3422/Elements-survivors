@@ -22,6 +22,11 @@ JUGADOR_HITBOX_AJUSTE_INFERIOR = 4 # Ajuste adicional para la parte inferior del
 JUGADOR_RETRASO_ANIM_DESCANSO = 150 # ms entre frames de animación de descanso
 JUGADOR_DANO_BASE_ATAQUE = 5
 JUGADOR_COOLDOWN_ATAQUE = 700 # ms
+JUGADOR_VIDA_MAX_DEFAULT = 100
+JUGADOR_ENERGIA_MAX_DEFAULT = 100
+JUGADOR_DANO_BASE_ATAQUE_DEFAULT = 10
+JUGADOR_COOLDOWN_GENERAL_ATAQUE_MS = 500 # Tiempo en ms
+JUGADOR_MAX_FUERZA_EMPUJE_FRAME = 7.0 # Límite a la fuerza de empuje total que el jugador puede recibir en un frame.
 
 # --- Configuración Base de Parámetros de Ataque (usados como fallback si no están en perfil) ---
 ATAQUE_BASE_OFFSET_DISTANCIA = 25.0
@@ -39,8 +44,9 @@ ENEMIGO_HITBOX_OFFSET_X = 3
 ENEMIGO_HITBOX_OFFSET_Y = 3
 ENEMIGO_DANO_ATAQUE = 1 # Daño que hace el enemigo (si tuviera un ataque explícito)
 ENEMIGO_RANGO_AGRO = 200 # Distancia a la que el enemigo detecta y persigue al jugador
-ENEMIGO_DIST_MIN_JUGADOR = 22 # Distancia mínima que el enemigo intenta mantener con el jugador
+ENEMIGO_DIST_MIN_JUGADOR = 30 # Distancia mínima que el enemigo intenta mantener con el jugador
 ENEMIGO_DANO_CONTACTO_DEFAULT = 10 # Daño por defecto que inflige un enemigo por contacto
+ENEMIGO_FUERZA_EMPUJE_BASE = 2.5 # Nueva constante para la magnitud del empuje del enemigo (píxeles/frame tentativo)
 
 # --- Configuración del Zoom de la Cámara ---
 # Factor de zoom inicial. Un valor mayor significa más zoom (objetos más grandes, vista más cercana).
@@ -93,54 +99,75 @@ RUTA_DATOS_PERFILES_ATAQUE = os.path.join(RUTA_ASSETS, "data", "attack_profiles"
 RUTA_NIVEL_1 = os.path.join(RUTA_ASSETS, "data", "niveles", "nivel_1.json")
 
 # --- Configuraciones de Depuración ---
-DEBUG_VER_HITBOXES = False
+DEBUG_VER_HITBOXES = True
 INCREMENTO_AJUSTE_DEBUG = 2
 INCREMENTO_DURACION_DEBUG = 10
 ARCHIVO_CONFIG_ATAQUE = "config_ataque.json"
 NOMBRE_PERFIL_ATAQUE_INICIAL = "espada_predeterminada"
-DEBUG_PRINT_GESTION_DANO = False
-DEBUG_PRINT_ENTORNO = False
-DEBUG_PRINT_ENTORNO_ANIM = False
-DEBUG_PRINT_JUGADOR_ATAQUE_CALCULO = False
-DEBUG_PRINT_JUGADOR_RECIBIR_DANO_INFO = False
-DEBUG_PRINT_JUGADOR_MOV_DEBUG = False  # Controla prints directos del movimiento del jugador
-DEBUG_PRINT_JUGADOR_ATAQUE_DEBUG = False  # Controla prints directos del ataque del jugador
+
+# Nueva constante para el umbral de contacto en píxeles
+PIXEL_CONTACT_THRESHOLD = 1 # Umbral para considerar contacto, usado en colisiones
+
+# DEBUG_PRINT_GESTION_DANO = False # Se manejará por log_enemigo_vida o log_gestor_estado
 
 # --- Configuración Global de Logs ---
-MODO_DEBUG_LOGS = False # MODO DEBUG DESACTIVADO
+MODO_DEBUG_LOGS = True # CAMBIADO A True PARA VER ERRORES
 LOG_LEVEL_VERBOSE = "DEBUG"
 LOG_LEVEL_STANDARD = "INFO"
 
 LOG_CATEGORIAS = {
-    "log_general": False,
-    "log_assets": False,
-    "log_input": False,
-    "log_jugador_mov": False,
-    "log_jugador_col": False,
-    "log_jugador_cmb": False,
-    "log_jugador_general": False,
-    "log_enemigo_mov": False,
-    "log_enemigo_ia": False,
-    "log_enemigo_col": False,
-    "log_enemigo_cmb": False,
-    "log_enemigo_general": False,
-    "log_animacion": False,
-    "log_camara": False, # Desactivado
-    "log_collision_handler": False,
-    "log_event_handler": False, # Desactivado
-    "log_event_handler_verbose": False,
-    "log_gestor_estado": False,
-    "log_gestor_estado_detalle": False,
-    "log_render": False,
-    "log_render_verbose": False,
-    "log_render_hitbox": False,
-    "log_camara_verbose": False,
-    "log_apm": False,
-    "log_initializer": False,
-    "log_entidad_base": False,
+    # Categorías Generales y de Sistema
+    "log_general": False,               # Para mensajes generales no específicos de un módulo. ¡ACTIVAR CON PRECAUCIÓN! Puede ser muy verboso.
+    "log_main": True,                  # Logs específicos del script principal main.py # CAMBIADO A True PARA VER ERRORES
+    "log_juego": False,                 # Logs del bucle principal del juego, eventos de alto nivel en Juego.py
+    "log_game_initializer": False,      # Logs del proceso de inicialización del juego
+    "log_config_logging": False,       # Logs relacionados con la configuración del propio sistema de logging (puede ser meta-verboso)
+    "log_asset_manager": False,         # Logs de carga y gestión de assets (imágenes, sonidos, fuentes) # CAMBIADO A False TEMPORALMENTE
+    
+    # Categorías de Entidades
+    "log_entidad_base": False,         # Logs de la clase EntidadBase (si se añaden)
+    "log_jugador_general": False,      # Logs generales del jugador (estados, inicialización)
+    "log_jugador_mov_detalle": True,  # ACTIVADO PARA DEBUG DE EMPUJE
+    "log_jugador_ataque_calculo": False,
+    "log_jugador_ataque_debug": False,   # MANTENER ACTIVADO PARA PRUEBA # CAMBIADO A False TEMPORALMENTE
+    "log_jugador_vida": False,         # ACTIVADO PARA PRUEBA DE DAÑO # CAMBIADO A False TEMPORALMENTE
+    "log_jugador_anim": False,         # Logs específicos de la animación del jugador
+    "log_enemigo": False,              # ACTIVADO PARA PRUEBA DE DAÑO # CAMBIADO A False TEMPORALMENTE
+    "log_enemigo_ia": True,           # ACTIVADO PARA DEBUG DE EMPUJE
+    "log_enemigo_mov": False,          # Logs del movimiento del enemigo
+    "log_enemigo_col": False,          # Logs de colisiones específicas del enemigo
+    "log_entorno": False,              # Logs de los elementos del entorno (DEBUG_PRINT_ENTORNO, DEBUG_PRINT_ENTORNO_ANIM)
+
+    # Categorías de Sistemas y Gestores
+    "log_collision_handler": True,
+    "log_collision_handler_detalle": True,
+    "log_gestor_eventos": False,
+    "log_gestor_eventos_verbose": False, # Nueva categoría para logs detallados de eventos
+    "log_gestor_estado": False,         # Logs de alto nivel del GestorEstado # CAMBIADO A False TEMPORALMENTE
+    "log_gestor_estado_detalle": False, # Logs detallados de GestorEstado.actualizar_entidades_y_logica
     "log_gestor_nivel": False,
-    "log_gestor_nivel_detalle": False,
-    "log_entorno": False,
+    "log_gestor_nivel_detalle": False, # Nueva categoría para logs detallados de GestorNivel
+    "log_attack_profile_manager": False,
+    "log_renderer": False,             # Logs del sistema de renderizado (si se implementa un logger específico)
+    "log_renderer_verbose": False,     # Para logs detallados del renderer
+    "log_renderer_hitbox": False,      # Para logs específicos del renderizado de hitboxes
+    "log_hud": False,                  # Logs del HUD
+    "log_camara": False,               # Logs del sistema de cámara
+    "log_camara_verbose": False,       # Para logs detallados de la cámara
+    "log_dialogo": False,              # Logs del sistema de diálogos
+    "log_inventario": False,           # Logs del sistema de inventario
+    "log_misiones": False,             # Logs del sistema de misiones
+    "log_motor_fisica": True,          # ACTIVADO PARA DEBUG DE EMPUJE
+
+    # Categorías para Debugging Específico (Usar con moderación)
+    "log_debug_temporal": True,       # Para logs temporales durante una sesión de debugging específica # CAMBIADO A True PARA VER ERRORES
+    "log_posiciones_debug": False,     # Nueva categoría para debug de posiciones de entidades
+
+    # Categorías de Rendimiento y Debugging Detallado
+    "log_juego_perf_detalle": False,    # Logs detallados de rendimiento para fases internas de Juego.py # CAMBIADO A False TEMPORALMENTE
+
+    # Categorías de Utilidades y Otros
+    "log_utils": False,                # Logs de funciones en utils.py
 }
 
 # Nueva constante para el filtro de duplicados
@@ -165,6 +192,7 @@ MODULOS_CON_LOG_PROPIO = [
     "attack_profile_manager",
     "game_initializer",
     "entorno",
+    "motor_fisica",
 ]
 
 # --- Configuración de Fuentes ---
@@ -191,4 +219,4 @@ HUD_ESPACIO_ENTRE_SECCIONES = 25
 # --- Constantes de Gameplay/Física ---
 UMBRAL_MOV_FLOTANTE_ENTIDAD = 0.0001
 FACTOR_UMBRAL_TELETRANSPORTACION = 1.5
-MAX_PASADAS_RESOLUCION_ESTATICA = 2
+MAX_PASADAS_RESOLUCION_ESTATICA = 4

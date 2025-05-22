@@ -37,21 +37,24 @@ class GestorEstado:
         if log_gs_enabled:
             logger.debug("GestorEstado inicializado.", extra={"categoria_log": "log_gestor_estado"})
 
-    def actualizar_entidades_y_logica(self, teclas_presionadas, delta_time):
+    def actualizar_entidades_y_logica(self, teclas_presionadas, delta_time, mundo_ancho, mundo_alto):
+        print("DEBUG: GestorEstado.actualizar_entidades_y_logica() - INICIO")
         """
         Actualiza el estado de todas las entidades relevantes y maneja la lógica principal del juego.
 
         Args:
             teclas_presionadas: El estado actual de las teclas presionadas (de pygame.key.get_pressed()).
             delta_time: El tiempo transcurrido desde el último frame, en segundos.
+            mundo_ancho (int): Ancho total del mundo del juego.
+            mundo_alto (int): Alto total del mundo del juego.
         """
         log_gs_enabled = settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_gestor_estado", False)
         log_gs_detalle_enabled = settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_gestor_estado_detalle", False)
-        log_jugador_cmb_enabled = settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_jugador_cmb", False) # Para el log de daño al jugador
 
         if log_gs_detalle_enabled:
             logger.debug(f"GestorEstado: Inicio actualizar_entidades_y_logica. Delta: {delta_time:.4f}s", extra={"categoria_log": "log_gestor_estado_detalle"})
 
+        print("DEBUG: GestorEstado - ANTES de actualizar enemigos")
         # 1. Actualizar Enemigos
         if log_gs_enabled:
             if not self.enemigos_grupo:
@@ -61,19 +64,26 @@ class GestorEstado:
         
         # Los enemigos necesitan al jugador (para la IA) y los obstáculos (para colisiones)
         # También necesitan otros enemigos como obstáculos.
+        print("DEBUG: GestorEstado - INICIO BUCLE ENEMIGOS")
         for i, enemigo_actual in enumerate(self.enemigos_grupo):
+            print(f"DEBUG: GestorEstado - Iteracion {i}, Enemigo: {getattr(enemigo_actual, 'nombre_log_entidad', 'N/A')}")
             # Crear grupo de obstáculos específico para este enemigo
             obstaculos_para_enemigo_actual = pygame.sprite.Group(self.obstaculos_grupo.sprites())
             for j, otro_enemigo in enumerate(self.enemigos_grupo):
                 if i != j: # No añadir el enemigo actual a sus propios obstáculos
                     obstaculos_para_enemigo_actual.add(otro_enemigo)
             
-            # Asumimos que Enemigo.update() toma (objetivo_jugador, obstaculos_lista, delta_time)
+            # Asumimos que Enemigo.update() toma (objetivo_jugador, obstaculos_lista, delta_time, mundo_ancho, mundo_alto)
             # Los logs internos de enemigo_actual.update() ya usan sus categorías.
             if hasattr(enemigo_actual, 'update'):
-                 # Pasar la hitbox del jugador como objetivo
-                enemigo_actual.update(self.jugador.hitbox, obstaculos_para_enemigo_actual, delta_time)
+                 # Pasar la instancia completa del jugador como objetivo, no solo su hitbox
+                print(f"DEBUG: GestorEstado - ANTES de llamar a update() para {getattr(enemigo_actual, 'nombre_log_entidad', 'N/A')}")
+                enemigo_actual.update(self.jugador, obstaculos_para_enemigo_actual, delta_time, mundo_ancho, mundo_alto)
+                print(f"DEBUG: GestorEstado - DESPUÉS de llamar a update() para {getattr(enemigo_actual, 'nombre_log_entidad', 'N/A')}")
 
+        print("DEBUG: GestorEstado - DESPUÉS de actualizar enemigos")
+
+        print("DEBUG: GestorEstado - ANTES de eliminar enemigos muertos")
         # Eliminar enemigos muertos de los grupos de sprites
         enemigos_a_eliminar = []
         for enemigo in self.enemigos_grupo:
@@ -87,17 +97,26 @@ class GestorEstado:
             if enemigo_muerto in self.todos_los_sprites_grupo:
                 self.todos_los_sprites_grupo.remove(enemigo_muerto)
 
+        print("DEBUG: GestorEstado - DESPUÉS de eliminar enemigos muertos")
+
+        print("DEBUG: GestorEstado - ANTES de actualizar jugador")
         # 2. Actualizar Jugador
         # El jugador necesita los obstáculos y los enemigos para sus colisiones.
+        print("DEBUG: GestorEstado - ANTES de crear obstaculos_para_jugador")
         obstaculos_para_jugador = pygame.sprite.Group(self.obstaculos_grupo.sprites(), self.enemigos_grupo.sprites())
+        print(f"DEBUG: GestorEstado - DESPUÉS de crear obstaculos_para_jugador. Contiene {len(obstaculos_para_jugador)} sprites.")
         if log_gs_enabled:
             logger.debug("  GestorEstado: Actualizando jugador...", extra={"categoria_log": "log_gestor_estado"})
         
         # Asumimos que Jugador.update() toma (teclas, obstaculos, enemigos, ancho_mundo, alto_mundo, delta_time)
         # Jugador.update() tiene sus propios logs internos categóricos.
         if hasattr(self.jugador, 'update'):
-            self.jugador.update(teclas_presionadas, obstaculos_para_jugador, self.enemigos_grupo, settings.ANCHO_MUNDO_JUEGO, settings.ALTO_MUNDO_JUEGO, delta_time)
+            print("DEBUG: GestorEstado - ANTES de self.jugador.update()")
+            self.jugador.update(teclas_presionadas, obstaculos_para_jugador, self.enemigos_grupo, mundo_ancho, mundo_alto, delta_time)
+            print("DEBUG: GestorEstado - DESPUÉS de self.jugador.update()")
+        print("DEBUG: GestorEstado - DESPUÉS de actualizar jugador")
 
+        print("DEBUG: GestorEstado - ANTES de actualizar otros sprites")
         # 3. Actualizar otros sprites (ej. árboles)
         # Esto es si los sprites en `todos_los_sprites_grupo` que no son jugador ni enemigos necesitan update.
         # Por ejemplo, un árbol con animación.
@@ -119,7 +138,9 @@ class GestorEstado:
                         except TypeError:
                             sprite.update() # Fallback si no acepta delta_time
 
+        print("DEBUG: GestorEstado - DESPUÉS de actualizar otros sprites")
 
+        print("DEBUG: GestorEstado - ANTES de manejar colisiones por contacto")
         # 4. Manejar colisiones para daño por contacto jugador <-> enemigos
         colisiones_contacto = pygame.sprite.spritecollide(self.jugador, self.enemigos_grupo, False, collide_rect_extended)
         if colisiones_contacto:
@@ -139,8 +160,52 @@ class GestorEstado:
                 else:
                     if log_gs_enabled:
                         logger.error(f"  GestorEstado: Jugador no tiene método 'recibir_dano'. No se aplicó daño de {getattr(enemigo_colisionado, 'nombre_log_entidad', type(enemigo_colisionado).__name__)}.", extra={"categoria_log": "log_gestor_estado"})
+        print("DEBUG: GestorEstado - DESPUÉS de manejar colisiones por contacto")
         
+        # --- INICIO NUEVO LOG DE POSICIONES ---
+        log_pos_debug_enabled = settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_posiciones_debug", False)
+        if log_pos_debug_enabled:
+            if self.jugador and hasattr(self.jugador, 'hitbox'):
+                logger.debug(f"[POS_DEBUG] Jugador: {getattr(self.jugador, 'nombre_log_entidad', 'JUGADOR')} HB: {self.jugador.hitbox.topleft}, Size: {self.jugador.hitbox.size}", extra={"categoria_log": "log_posiciones_debug"})
+            
+            if self.enemigos_grupo:
+                for enemigo in self.enemigos_grupo:
+                    if hasattr(enemigo, 'hitbox'):
+                        logger.debug(f"[POS_DEBUG] Enemigo: {getattr(enemigo, 'nombre_log_entidad', type(enemigo).__name__)} HB: {enemigo.hitbox.topleft}, Size: {enemigo.hitbox.size}", extra={"categoria_log": "log_posiciones_debug"})
+            else:
+                logger.debug("[POS_DEBUG] No hay enemigos activos.", extra={"categoria_log": "log_posiciones_debug"})
+        # --- FIN NUEVO LOG DE POSICIONES ---
+
         if log_gs_detalle_enabled:
             logger.debug("GestorEstado: Fin actualizar_entidades_y_logica.", extra={"categoria_log": "log_gestor_estado_detalle"})
 
-        # No es necesario devolver nada, las actualizaciones modifican los objetos directamente. 
+        print("DEBUG: GestorEstado.actualizar_entidades_y_logica() - FIN")
+        # No es necesario devolver nada, las actualizaciones modifican los objetos directamente.
+    
+    def limpiar_grupos_y_estado(self):
+        """Limpia todos los grupos de sprites y resetea referencias internas."""
+        logger.info("Limpiando grupos de sprites y estado en GestorEstado...", extra={"categoria_log": "log_gestor_estado"})
+        
+        # Eliminar todos los sprites de los grupos. 
+        # Esto también debería hacer que los sprites individuales llamen a su método kill() si están bien implementados,
+        # o al menos eliminar las referencias de los grupos a ellos.
+        if self.todos_los_sprites_grupo:
+            self.todos_los_sprites_grupo.empty()
+        if self.enemigos_grupo:
+            self.enemigos_grupo.empty()
+        if self.obstaculos_grupo:
+            self.obstaculos_grupo.empty()
+
+        # Si el jugador es un sprite y está en grupos, .empty() ya lo habrá afectado.
+        # Si queremos estar seguros o si el jugador no está en todos_los_sprites_grupo:
+        if self.jugador and hasattr(self.jugador, 'kill'):
+            self.jugador.kill() # kill() lo quita de todos los grupos a los que pertenece
+
+        # Romper referencias a los objetos principales para ayudar al GC
+        self.jugador = None
+        # Los grupos ya están vacíos, pero también podemos eliminar las referencias a los objetos Group
+        self.enemigos_grupo = None
+        self.obstaculos_grupo = None
+        self.todos_los_sprites_grupo = None
+        
+        logger.info("Grupos de sprites y referencias de estado en GestorEstado limpiados.", extra={"categoria_log": "log_gestor_estado"}) 

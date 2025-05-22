@@ -1,6 +1,7 @@
 import pygame
 import sys
 import logging
+import time # Importar time para medir duraciones
 # import math # Ya no es necesario directamente en juego.py para el renderizado de fondo
 
 from src.config import settings
@@ -22,6 +23,7 @@ logger = logging.getLogger("juego")
 
 class Juego:
     def __init__(self):
+        print("DEBUG: Juego.__init__() - INICIO")
         # print("DEBUG: Juego.__init__() - INICIO") # Limpiado
         logger.info("Iniciando Pygame y módulos del juego...", extra={"categoria_log": "log_general"})
         pygame.init()
@@ -80,17 +82,23 @@ class Juego:
         if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_general", False):
             logger.debug(f"  Detalles inicialización: Pantalla: {settings.ANCHO_PANTALLA}x{settings.ALTO_PANTALLA}, Zoom inicial: {self.factor_zoom_actual}", extra={"categoria_log": "log_general"})
         # print("DEBUG: Juego.__init__() - FIN") # Limpiado
+        print("DEBUG: Juego.__init__() - FIN")
 
     def _manejar_eventos(self):
+        print("DEBUG: Juego._manejar_eventos() - INICIO")
         if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_input", False):
             logger.debug("Procesando eventos Pygame...", extra={"categoria_log": "log_input"})
         eventos_pygame = pygame.event.get()
+        print(f"DEBUG: Juego._manejar_eventos() - Pygame events fetched: {eventos_pygame}")
         self.gestor_eventos.procesar_eventos(eventos_pygame)
+        print("DEBUG: Juego._manejar_eventos() - DESPUÉS de gestor_eventos.procesar_eventos()")
 
         if self.gestor_eventos.debe_salir():
+            print("DEBUG: Juego._manejar_eventos() - gestor_eventos.debe_salir() es True")
             self.running = False
             if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_input", False):
                  logger.debug("Solicitud de salir del juego procesada.", extra={"categoria_log": "log_input"})
+        print("DEBUG: Juego._manejar_eventos() - FIN")
 
     # Método para que GestorEventos actualice el zoom en Juego
     def actualizar_factor_zoom(self, nuevo_zoom):
@@ -99,20 +107,48 @@ class Juego:
             logger.info(f"Factor de zoom actualizado a {self.factor_zoom_actual:.2f}", extra={"categoria_log": "log_camara"})
 
     def _actualizar_estado(self, delta_time):
+        print("DEBUG: Juego._actualizar_estado() - INICIO")
+        log_perf_detalle_enabled = settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_juego_perf_detalle", False)
         if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_juego_estado", False):
             logger.debug(f"Inicio de actualización de estado. Delta: {delta_time:.4f}s.", extra={"categoria_log": "log_juego_estado"})
         
+        print("DEBUG: Juego._actualizar_estado() - ANTES de pygame.key.get_pressed()")
         teclas_presionadas = pygame.key.get_pressed()
-        self.gestor_estado.actualizar_entidades_y_logica(teclas_presionadas, delta_time)
+        print("DEBUG: Juego._actualizar_estado() - DESPUÉS de pygame.key.get_pressed()")
+
+        # Medir self.gestor_estado.actualizar_entidades_y_logica
+        if log_perf_detalle_enabled: ges_start_time = time.perf_counter()
+        print("DEBUG: Juego._actualizar_estado() - ANTES de gestor_estado.actualizar_entidades_y_logica()")
+        self.gestor_estado.actualizar_entidades_y_logica(teclas_presionadas, delta_time, settings.ANCHO_MUNDO_JUEGO, settings.ALTO_MUNDO_JUEGO)
+        print("DEBUG: Juego._actualizar_estado() - DESPUÉS de gestor_estado.actualizar_entidades_y_logica()")
+        if log_perf_detalle_enabled:
+            ges_duration_ms = (time.perf_counter() - ges_start_time) * 1000
+            logger.debug(f"    SUB: GestorEstado.actualizar: {ges_duration_ms:.4f}ms", extra={"categoria_log": "log_juego_perf_detalle"})
 
         if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_juego_estado", False):
             logger.debug("Actualizando cámara y HUD...", extra={"categoria_log": "log_juego_estado"})
         
+        # Medir self.camara.update
+        if log_perf_detalle_enabled: cam_start_time = time.perf_counter()
+        print("DEBUG: Juego._actualizar_estado() - ANTES de camara.update()")
         self.camara.update(self.jugador, self.factor_zoom_actual)
-        self.hud.update() 
+        print("DEBUG: Juego._actualizar_estado() - DESPUÉS de camara.update()")
+        if log_perf_detalle_enabled:
+            cam_duration_ms = (time.perf_counter() - cam_start_time) * 1000
+            logger.debug(f"    SUB: Camara.update: {cam_duration_ms:.4f}ms", extra={"categoria_log": "log_juego_perf_detalle"})
+
+        # Medir self.hud.update
+        if log_perf_detalle_enabled: hud_start_time = time.perf_counter()
+        print("DEBUG: Juego._actualizar_estado() - ANTES de hud.update()")
+        self.hud.update()
+        print("DEBUG: Juego._actualizar_estado() - DESPUÉS de hud.update()")
+        if log_perf_detalle_enabled:
+            hud_duration_ms = (time.perf_counter() - hud_start_time) * 1000
+            logger.debug(f"    SUB: HUD.update: {hud_duration_ms:.4f}ms", extra={"categoria_log": "log_juego_perf_detalle"})
         
         if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_juego_estado", False):
             logger.debug("Fin de actualización de estado.", extra={"categoria_log": "log_juego_estado"})
+        print("DEBUG: Juego._actualizar_estado() - FIN")
     
     def _renderizar(self):
         """Delega el renderizado de la escena y el HUD al Renderer."""
@@ -127,40 +163,88 @@ class Juego:
             logger.debug("Ciclo de renderizado completado (flip ejecutado).", extra={"categoria_log": "log_general"})
 
     def run(self):
+        print("DEBUG: Juego.run() - INICIO DEL MÉTODO RUN")
         # print("DEBUG: Juego.run() - INICIO") # Limpiado
         self.running = True
+        print("DEBUG: Juego.run() - self.running establecido a True")
         logger.info("Bucle principal iniciado.", extra={"categoria_log": "log_general"})
         # print("DEBUG: Juego.run() - ANTES DEL BUCLE WHILE") # Limpiado
+        print("DEBUG: Juego.run() - ANTES DEL BUCLE WHILE")
         while self.running:
+            print("DEBUG: Juego.run() - INICIO ITERACIÓN BUCLE WHILE")
+            frame_start_time = time.perf_counter() # Registrar tiempo de inicio del frame
             # print("DEBUG: Juego.run() - INICIO DEL BUCLE WHILE") # Limpiado
             
             # print("DEBUG: Juego.run() - ANTES de self.clock.tick()") # Limpiado
+            print("DEBUG: Juego.run() - ANTES de self.clock.tick()")
             delta_time_secs = self.clock.tick(settings.FPS) / 1000.0
+            print(f"DEBUG: Juego.run() - DESPUÉS de self.clock.tick(), delta_time_secs: {delta_time_secs}")
+            if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_juego", False):
+                logger.debug(f"Frame Start. Delta Time: {delta_time_secs:.6f}s", extra={"categoria_log": "log_juego"})
             # print(f"DEBUG: Juego.run() - DESPUES de self.clock.tick(), delta_time_secs: {delta_time_secs}") # Limpiado
             
-            logger.debug("MENSAJE DE PRUEBA REPETIDO PARA FILTRO", extra={"categoria_log": "log_general"})
+            # logger.debug("MENSAJE DE PRUEBA REPETIDO PARA FILTRO", extra={"categoria_log": "log_juego"})
 
             # print("DEBUG: Juego.run() - ANTES de self._manejar_eventos()") # Limpiado
+            print("DEBUG: Juego.run() - ANTES de self._manejar_eventos()")
+            event_start_time = time.perf_counter()
             self._manejar_eventos()
+            print("DEBUG: Juego.run() - DESPUÉS de self._manejar_eventos()")
+            if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_juego", False):
+                event_duration_ms = (time.perf_counter() - event_start_time) * 1000
+                logger.debug(f"  Event Handling: {event_duration_ms:.4f}ms", extra={"categoria_log": "log_juego"})
             # print("DEBUG: Juego.run() - DESPUES de self._manejar_eventos()") # Limpiado
             
             if not self.running:
-                # print("DEBUG: Juego.run() - self.running es False, saliendo del bucle") # Limpiado
+                print("DEBUG: Juego.run() - self.running es False, saliendo del bucle")
                 break
+            print("DEBUG: Juego.run() - DESPUÉS de la comprobación 'if not self.running'")
             
             # print("DEBUG: Juego.run() - ANTES de self._actualizar_estado()") # Limpiado
+            print("DEBUG: Juego.run() - ANTES de self._actualizar_estado()")
+            update_start_time = time.perf_counter()
             self._actualizar_estado(delta_time_secs)
+            print("DEBUG: Juego.run() - DESPUÉS de self._actualizar_estado()")
+            if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_juego", False):
+                update_duration_ms = (time.perf_counter() - update_start_time) * 1000
+                logger.debug(f"  State Update:   {update_duration_ms:.4f}ms", extra={"categoria_log": "log_juego"})
             # print("DEBUG: Juego.run() - DESPUES de self._actualizar_estado()") # Limpiado
             
             # print("DEBUG: Juego.run() - ANTES de self._renderizar()") # Limpiado
+            render_start_time = time.perf_counter()
             self._renderizar()
+            if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_juego", False):
+                render_duration_ms = (time.perf_counter() - render_start_time) * 1000
+                logger.debug(f"  Rendering:      {render_duration_ms:.4f}ms", extra={"categoria_log": "log_juego"})
             # print("DEBUG: Juego.run() - DESPUES de self._renderizar()") # Limpiado
             # print("DEBUG: Juego.run() - FIN DEL BUCLE WHILE") # Limpiado
-        
+            print("DEBUG: Juego.run() - FIN ITERACIÓN BUCLE WHILE")
+            
+            if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_juego", False):
+                frame_end_time = time.perf_counter()
+                frame_duration_ms = (frame_end_time - frame_start_time) * 1000
+                logger.debug(f"Frame End. Duration: {frame_duration_ms:.4f}ms", extra={"categoria_log": "log_juego"})
+
         # print("DEBUG: Juego.run() - DESPUES DEL BUCLE WHILE, llamando a self.quit()") # Limpiado
+        print("DEBUG: Juego.run() - DESPUÉS DEL BUCLE WHILE, llamando a self.quit()")
         self.quit()
 
     def quit(self):
+        logger.info("Iniciando proceso de limpieza y salida del juego...", extra={"categoria_log": "log_general"})
+        
+        # Limpiar Assets
+        if hasattr(self, 'asset_manager') and self.asset_manager:
+            logger.info("Limpiando AssetManager...", extra={"categoria_log": "log_general"})
+            self.asset_manager.clear_all_assets()
+        
+        # Limpiar GestorEstado (grupos de sprites, etc.)
+        if hasattr(self, 'gestor_estado') and self.gestor_estado:
+            logger.info("Limpiando GestorEstado...", extra={"categoria_log": "log_general"})
+            self.gestor_estado.limpiar_grupos_y_estado()
+
+        # Aquí podrían ir otras limpiezas de otros módulos si fuera necesario
+        # Ejemplo: self.mi_otro_gestor.cleanup()
+
         logger.info("Saliendo de Pygame y del sistema...", extra={"categoria_log": "log_general"})
         pygame.quit()
         sys.exit()

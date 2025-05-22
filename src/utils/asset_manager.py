@@ -194,6 +194,14 @@ class AssetManager:
         # Reemplazar logger_am_general.info por logger.info y añadir extra
         logger.info("--- AM: Preload General de Assets Completado ---", extra={"categoria_log": "log_assets"})
 
+    def clear_all_assets(self):
+        """Limpia todos los assets cargados (imágenes y fuentes) de los diccionarios."""
+        logger.info("Limpiando todos los assets cargados (imágenes, fuentes)...", extra={"categoria_log": "log_assets"})
+        self.images.clear()
+        self.fonts.clear()
+        self.sounds.clear() # También limpiar el diccionario de sonidos
+        logger.info("Todos los assets en AssetManager han sido limpiados.", extra={"categoria_log": "log_assets"})
+
 # Ejemplo de cómo se podría usar (esto iría en main.py o clase Juego)
 if __name__ == '__main__':
     pygame.init() # Pygame debe estar inicializado para cargar fuentes e imágenes

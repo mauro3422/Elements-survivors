@@ -1,6 +1,12 @@
 import pygame
 import logging
 from src.config import settings # MODIFICADO: Importación de settings actualizada
+from typing import TYPE_CHECKING # <--- AÑADIR IMPORT
+
+# Ya no importamos Jugador y Enemigo aquí en el ámbito global para evitar el ciclo
+# if TYPE_CHECKING: # Se usaría si tuviéramos anotaciones de tipo que los necesitaran globalmente
+#     from src.entidades.jugador import Jugador
+#     from src.entidades.enemigo import Enemigo
 
 # Cambiar nombre del logger y eliminar setLevel
 # logger_ch = logging.getLogger("log_collision_handler")
@@ -9,366 +15,529 @@ logger = logging.getLogger("collision_handler")
 
 class CollisionHandler:
     @staticmethod
-    def _resolver_solapamientos_estaticos_eje(entidad_hitbox, entidad_rect, hitbox_offset_x, hitbox_offset_y, obstaculos, eje, movimiento_input_en_eje):
+    def _check_touch_or_overlap(r1, r2, eje):
+        """
+        Verifica si dos rectángulos se tocan o se solapan.
+        Para el eje principal de verificación, usa <= y >= para incluir el contacto de bordes.
+        Para el eje secundario, usa <= y >= para asegurar un solapamiento/contacto en ese eje.
+        """
+        if eje == 'x':
+            # Verifica solapamiento/contacto en X, y solapamiento/contacto en Y
+            return (r1.left <= r2.right and r1.right >= r2.left and
+                    r1.top <= r2.bottom and r1.bottom >= r2.top)
+        elif eje == 'y':
+            # Verifica solapamiento/contacto en Y, y solapamiento/contacto en X
+            return (r1.top <= r2.bottom and r1.bottom >= r2.top and
+                    r1.left <= r2.right and r1.right >= r2.left)
+        return False # Eje no válido
+
+    @staticmethod
+    def _resolver_solapamientos_estaticos_eje(entidad_actual, entidad_hitbox, obstaculos, eje, movimiento_input_en_eje):
+        # --- IMPORTACIONES LOCALES PARA EVITAR CICLOS ---
+        from src.entidades.jugador import Jugador
+        from src.entidades.enemigo import Enemigo
+        # --- FIN IMPORTACIONES LOCALES ---
+
+        ent_name_for_print = getattr(entidad_actual, 'nombre_log_entidad', type(entidad_actual).__name__)
+        print(f"DEBUG_CH_RSE_ENTRADA: Entrando a _resolver_solapamientos_estaticos_eje para: {ent_name_for_print}, Eje: {eje}, Input: {movimiento_input_en_eje:.2f}, HB_Ent_Inicial: {entidad_hitbox.topleft}")
+
         log_habilitado = settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_collision_handler", False)
+        log_detalle_habilitado = settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_collision_handler_detalle", False)
 
-        if log_habilitado:
-            # Reemplazar logger_ch por logger y añadir extra
-            logger.debug(f"    --- CH: Inicio _resolver_solapamientos_estaticos_eje ({eje}) --- Input: {movimiento_input_en_eje}, HB_Ent_INICIAL_FUNCION: {entidad_hitbox.topleft}, HB_Ent_Size: {entidad_hitbox.size}", extra={"categoria_log": "log_collision_handler"})
-
+        es_jugador_actual = isinstance(entidad_actual, Jugador)
+        input_actual_en_eje_es_cero = (abs(movimiento_input_en_eje) < settings.UMBRAL_MOV_FLOTANTE_ENTIDAD)
+        
         for pasada in range(settings.MAX_PASADAS_RESOLUCION_ESTATICA):
             colision_resuelta_en_pasada = False
-            if log_habilitado:
-                # Reemplazar logger_ch por logger y añadir extra
-                logger.debug(f"      CH: Pasada {pasada + 1} res. estática eje {eje}. HB_Ent_Inicio_Pasada: {entidad_hitbox.topleft}", extra={"categoria_log": "log_collision_handler"})
+            print(f"DEBUG_CH_RSE_PASADA_INICIO: ({ent_name_for_print}, Eje: {eje}) --- INICIO Pasada {pasada + 1} --- HB_Actual: {entidad_hitbox.topleft}")
 
-            for i, obstaculo in enumerate(obstaculos):
+            for obstaculo in obstaculos:
+                if obstaculo == entidad_actual: 
+                    continue
+            
                 rect_colision_obstaculo = obstaculo.hitbox if hasattr(obstaculo, 'hitbox') else obstaculo.rect
-                # Usar nombre_log_entidad si existe, sino un fallback descriptivo.
-                obst_id_log = getattr(obstaculo, 'nombre_log_entidad', f"{type(obstaculo).__name__}_idx{i}")
-
-                if log_habilitado:
-                    logger.debug(f"        CH_DETALLE: Eje {eje}, Pasada {pasada+1}. ANTES de colliderect con {obst_id_log}.\\n"
-                                 f"                  HB_Ent: TL={entidad_hitbox.topleft}, Size={entidad_hitbox.size}\\n"
-                                 f"                  HB_Obs ({obst_id_log}): TL={rect_colision_obstaculo.topleft}, Size={rect_colision_obstaculo.size}",
-                                 extra={"categoria_log": "log_collision_handler"})
+                obst_id_log = getattr(obstaculo, 'nombre_log_entidad', type(obstaculo).__name__)
                 
-                colisiona = entidad_hitbox.colliderect(rect_colision_obstaculo)
+                print(f"DEBUG_CH_RSE_OBST_LOOP: ({ent_name_for_print}) Verificando Obst: {obst_id_log} (HB_Obs: {rect_colision_obstaculo.topleft}, Size_Obs: {rect_colision_obstaculo.size}) vs HB_Ent: {entidad_hitbox.topleft}")
                 
-                if log_habilitado:
-                    logger.debug(f"        CH_DETALLE: Eje {eje}, Pasada {pasada+1}. {obst_id_log}. Resultado de colliderect: {colisiona}",
-                                 extra={"categoria_log": "log_collision_handler"})
+                colisiona_general = entidad_hitbox.colliderect(rect_colision_obstaculo)
 
-                if colisiona:
-                    if log_habilitado:
-                        # Reemplazar logger_ch por logger y añadir extra
-                        logger.debug(f"        CH: SOLAP. ESTÁTICO EJE {eje} con {obst_id_log} (Pasada {pasada+1}). HB_Ent_Al_Solapar: {entidad_hitbox.topleft}, HB_Obs: {rect_colision_obstaculo.topleft}", extra={"categoria_log": "log_collision_handler"})
-                    
-                    hitbox_modificado_este_obstaculo = False
-                    if eje == 'x':
-                        x_antes = entidad_hitbox.x
-                        if log_habilitado:
-                            logger.debug(f"          CH_DETALLE_AJUSTE_X: Entrando a lógica de ajuste X. HB_Ent.centerx={entidad_hitbox.centerx}, Obs.centerx={rect_colision_obstaculo.centerx}", extra={"categoria_log": "log_collision_handler"})
+                if not colisiona_general:
+                    print(f"DEBUG_CH_RSE_OBST_LOOP: ({ent_name_for_print}) NO hay colisión general con {obst_id_log}. Continuando con siguiente obstáculo.")
+                    continue
 
-                        if entidad_hitbox.centerx < rect_colision_obstaculo.centerx:
-                            overlap = entidad_hitbox.right - rect_colision_obstaculo.left
-                            if log_habilitado:
-                                logger.debug(f"            CH_DETALLE_AJUSTE_X (Entidad a IZQ de Obs): Overlap (Ent.R - Obs.L) = {overlap:.2f}. HB_Ent.right={entidad_hitbox.right}, Obs.left={rect_colision_obstaculo.left}", extra={"categoria_log": "log_collision_handler"})
-                            if overlap > 0:
-                                if log_habilitado:
-                                    # Reemplazar logger_ch por logger y añadir extra
-                                    logger.debug(f"          CH: Estático EJE X vs {obst_id_log}: Entidad a la IZQ del Obs. Ajustando Ent.Right = Obs.Left ({rect_colision_obstaculo.left})", extra={"categoria_log": "log_collision_handler"})
+                print(f"DEBUG_CH_RSE_COLISION_DETECTADA: ({ent_name_for_print}) SÍ hay colisión con {obst_id_log}. HB_Ent: {entidad_hitbox.topleft}, HB_Obs: {rect_colision_obstaculo.topleft}, MovInputEje: {movimiento_input_en_eje:.2f}")
+
+                    x_antes = entidad_hitbox.x
+                    y_antes = entidad_hitbox.y
+                print(f"DEBUG_CH_RSE_PRE_AJUSTE_LOGICA: ({ent_name_for_print} vs {obst_id_log}) HB_Ent_Antes_De_Logica_Ajuste: ({x_antes},{y_antes})")
+
+                        if eje == 'x':
+                    if movimiento_input_en_eje > 0: 
+                        if rect_colision_obstaculo.centerx > entidad_hitbox.centerx: 
                                 entidad_hitbox.right = rect_colision_obstaculo.left
-                        else:
-                            overlap = rect_colision_obstaculo.right - entidad_hitbox.left
-                            if log_habilitado:
-                                logger.debug(f"            CH_DETALLE_AJUSTE_X (Entidad a DER de Obs): Overlap (Obs.R - Ent.L) = {overlap:.2f}. Obs.right={rect_colision_obstaculo.right}, HB_Ent.left={entidad_hitbox.left}", extra={"categoria_log": "log_collision_handler"})
-                            if overlap > 0:
-                                if log_habilitado:
-                                    # Reemplazar logger_ch por logger y añadir extra
-                                    logger.debug(f"          CH: Estático EJE X vs {obst_id_log}: Entidad a la DER del Obs. Ajustando Ent.Left = Obs.Right ({rect_colision_obstaculo.right})", extra={"categoria_log": "log_collision_handler"})
+                            print(f"DEBUG_CH_RSE_AJUSTE_X_CASO1: ({ent_name_for_print}) Mov DERECHA, Obs a DERECHA. HB.right ({entidad_hitbox.right}) ajustado a Obs.left ({rect_colision_obstaculo.left})")
+                    elif movimiento_input_en_eje < 0: 
+                        if rect_colision_obstaculo.centerx < entidad_hitbox.centerx: 
                                 entidad_hitbox.left = rect_colision_obstaculo.right
-                        
-                        if entidad_hitbox.x != x_antes: 
-                            hitbox_modificado_este_obstaculo = True
-                            if log_habilitado:
-                                # Reemplazar logger_ch por logger y añadir extra
-                                logger.debug(f"          CH: Estático EJE X vs {obst_id_log}: Cambio aplicado. HB_Ent.x antes: {x_antes:.2f}, después: {entidad_hitbox.x:.2f}", extra={"categoria_log": "log_collision_handler"})
-                                
-                    elif eje == 'y':
-                        y_antes = entidad_hitbox.y
-                        if entidad_hitbox.centery < rect_colision_obstaculo.centery:
-                            overlap = entidad_hitbox.bottom - rect_colision_obstaculo.top
-                            if overlap > 0:
-                                if log_habilitado:
-                                    # Reemplazar logger_ch por logger y añadir extra
-                                    logger.debug(f"          CH: Estático EJE Y vs {obst_id_log}: Entidad ARRIBA del Obs. Overlap (Ent.B - Obs.T): {overlap:.2f}. Ajustando Ent.Bottom.", extra={"categoria_log": "log_collision_handler"})
-                                entidad_hitbox.bottom = rect_colision_obstaculo.top
-                        else:
-                            overlap = rect_colision_obstaculo.bottom - entidad_hitbox.top
-                            if overlap > 0:
-                                if log_habilitado:
-                                    # Reemplazar logger_ch por logger y añadir extra
-                                    logger.debug(f"          CH: Estático EJE Y vs {obst_id_log}: Entidad ABAJO del Obs. Overlap (Obs.B - Ent.T): {overlap:.2f}. Ajustando Ent.Top.", extra={"categoria_log": "log_collision_handler"})
-                                entidad_hitbox.top = rect_colision_obstaculo.bottom
+                            print(f"DEBUG_CH_RSE_AJUSTE_X_CASO2: ({ent_name_for_print}) Mov IZQUIERDA, Obs a IZQUIERDA. HB.left ({entidad_hitbox.left}) ajustado a Obs.right ({rect_colision_obstaculo.right})")
+                    else: 
+                            if entidad_hitbox.centerx < rect_colision_obstaculo.centerx:
+                                entidad_hitbox.right = rect_colision_obstaculo.left
+                            print(f"DEBUG_CH_RSE_AJUSTE_X_CASO3: ({ent_name_for_print}) Mov CERO, Ent a IZQ de Obs. HB.right ({entidad_hitbox.right}) ajustado a Obs.left ({rect_colision_obstaculo.left})")
+                            else:
+                                entidad_hitbox.left = rect_colision_obstaculo.right
+                            print(f"DEBUG_CH_RSE_AJUSTE_X_CASO4: ({ent_name_for_print}) Mov CERO, Ent a DER de Obs. HB.left ({entidad_hitbox.left}) ajustado a Obs.right ({rect_colision_obstaculo.right})")
+                        hitbox_modificado_este_obstaculo = (entidad_hitbox.x != x_antes)
 
-                        if entidad_hitbox.y != y_antes:
-                            hitbox_modificado_este_obstaculo = True
-                            if log_habilitado:
-                                # Reemplazar logger_ch por logger y añadir extra
-                                logger.debug(f"          CH: Estático EJE Y vs {obst_id_log}: Cambio aplicado. HB_Ent.y antes: {y_antes:.2f}, después: {entidad_hitbox.y:.2f}", extra={"categoria_log": "log_collision_handler"})
+                    elif eje == 'y':
+                    if movimiento_input_en_eje > 0: 
+                        if rect_colision_obstaculo.centery > entidad_hitbox.centery: 
+                                entidad_hitbox.bottom = rect_colision_obstaculo.top
+                            print(f"DEBUG_CH_RSE_AJUSTE_Y_CASO1: ({ent_name_for_print}) Mov ABAJO, Obs ABAJO. HB.bottom ({entidad_hitbox.bottom}) ajustado a Obs.top ({rect_colision_obstaculo.top})")
+                    elif movimiento_input_en_eje < 0: 
+                        if rect_colision_obstaculo.centery < entidad_hitbox.centery: 
+                                entidad_hitbox.top = rect_colision_obstaculo.bottom
+                            print(f"DEBUG_CH_RSE_AJUSTE_Y_CASO2: ({ent_name_for_print}) Mov ARRIBA, Obs ARRIBA. HB.top ({entidad_hitbox.top}) ajustado a Obs.bottom ({rect_colision_obstaculo.bottom})")
+                    else: 
+                            if entidad_hitbox.centery < rect_colision_obstaculo.centery:
+                                entidad_hitbox.bottom = rect_colision_obstaculo.top
+                            print(f"DEBUG_CH_RSE_AJUSTE_Y_CASO3: ({ent_name_for_print}) Mov CERO, Ent ARRIBA de Obs. HB.bottom ({entidad_hitbox.bottom}) ajustado a Obs.top ({rect_colision_obstaculo.top})")
+                            else:
+                                entidad_hitbox.top = rect_colision_obstaculo.bottom
+                            print(f"DEBUG_CH_RSE_AJUSTE_Y_CASO4: ({ent_name_for_print}) Mov CERO, Ent ABAJO de Obs. HB.top ({entidad_hitbox.top}) ajustado a Obs.bottom ({rect_colision_obstaculo.bottom})")
+                        hitbox_modificado_este_obstaculo = (entidad_hitbox.y != y_antes)
 
                     if hitbox_modificado_este_obstaculo:
                         colision_resuelta_en_pasada = True
-                        if log_habilitado:
-                            # Reemplazar logger_ch por logger y añadir extra
-                            logger.debug(f"          CH: Post-Pre-Corrección EJE {eje} (estática) vs {obst_id_log}: HB_Ent: {entidad_hitbox.topleft}", extra={"categoria_log": "log_collision_handler"})
+                    print(f"DEBUG_CH_RSE_POST_AJUSTE_OBST: ({ent_name_for_print} vs {obst_id_log}) HB_Ent_Modificado: {entidad_hitbox.topleft}")
             
-            if not colision_resuelta_en_pasada: 
-                if log_habilitado:
-                    # Reemplazar logger_ch por logger y añadir extra
-                    logger.debug(f"      CH: No más solapamientos estáticos eje {eje} en pasada {pasada + 1}. Saliendo.", extra={"categoria_log": "log_collision_handler"})
-                break 
-        
-        if log_habilitado:
-            # Reemplazar logger_ch por logger y añadir extra
-            logger.debug(f"    --- CH: Fin _resolver_solapamientos_estaticos_eje ({eje}) --- HB_Ent_FINAL_FUNCION: {entidad_hitbox.topleft}", extra={"categoria_log": "log_collision_handler"})
+            print(f"DEBUG_CH_RSE_PASADA_FIN: ({ent_name_for_print}, Eje: {eje}) --- FIN Pasada {pasada + 1} --- HB_Actual: {entidad_hitbox.topleft}, ColisionResueltaEnPasada: {colision_resuelta_en_pasada}")
+            if not colision_resuelta_en_pasada:
+                print(f"DEBUG_CH_RSE_PASADA_BREAK: ({ent_name_for_print}, Eje: {eje}) No hubo más modificaciones en esta pasada. Saliendo del bucle de pasadas.")
+                break
+
+        print(f"DEBUG_CH_RSE_SALIDA: Saliendo de _resolver_solapamientos_estaticos_eje para: {ent_name_for_print}, Eje: {eje}, HB_Out_Final: {entidad_hitbox.topleft}")
 
     @staticmethod
-    def _aplicar_movimiento_y_colision_eje_x(entidad_hitbox, dx_aplicado, obstaculos):
+    def _aplicar_movimiento_y_colision_eje_x(entidad_hitbox, dx_aplicado, obstaculos, mundo_ancho, mundo_alto):
         log_habilitado = settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_collision_handler", False)
-        if log_habilitado:
-            # Reemplazar logger_ch por logger y añadir extra
-            logger.debug(f"    --- CH: Inicio _aplicar_movimiento_y_colision_eje_x --- dx: {dx_aplicado}, HB_in: {entidad_hitbox.topleft}", extra={"categoria_log": "log_collision_handler"})
+        log_detalle_habilitado = settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_collision_handler_detalle", False)
         
-        x_original_hb = entidad_hitbox.x # Guardar para comparar
+        print(f"DEBUG_CH: Entrando a _aplicar_movimiento_y_colision_eje_x, dx_aplicado: {dx_aplicado:.2f}, HB_In: {entidad_hitbox.topleft}")
 
-        if dx_aplicado != 0:
-            # entidad_hitbox.x += dx_aplicado # Asignación directa anterior
-            entidad_hitbox.x = int(x_original_hb + dx_aplicado)# Truncamiento explícito
+        dx_total_aplicado_al_hb_original = 0.0
+        hb_temporal_eje_actual = entidad_hitbox.copy() # Copia para manipular en este eje
             
-            if log_habilitado:
-                # Reemplazar logger_ch por logger y añadir extra
-                logger.debug(f"      CH: Fase 2 (X): dx_aplicado={dx_aplicado:.4f}. HB.x original={x_original_hb}, HB.x post-int-trunc={entidad_hitbox.x}", extra={"categoria_log": "log_collision_handler"})
+        if abs(dx_aplicado) < settings.UMBRAL_MOV_FLOTANTE_ENTIDAD:
+            if log_detalle_habilitado:
+                logger.debug(f"      CH_DETALLE: Fase 2 (X): dx_aplicado ({dx_aplicado:.4f}) muy pequeño, no se aplica movimiento.", extra={"categoria_log": "log_collision_handler_detalle"})
+            return dx_total_aplicado_al_hb_original # Devuelve 0.0
 
+        paso_mov_truncado = int(dx_aplicado) # Tomar la parte entera para el bucle principal
+        dx_restante_flotante = dx_aplicado - paso_mov_truncado # Guardar la parte flotante
+
+        if log_detalle_habilitado:
+            logger.debug(f"      CH_DETALLE: Fase 2 (X): dx_aplicado={dx_aplicado:.4f}. HB.x original={hb_temporal_eje_actual.x}, PasoTrunc={paso_mov_truncado}, RestoFloat={dx_restante_flotante:.4f}", extra={"categoria_log": "log_collision_handler_detalle"})
+
+        # Mover pixel a pixel la parte entera
+        if paso_mov_truncado != 0:
+            dx_signo = 1 if paso_mov_truncado > 0 else -1
+            for _ in range(abs(paso_mov_truncado)):
+                hb_pos_anterior_al_paso = hb_temporal_eje_actual.x
+                hb_temporal_eje_actual.x += dx_signo
+                dx_total_aplicado_al_hb_original += dx_signo
+                colision_en_este_paso = False
+
+                # --- INICIO: Chequeo Límites del Mundo --- 
+                if hb_temporal_eje_actual.left < 0:
+                    hb_temporal_eje_actual.left = 0
+                    dx_total_aplicado_al_hb_original = hb_temporal_eje_actual.left - entidad_hitbox.left # Movimiento real hasta el límite
+                    colision_en_este_paso = True
+                    if log_detalle_habilitado: logger.debug(f"        CH_LIMITE_MUNDO: X Colisión con límite IZQUIERDO. HB.left ajustado a 0. Mov real hasta aquí: {dx_total_aplicado_al_hb_original}", extra={"categoria_log": "log_collision_handler_detalle"})
+                elif hb_temporal_eje_actual.right > mundo_ancho:
+                    hb_temporal_eje_actual.right = mundo_ancho
+                    dx_total_aplicado_al_hb_original = hb_temporal_eje_actual.left - entidad_hitbox.left # Movimiento real hasta el límite
+                    colision_en_este_paso = True
+                    if log_detalle_habilitado: logger.debug(f"        CH_LIMITE_MUNDO: X Colisión con límite DERECHO. HB.right ajustado a {mundo_ancho}. Mov real hasta aquí: {dx_total_aplicado_al_hb_original}", extra={"categoria_log": "log_collision_handler_detalle"})
+                # --- FIN: Chequeo Límites del Mundo --- 
+
+                if not colision_en_este_paso: # Solo chequear obstáculos si no colisionó con límites
+                    for obstaculo in obstaculos:
+                        rect_colision_obstaculo = obstaculo.hitbox if hasattr(obstaculo, 'hitbox') else obstaculo.rect
+                        if hb_temporal_eje_actual.colliderect(rect_colision_obstaculo):
+                            hb_temporal_eje_actual.x = hb_pos_anterior_al_paso # Revertir el paso
+                            dx_total_aplicado_al_hb_original -= dx_signo # Revertir el acumulado
+                            colision_en_este_paso = True
+                            if log_detalle_habilitado: 
+                                obst_id_log = getattr(obstaculo, 'nombre_log_entidad', type(obstaculo).__name__)
+                                logger.debug(f"        CH_DETALLE: Fase 2 (X) Colisión PASO con {obst_id_log} en x={hb_temporal_eje_actual.x+dx_signo}. Revertido a x={hb_temporal_eje_actual.x}. Acumulado: {dx_total_aplicado_al_hb_original}", extra={"categoria_log": "log_collision_handler_detalle"})
+                            break # Salir del bucle de obstáculos
+                
+                if colision_en_este_paso:
+                    break # Salir del bucle de movimiento pixel a pixel
+
+        # Aplicar la parte flotante restante si no hubo colisión con la parte entera
+        # Y si la parte flotante es significativa.
+        # Además, chequear colisión con límites del mundo también para la parte flotante.
+        if abs(dx_restante_flotante) >= settings.UMBRAL_MOV_FLOTANTE_ENTIDAD:
+            colision_despues_de_parte_entera = False
+            # Verificar si el movimiento entero ya causó una colisión con un obstáculo (no límite)
             for obstaculo in obstaculos:
                 rect_colision_obstaculo = obstaculo.hitbox if hasattr(obstaculo, 'hitbox') else obstaculo.rect
-                if entidad_hitbox.colliderect(rect_colision_obstaculo):
-                    obst_id_log = getattr(obstaculo, 'nombre_log_entidad', f"{type(obstaculo).__name__}_Desconocido")
-                    if log_habilitado:
-                        # Reemplazar logger_ch por logger y añadir extra
-                        logger.debug(f"      CH: Fase 2 (X): Colisión X detectada con {obst_id_log} después de mov. tentativo. HB_Ent: {entidad_hitbox.topleft}, HB_Obs: {rect_colision_obstaculo.topleft}", extra={"categoria_log": "log_collision_handler"})
-                    
-                    if dx_aplicado > 0: # Se movía hacia la derecha y colisionó
-                        entidad_hitbox.right = rect_colision_obstaculo.left
-                        if log_habilitado:
-                            # Reemplazar logger_ch por logger y añadir extra
-                            logger.debug(f"        CH: Fase 2 (X): Ajustado. Entidad mov. a DER. HB_Ent.right = Obs.left ({entidad_hitbox.right:.2f})", extra={"categoria_log": "log_collision_handler"})
-                    elif dx_aplicado < 0: # Se movía hacia la izquierda y colisionó
-                        entidad_hitbox.left = rect_colision_obstaculo.right
-                        if log_habilitado:
-                            # Reemplazar logger_ch por logger y añadir extra
-                            logger.debug(f"        CH: Fase 2 (X): Ajustado. Entidad mov. a IZQ. HB_Ent.left = Obs.right ({entidad_hitbox.left:.2f})", extra={"categoria_log": "log_collision_handler"})
-                    # Una vez que se maneja una colisión en este eje, rompemos el bucle de obstáculos.
-                    # La posición ya está ajustada al primer obstáculo encontrado en la dirección del movimiento.
+                if hb_temporal_eje_actual.colliderect(rect_colision_obstaculo):
+                    colision_despues_de_parte_entera = True
                     break 
         
-        if log_habilitado:
-            # Reemplazar logger_ch por logger y añadir extra
-            logger.debug(f"    --- CH: Fin _aplicar_movimiento_y_colision_eje_x --- HB_out X: {entidad_hitbox.x:.2f}", extra={"categoria_log": "log_collision_handler"})
+            # También verificar si el movimiento entero ya causó colisión con límites del mundo
+            if hb_temporal_eje_actual.left <= 0 or hb_temporal_eje_actual.right >= mundo_ancho:
+                colision_despues_de_parte_entera = True # Considerar colisión con límite como una colisión que detiene parte flotante
+
+            if not colision_despues_de_parte_entera:
+                hb_pos_anterior_flotante = hb_temporal_eje_actual.x
+                hb_temporal_eje_actual.x += dx_restante_flotante
+                dx_total_aplicado_al_hb_original += dx_restante_flotante
+                colision_parte_flotante = False
+
+                # --- INICIO: Chequeo Límites del Mundo para parte flotante --- 
+                if hb_temporal_eje_actual.left < 0:
+                    hb_temporal_eje_actual.left = 0
+                    dx_total_aplicado_al_hb_original = hb_temporal_eje_actual.left - entidad_hitbox.left
+                    colision_parte_flotante = True
+                    if log_detalle_habilitado: logger.debug(f"        CH_LIMITE_MUNDO: X Colisión FLOTANTE con límite IZQUIERDO. HB.left ajustado a 0.", extra={"categoria_log": "log_collision_handler_detalle"})
+                elif hb_temporal_eje_actual.right > mundo_ancho:
+                    hb_temporal_eje_actual.right = mundo_ancho
+                    dx_total_aplicado_al_hb_original = hb_temporal_eje_actual.left - entidad_hitbox.left 
+                    colision_parte_flotante = True
+                    if log_detalle_habilitado: logger.debug(f"        CH_LIMITE_MUNDO: X Colisión FLOTANTE con límite DERECHO. HB.right ajustado a {mundo_ancho}. Mov real: {dx_total_aplicado_al_hb_original}", extra={"categoria_log": "log_collision_handler_detalle"})
+                # --- FIN: Chequeo Límites del Mundo para parte flotante --- 
+
+                if not colision_parte_flotante:
+                    for obstaculo in obstaculos:
+                        rect_colision_obstaculo = obstaculo.hitbox if hasattr(obstaculo, 'hitbox') else obstaculo.rect
+                        if hb_temporal_eje_actual.colliderect(rect_colision_obstaculo):
+                            hb_temporal_eje_actual.x = hb_pos_anterior_flotante # Revertir solo la parte flotante
+                            dx_total_aplicado_al_hb_original -= dx_restante_flotante
+                            colision_parte_flotante = True # Marcar colisión para log
+                            if log_detalle_habilitado: 
+                                obst_id_log = getattr(obstaculo, 'nombre_log_entidad', type(obstaculo).__name__)
+                                logger.debug(f"        CH_DETALLE: Fase 2 (X) Colisión FLOTANTE con {obst_id_log} en x={hb_pos_anterior_flotante+dx_restante_flotante:.4f}. Revertido a x={hb_temporal_eje_actual.x:.4f}. Acumulado: {dx_total_aplicado_al_hb_original:.4f}", extra={"categoria_log": "log_collision_handler_detalle"})
+                            break # Salir del bucle de obstáculos
+                
+                if colision_parte_flotante and log_detalle_habilitado:
+                    logger.debug(f"      CH_DETALLE: Fase 2 (X): Movimiento flotante ({dx_restante_flotante:.4f}) causó colisión y fue revertido o ajustado por límite.", extra={"categoria_log": "log_collision_handler_detalle"})
+                elif log_detalle_habilitado:
+                    logger.debug(f"      CH_DETALLE: Fase 2 (X): Movimiento flotante ({dx_restante_flotante:.4f}) aplicado. HB.x post-float={hb_temporal_eje_actual.x:.4f}. Acumulado: {dx_total_aplicado_al_hb_original:.4f}", extra={"categoria_log": "log_collision_handler_detalle"})
+            elif log_detalle_habilitado:
+                 logger.debug(f"      CH_DETALLE: Fase 2 (X): Movimiento flotante ({dx_restante_flotante:.4f}) NO aplicado debido a colisión previa con parte entera o límite.", extra={"categoria_log": "log_collision_handler_detalle"})
+        elif log_detalle_habilitado:
+            logger.debug(f"      CH_DETALLE: Fase 2 (X): dx_restante_flotante ({dx_restante_flotante:.4f}) muy pequeño, no se aplica.", extra={"categoria_log": "log_collision_handler_detalle"})
+
+        print(f"DEBUG_CH: Saliendo de _aplicar_movimiento_y_colision_eje_x, dx_real_aplicado: {dx_total_aplicado_al_hb_original:.2f}, HB.x final (temporal): {hb_temporal_eje_actual.x}")
+        return dx_total_aplicado_al_hb_original
 
     @staticmethod
-    def _aplicar_movimiento_y_colision_eje_y(entidad_hitbox, dy_aplicado, obstaculos):
+    def _aplicar_movimiento_y_colision_eje_y(entidad_hitbox, dy_aplicado, obstaculos, mundo_ancho, mundo_alto):
         log_habilitado = settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_collision_handler", False)
+        log_detalle_habilitado = settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_collision_handler_detalle", False)
+        
+        print(f"DEBUG_CH: Entrando a _aplicar_movimiento_y_colision_eje_y, dy_aplicado: {dy_aplicado:.2f}, HB_In: {entidad_hitbox.topleft}")
+
         if log_habilitado:
-            # Reemplazar logger_ch por logger y añadir extra
             logger.debug(f"    --- CH: Inicio _aplicar_movimiento_y_colision_eje_y --- dy: {dy_aplicado}, HB_in: {entidad_hitbox.topleft}", extra={"categoria_log": "log_collision_handler"})
         
-        y_original_hb = entidad_hitbox.y # Guardar para comparar
+        y_original_hb = entidad_hitbox.y
+        hb_temporal_eje_actual = entidad_hitbox.copy() # Usar una copia para la lógica de este eje
 
-        if dy_aplicado != 0:
-            # entidad_hitbox.y += dy_aplicado # Asignación directa anterior
-            entidad_hitbox.y = int(y_original_hb + dy_aplicado)# Truncamiento explícito
+        if abs(dy_aplicado) < settings.UMBRAL_MOV_FLOTANTE_ENTIDAD:
+            if log_detalle_habilitado:
+                logger.debug(f"      CH_DETALLE: Fase 2 (Y): dy_aplicado ({dy_aplicado:.4f}) muy pequeño, no se aplica movimiento.", extra={"categoria_log": "log_collision_handler_detalle"})
+            return 0.0 # Devuelve 0.0 si el movimiento es insignificante
 
-            if log_habilitado:
-                # Reemplazar logger_ch por logger y añadir extra
-                logger.debug(f"      CH: Fase 2 (Y): dy_aplicado={dy_aplicado:.4f}. HB.y original={y_original_hb}, HB.y post-int-trunc={entidad_hitbox.y}", extra={"categoria_log": "log_collision_handler"})
+        # Aplicar el movimiento deseado al hitbox temporal
+        hb_temporal_eje_actual.y = round(y_original_hb + dy_aplicado)
 
+        if log_detalle_habilitado:
+            logger.debug(f"      CH_DETALLE: Fase 2 (Y): dy_aplicado={dy_aplicado:.4f}. HB.y original={y_original_hb}, HB_temporal.y post-round={hb_temporal_eje_actual.y}", extra={"categoria_log": "log_collision_handler_detalle"})
+
+        # --- INICIO: Chequeo Límites del Mundo --- 
+        if hb_temporal_eje_actual.top < 0:
+            hb_temporal_eje_actual.top = 0
+            if log_detalle_habilitado: logger.debug(f"        CH_LIMITE_MUNDO: Y Colisión con límite SUPERIOR. HB.top ajustado a 0.", extra={"categoria_log": "log_collision_handler_detalle"})
+        elif hb_temporal_eje_actual.bottom > mundo_alto:
+            hb_temporal_eje_actual.bottom = mundo_alto
+            if log_detalle_habilitado: logger.debug(f"        CH_LIMITE_MUNDO: Y Colisión con límite INFERIOR. HB.bottom ajustado a {mundo_alto}.", extra={"categoria_log": "log_collision_handler_detalle"})
+        # --- FIN: Chequeo Límites del Mundo --- 
+
+        # Chequeo de colisiones con obstáculos DESPUÉS de aplicar límites del mundo
             for obstaculo in obstaculos:
                 rect_colision_obstaculo = obstaculo.hitbox if hasattr(obstaculo, 'hitbox') else obstaculo.rect
-                if entidad_hitbox.colliderect(rect_colision_obstaculo):
+            if hb_temporal_eje_actual.colliderect(rect_colision_obstaculo):
                     obst_id_log = getattr(obstaculo, 'nombre_log_entidad', f"{type(obstaculo).__name__}_Desconocido")
-                    if log_habilitado:
-                        # Reemplazar logger_ch por logger y añadir extra
-                        logger.debug(f"      CH: Fase 2 (Y): Colisión Y detectada con {obst_id_log} después de mov. tentativo. HB_Ent: {entidad_hitbox.topleft}, HB_Obs: {rect_colision_obstaculo.topleft}", extra={"categoria_log": "log_collision_handler"})
+                if log_detalle_habilitado:
+                    logger.debug(f"      CH_DETALLE: Fase 2 (Y): Colisión Y detectada con {obst_id_log}. HB_Ent_temp: {hb_temporal_eje_actual.topleft}, HB_Obs: {rect_colision_obstaculo.topleft}", extra={"categoria_log": "log_collision_handler_detalle"})
 
-                    if dy_aplicado > 0: # Se movía hacia abajo y colisionó
-                        entidad_hitbox.bottom = rect_colision_obstaculo.top
-                        if log_habilitado:
-                            # Reemplazar logger_ch por logger y añadir extra
-                            logger.debug(f"        CH: Fase 2 (Y): Ajustado. Entidad mov. ABAJO. HB_Ent.bottom = Obs.top ({entidad_hitbox.bottom:.2f})", extra={"categoria_log": "log_collision_handler"})
-                    elif dy_aplicado < 0: # Se movía hacia arriba y colisionó
-                        entidad_hitbox.top = rect_colision_obstaculo.bottom
-                        if log_habilitado:
-                            # Reemplazar logger_ch por logger y añadir extra
-                            logger.debug(f"        CH: Fase 2 (Y): Ajustado. Entidad mov. ARRIBA. HB_Ent.top = Obs.bottom ({entidad_hitbox.top:.2f})", extra={"categoria_log": "log_collision_handler"})
-                    # Una vez que se maneja una colisión en este eje, rompemos el bucle de obstáculos.
-                    break
+                # Ajustar la posición del hitbox temporal basado en la dirección del movimiento original
+                if dy_aplicado > 0: # Moviéndose hacia abajo, colisionó desde arriba
+                    hb_temporal_eje_actual.bottom = rect_colision_obstaculo.top
+                    if log_detalle_habilitado:
+                            logger.debug(f"        CH_DETALLE: Fase 2 (Y): Ajustado (ABAJO). HB_Ent_temp.bottom corregido a {hb_temporal_eje_actual.bottom}", extra={"categoria_log": "log_collision_handler_detalle"})
+                elif dy_aplicado < 0: # Moviéndose hacia arriba, colisionó desde abajo
+                    hb_temporal_eje_actual.top = rect_colision_obstaculo.bottom
+                        if log_detalle_habilitado:
+                            logger.debug(f"        CH_DETALLE: Fase 2 (Y): Ajustado (ARRIBA). HB_Ent_temp.top corregido a {hb_temporal_eje_actual.top}", extra={"categoria_log": "log_collision_handler_detalle"})
+                break # Colisión resuelta con este obstáculo, no necesita chequear más para este movimiento
+
+        # El movimiento real aplicado es la diferencia entre la posición final del hb_temporal y la original
+        dy_real_aplicado_hb = float(hb_temporal_eje_actual.y - y_original_hb) 
 
         if log_habilitado:
-            # Reemplazar logger_ch por logger y añadir extra
-            logger.debug(f"    --- CH: Fin _aplicar_movimiento_y_colision_eje_y --- HB_out Y: {entidad_hitbox.y:.2f}", extra={"categoria_log": "log_collision_handler"})
+            logger.debug(f"    --- CH: Fin _aplicar_movimiento_y_colision_eje_y --- HB_temporal_Y: {hb_temporal_eje_actual.y:.2f}, dy_real_aplicado: {dy_real_aplicado_hb:.4f}", extra={"categoria_log": "log_collision_handler"})
+        
+        print(f"DEBUG_CH: Saliendo de _aplicar_movimiento_y_colision_eje_y, dy_real_aplicado: {dy_real_aplicado_hb:.2f}, HB.y final (temporal): {hb_temporal_eje_actual.y}")
+        return dy_real_aplicado_hb # <--- RETORNAR EL VALOR CALCULADO
 
     @staticmethod
-    def _verificar_y_revertir_colision_post_fase2(entidad_hitbox, obstaculos, pos_segura_fase1_x, pos_segura_fase1_y, 
-                                               pos_original_global_x, pos_original_global_y):
+    def _verificar_y_revertir_colision_post_fase2(entidad_actual, entidad_hitbox, obstaculos, 
+                                               pos_segura_fase1_x, pos_segura_fase1_y, 
+                                               pos_original_global_x, pos_original_global_y,
+                                               intento_mov_x_frame, intento_mov_y_frame):
         log_habilitado = settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_collision_handler", False)
+        log_detalle_habilitado = settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_collision_handler_detalle", False)
+        revertido_a_fase1 = False
+        revertido_a_original = False
+        ent_name_for_print = getattr(entidad_actual, 'nombre_log_entidad', type(entidad_actual).__name__)
+        print(f"DEBUG_CH: Entrando a _verificar_y_revertir_colision_post_fase2 para: {ent_name_for_print}, HB_In: {entidad_hitbox.topleft}")
+
         if log_habilitado:
-            # Reemplazar logger_ch por logger y añadir extra
-            logger.debug(f"    --- CH: Inicio _verificar_y_revertir_colision_post_fase2 --- HB_in: {entidad_hitbox.topleft}", extra={"categoria_log": "log_collision_handler"})
-        
-        colision_global_tras_fase2, obstaculo_colisionante_global = False, None
+            logger.debug(f"    --- CH: Inicio _verificar_y_revertir_colision_post_fase2 --- HB_Entrada: {entidad_hitbox.topleft}", extra={"categoria_log": "log_collision_handler"})
+
         for obstaculo in obstaculos:
             rect_colision_obstaculo = obstaculo.hitbox if hasattr(obstaculo, 'hitbox') else obstaculo.rect
             if entidad_hitbox.colliderect(rect_colision_obstaculo):
-                colision_global_tras_fase2, obstaculo_colisionante_global = True, obstaculo
-                break
-        
-        hubo_reversion_global = False
-        if colision_global_tras_fase2:
-            # Estos son WARNING y CRITICAL, se loguearán más fácilmente si MODO_DEBUG_LOGS está activo
-            # pero también si su categoría específica está activa, o siempre si se decide así para niveles altos.
-            # Por ahora, los dejamos condicionados a la categoría "log_collision_handler" también para verbosidad.
-            if log_habilitado:
-                # Usar nombre_log_entidad si existe, sino un fallback descriptivo.
-                obst_id_log = getattr(obstaculo_colisionante_global, 'nombre_log_entidad', f"{type(obstaculo_colisionante_global).__name__}_Desconocido")
-                # Reemplazar logger_ch por logger y añadir extra
-                logger.warning(f"CH WARN Global (post-F2): Entidad AÑ colisiona con {obst_id_log} DESPUÉS de Fase 2. HB_Ent: {entidad_hitbox.topleft}. Revertiendo a Fase 1: ({pos_segura_fase1_x}, {pos_segura_fase1_y})", extra={"categoria_log": "log_collision_handler"})
-            entidad_hitbox.x, entidad_hitbox.y = pos_segura_fase1_x, pos_segura_fase1_y
-            hubo_reversion_global = True
-            if log_habilitado:
-                # Reemplazar logger_ch por logger y añadir extra
-                 logger.warning(f"  CH WARN Global (post-F2): Posición REVERTIDA A FASE 1. HB_Ent: {entidad_hitbox.topleft}", extra={"categoria_log": "log_collision_handler"})
+                obst_id_log = getattr(obstaculo, 'nombre_log_entidad', f"{type(obstaculo).__name__}_Desconocido")
+                if log_habilitado:
+                    logger.warning(f"      CH_ALERTA: Fase 3: Colisión POST FASE 2 con {obst_id_log}. HB_Ent: {entidad_hitbox.topleft}, HB_Obs: {rect_colision_obstaculo.topleft}. Intentando revertir a Fase 1.", extra={"categoria_log": "log_collision_handler"})
+                
+                entidad_hitbox.x, entidad_hitbox.y = pos_segura_fase1_x, pos_segura_fase1_y
+                revertido_a_fase1 = True
+                if log_habilitado:
+                    logger.warning(f"        CH_ALERTA: Fase 3: REVERTIDO a pos segura Fase 1: ({pos_segura_fase1_x}, {pos_segura_fase1_y})", extra={"categoria_log": "log_collision_handler"})
 
-            col_aun_despues_rev_f1, obst_critico_final = False, None
-            for obst_check_critico in obstaculos:
-                if entidad_hitbox.colliderect(obst_check_critico.hitbox if hasattr(obst_check_critico, 'hitbox') else obst_check_critico.rect):
-                    col_aun_despues_rev_f1, obst_critico_final = True, obst_check_critico
-                    break
-            
-            if col_aun_despues_rev_f1:
-                if log_habilitado:
-                    # Usar nombre_log_entidad si existe, sino un fallback descriptivo.
-                    obst_id_log_crit = getattr(obst_critico_final, 'nombre_log_entidad', f"{type(obst_critico_final).__name__}_Desconocido")
-                    # Reemplazar logger_ch por logger y añadir extra
-                    logger.critical(f"CH CRITICAL POST-REVERSION (Fase1): Entidad AÑ COLISIONA con {obst_id_log_crit} DESPUÉS de revertir a Fase 1 ({entidad_hitbox.topleft}). Revertiendo a ORIGINAL GLOBAL: ({pos_original_global_x}, {pos_original_global_y})", extra={"categoria_log": "log_collision_handler"})
-                entidad_hitbox.x, entidad_hitbox.y = pos_original_global_x, pos_original_global_y
-                if log_habilitado:
-                    # Reemplazar logger_ch por logger y añadir extra
-                    logger.critical(f"  CH CRITICAL: Posición REVERTIDA A ORIGINAL GLOBAL. HB_Ent: {entidad_hitbox.topleft}", extra={"categoria_log": "log_collision_handler"})
-        
+                if entidad_hitbox.colliderect(rect_colision_obstaculo):
+                    if log_habilitado:
+                        logger.error(f"        CH_ERROR_GRAVE: Fase 3: Colisión INCLUSO DESPUÉS DE REVERTIR a Fase 1 con {obst_id_log}! HB_Ent: {entidad_hitbox.topleft}, HB_Obs: {rect_colision_obstaculo.topleft}. Revertiendo a posición ORIGINAL GLOBAL.", extra={"categoria_log": "log_collision_handler"})
+                    entidad_hitbox.x, entidad_hitbox.y = pos_original_global_x, pos_original_global_y
+                    revertido_a_original = True
+                    logger.critical(f"          CH_CRITICO: Fase 3: REVERTIDO A POSICIÓN ORIGINAL GLOBAL ({pos_original_global_x}, {pos_original_global_y}) debido a colisión persistente.", extra={"categoria_log": "log_collision_handler"})
+                break
+
         if log_habilitado:
-            # Reemplazar logger_ch por logger y añadir extra
-            logger.debug(f"    --- CH: Fin _verificar_y_revertir_colision_post_fase2 --- HB_out: {entidad_hitbox.topleft}, ReversionGlobal: {hubo_reversion_global}", extra={"categoria_log": "log_collision_handler"})
-        return hubo_reversion_global
+            logger.debug(f"    --- CH: Fin _verificar_y_revertir_colision_post_fase2 --- RevertidoF1: {revertido_a_fase1}, RevertidoORIG: {revertido_a_original}, HB_Salida: {entidad_hitbox.topleft}", extra={"categoria_log": "log_collision_handler"})
+
+        print(f"DEBUG_CH: Saliendo de _verificar_y_revertir_colision_post_fase2 para: {ent_name_for_print}, RevertidoF1: {revertido_a_fase1}, RevertidoORIG: {revertido_a_original}, HB_Out: {entidad_hitbox.topleft}")
+        return revertido_a_fase1, revertido_a_original
 
     @staticmethod
     def _prevenir_teletransportacion(entidad_hitbox, dx_solicitado, dy_solicitado, pos_segura_fase1_x, pos_segura_fase1_y):
         log_habilitado = settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_collision_handler", False)
-        # Esta función es principalmente para logs CRITICAL, así que se loguearán si la categoría está activa.
-        if not log_habilitado:
-            return False # No hacer nada si los logs están desactivados
-
-        # Umbral de detección de teletransportación (ejemplo, ajustable)
-        UMBRAL_TELETRANSPORTACION_X = entidad_hitbox.width * 1.5
-        UMBRAL_TELETRANSPORTACION_Y = entidad_hitbox.height * 1.5
-
-        # Comprobar si el movimiento solicitado excede el umbral
-        teletransportacion_detectada_x = abs(dx_solicitado) > UMBRAL_TELETRANSPORTACION_X
-        teletransportacion_detectada_y = abs(dy_solicitado) > UMBRAL_TELETRANSPORTACION_Y
-
-        # Comprobar si la posición después de la Fase 1 es drásticamente diferente (implica un gran ajuste)
-        # Esto es más un indicador de que la Fase 1 tuvo que trabajar mucho.
-        ajuste_drastico_f1_x = abs(entidad_hitbox.x - pos_segura_fase1_x) > UMBRAL_TELETRANSPORTACION_X / 2 # Umbral más pequeño aquí
-        ajuste_drastico_f1_y = abs(entidad_hitbox.y - pos_segura_fase1_y) > UMBRAL_TELETRANSPORTACION_Y / 2
-
-        if teletransportacion_detectada_x or teletransportacion_detectada_y:
-            logger.critical(f"CH CRITICAL - POSIBLE TELETRANSPORTACIÓN: Movimiento solicitado ({dx_solicitado:.2f}, {dy_solicitado:.2f}) excede umbral. HB_Ent: {entidad_hitbox.topleft}", extra={"categoria_log": "log_collision_handler"})
-            # Podría añadirse lógica aquí para revertir o limitar el movimiento si esto se considera un error irrecuperable.
-            # Por ahora, solo se loguea.
-            return True # Indica que se detectó una teletransportación potencial.
-
-        if ajuste_drastico_f1_x or ajuste_drastico_f1_y:
-            logger.warning(f"CH WARNING - AJUSTE DRÁSTICO FASE 1: HB_Ent después de F1 ({pos_segura_fase1_x:.2f}, {pos_segura_fase1_y:.2f}) difiere significativamente de HB original ({entidad_hitbox.x:.2f}, {entidad_hitbox.y:.2f}). Mov. Solicitado: ({dx_solicitado:.2f}, {dy_solicitado:.2f})", extra={"categoria_log": "log_collision_handler"})
-            # No necesariamente una 'teletransportación' por input, pero indica un gran ajuste en pre-resolución.
-            # No se retorna True aquí ya que es más una advertencia sobre la resolución de solapamientos.
+        print(f"DEBUG_CH_TP: Entrando a _prevenir_teletransportacion, dx_sol: {dx_solicitado:.2f}, dy_sol: {dy_solicitado:.2f}, HB_In: {entidad_hitbox.topleft}, PosSeguraF1: ({pos_segura_fase1_x},{pos_segura_fase1_y})")
         
-        return False # No se detectó teletransportación por input directo.
+        pos_actual_x = entidad_hitbox.x
+        pos_actual_y = entidad_hitbox.y
+        print(f"DEBUG_CH_TP: pos_actual_x={pos_actual_x}, pos_actual_y={pos_actual_y}")
+
+        distancia_movida_x = abs(pos_actual_x - pos_segura_fase1_x)
+        distancia_movida_y = abs(pos_actual_y - pos_segura_fase1_y)
+        print(f"DEBUG_CH_TP: dist_mov_x={distancia_movida_x:.2f}, dist_mov_y={distancia_movida_y:.2f}")
+
+        distancia_solicitada_x = abs(dx_solicitado)
+        distancia_solicitada_y = abs(dy_solicitado)
+        print(f"DEBUG_CH_TP: dist_sol_x={distancia_solicitada_x:.2f}, dist_sol_y={distancia_solicitada_y:.2f}")
+        
+        # ----> PRINT DE INSPECCIÓN ELIMINADO <----
+        
+        factor_teleport = settings.FACTOR_UMBRAL_TELETRANSPORTACION
+        # Añadimos un umbral absoluto mínimo para evitar falsos positivos cuando el movimiento solicitado es muy pequeño.
+        # Por ejemplo, si dx_solicitado es 0.1, 0.1 * 1.5 = 0.15. Un movimiento de 0.5 ya sería > 0.15.
+        # Queremos evitar que pequeños ajustes/rebotes se consideren teletransporte.
+        # Este umbral mínimo podría ser un valor como 2-5 píxeles.
+        min_mov_para_factor_check = 2.0 # Píxeles. Si el mov solicitado es menor, usamos un umbral absoluto más grande.
+        umbral_abs_teleport_peq_mov = 5.0 # Píxeles. Si el mov solicitado es < min_mov_para_factor_check, entonces un mov real > umbral_abs_teleport_peq_mov es teleport.
+
+        print(f"DEBUG_CH_TP: factor_teleport={factor_teleport}, min_mov_para_factor_check={min_mov_para_factor_check}, umbral_abs_teleport_peq_mov={umbral_abs_teleport_peq_mov}")
+
+        teleport_detectado_x = False
+        teleport_detectado_y = False
+        print(f"DEBUG_CH_TP: Antes de checkear teleport X")
+
+        # Comprobar teletransporte en X
+        if distancia_solicitada_x < min_mov_para_factor_check: # Movimiento solicitado muy pequeño
+            if distancia_movida_x > umbral_abs_teleport_peq_mov:
+                teleport_detectado_x = True
+                print(f"DEBUG_CH_TP: TELEPORTE X DETECTADO (solicitado < {min_mov_para_factor_check}, movido > {umbral_abs_teleport_peq_mov})")
+        elif distancia_movida_x > (distancia_solicitada_x * factor_teleport): # Movimiento solicitado normal, aplicar factor
+            # Adicionalmente, para que no salte por movimientos pequeños aunque el factor se cumpla:
+            # El movimiento real también debe superar un mínimo absoluto si el solicitado era pequeño.
+            # Ejemplo: sol=1, mov=1.6 (1.6 > 1*1.5). Esto podría ser un ajuste normal.
+            # Queremos que también distancia_movida_x sea significativamente grande en sí misma.
+            # Podríamos añadir: and distancia_movida_x > umbral_abs_teleport_peq_mov (o un valor similar)
+            if distancia_movida_x > umbral_abs_teleport_peq_mov: # Solo considera teletransporte si el movimiento real supera un mínimo
+                teleport_detectado_x = True
+                print(f"DEBUG_CH_TP: TELEPORTE X DETECTADO (solicitado >= {min_mov_para_factor_check}, movido > solicitado * {factor_teleport} Y movido > {umbral_abs_teleport_peq_mov})")
+            else:
+                print(f"DEBUG_CH_TP: NO TELEPORTE X (movido ({distancia_movida_x:.2f}) no superó umbral absoluto {umbral_abs_teleport_peq_mov} aunque factor se cumplió)")
+        
+        if teleport_detectado_x and log_habilitado:
+            logger.warning(f"CH_TELEPORT_DETECT: X. Movido: {distancia_movida_x:.2f} (Actual: {pos_actual_x}, SeguraF1: {pos_segura_fase1_x}) vs Solicitado: {distancia_solicitada_x:.2f} (Factor: {factor_teleport})", extra={"categoria_log": "log_collision_handler"})
+        
+        print(f"DEBUG_CH_TP: Antes de checkear teleport Y. teleport_detectado_x={teleport_detectado_x}")
+        
+        # Comprobar teletransporte en Y
+        if distancia_solicitada_y < min_mov_para_factor_check: # Movimiento solicitado muy pequeño
+            if distancia_movida_y > umbral_abs_teleport_peq_mov:
+                teleport_detectado_y = True
+                print(f"DEBUG_CH_TP: TELEPORTE Y DETECTADO (solicitado < {min_mov_para_factor_check}, movido > {umbral_abs_teleport_peq_mov})")
+        elif distancia_movida_y > (distancia_solicitada_y * factor_teleport): # Movimiento solicitado normal, aplicar factor
+            if distancia_movida_y > umbral_abs_teleport_peq_mov:
+                teleport_detectado_y = True
+                print(f"DEBUG_CH_TP: TELEPORTE Y DETECTADO (solicitado >= {min_mov_para_factor_check}, movido > solicitado * {factor_teleport} Y movido > {umbral_abs_teleport_peq_mov})")
+            else:
+                print(f"DEBUG_CH_TP: NO TELEPORTE Y (movido ({distancia_movida_y:.2f}) no superó umbral absoluto {umbral_abs_teleport_peq_mov} aunque factor se cumplió)")
+
+        if teleport_detectado_y and log_habilitado:
+            logger.warning(f"CH_TELEPORT_DETECT: Y. Movido: {distancia_movida_y:.2f} (Actual: {pos_actual_y}, SeguraF1: {pos_segura_fase1_y}) vs Solicitado: {distancia_solicitada_y:.2f} (Factor: {factor_teleport})", extra={"categoria_log": "log_collision_handler"})
+
+        print(f"DEBUG_CH_TP: Antes de if (teleport_detectado_x or teleport_detectado_y). X={teleport_detectado_x}, Y={teleport_detectado_y}")
+        if teleport_detectado_x or teleport_detectado_y:
+            if log_habilitado:
+                logger.warning(f"CH_TELEPORT_CORRECT: Revirtiendo a posición segura de Fase 1: ({pos_segura_fase1_x}, {pos_segura_fase1_y})", extra={"categoria_log": "log_collision_handler"})
+            print(f"DEBUG_CH_TP: _prevenir_teletransportacion - TELEPORTE DETECTADO (general). Revirtiendo a pos_segura_fase1: ({pos_segura_fase1_x},{pos_segura_fase1_y})")
+            return pos_segura_fase1_x, pos_segura_fase1_y
+        else:
+            print(f"DEBUG_CH_TP: _prevenir_teletransportacion - SIN TELEPORTE (general). Devolviendo pos_actual: ({pos_actual_x},{pos_actual_y})")
+            return pos_actual_x, pos_actual_y
 
     @staticmethod
-    def gestionar_movimiento_y_colision(entidad_hitbox, entidad_rect, hitbox_offset_x, hitbox_offset_y, dx, dy, obstaculos):
+    def gestionar_movimiento_y_colision(entidad_actual, entidad_hitbox, entidad_rect, hitbox_offset_x, hitbox_offset_y, dx, dy, obstaculos, mundo_ancho, mundo_alto):
+        ent_name_for_print = getattr(entidad_actual, 'nombre_log_entidad', type(entidad_actual).__name__)
+        print(f"DEBUG_CH: Entrando a GESTIONAR_MOVIMIENTO_Y_COLISION para: {ent_name_for_print}, dx: {dx:.2f}, dy: {dy:.2f}, HB_In: {entidad_hitbox.topleft}")
+        # --- IMPORTACIONES LOCALES PARA EVITAR CICLOS (si no están ya globales con TYPE_CHECKING) ---
+        from src.entidades.jugador import Jugador
+        # from src.entidades.enemigo import Enemigo # Ya no se usa directamente aquí para lógica específica
+
+        # Obtener referencias a las funciones miembro para acortar las llamadas
+        resolver_solapamientos_estaticos_eje_func = CollisionHandler._resolver_solapamientos_estaticos_eje
+        aplicar_movimiento_y_colision_eje_x_func = CollisionHandler._aplicar_movimiento_y_colision_eje_x
+        aplicar_movimiento_y_colision_eje_y_func = CollisionHandler._aplicar_movimiento_y_colision_eje_y
+        verificar_y_revertir_colision_post_fase2_func = CollisionHandler._verificar_y_revertir_colision_post_fase2
+        prevenir_teletransportacion_func = CollisionHandler._prevenir_teletransportacion
+
+        # --- Logging y Referencias Iniciales ---
         log_habilitado = settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_collision_handler", False)
         if log_habilitado:
-            logger.debug(f"CH: Inicio gestionar_movimiento_y_colision. dx={dx:.4f}, dy={dy:.4f}. HB_in: {entidad_hitbox.topleft}, Rect_in: {entidad_rect.topleft}", extra={"categoria_log": "log_collision_handler"})
+            ent_name = getattr(entidad_actual, 'nombre_log_entidad', type(entidad_actual).__name__)
+            ent_id = getattr(entidad_actual, 'id_entidad', 'N/A')
+            logger.info(f"--- CH_GMC Entrando a gestionar_movimiento_y_colision para: {ent_name}_ID:{ent_id} ---", extra={"categoria_log": "log_collision_handler"})
+            logger.debug(f"    CH_GMC_INPUT: dx={dx:.4f}, dy={dy:.4f}, HB_Ent_Inicial: {entidad_hitbox.topleft}, Rect_Ent_Inicial: {entidad_rect.topleft}", extra={"categoria_log": "log_collision_handler"})
 
-        # Guardar la posición original global de la hitbox para una posible reversión crítica.
-        pos_original_global_hb_x, pos_original_global_hb_y = entidad_hitbox.x, entidad_hitbox.y
+        hb_original_x = entidad_hitbox.x
+        hb_original_y = entidad_hitbox.y
 
-        # --- FASE 1: Resolver solapamientos estáticos ANTES de mover ---
-        # Esto maneja casos donde la entidad ya podría estar solapada al inicio del frame.
-        if log_habilitado:
-            logger.debug("  CH: Fase 1 - Resolviendo solapamientos estáticos (Eje X)...", extra={"categoria_log": "log_collision_handler"})
-        CollisionHandler._resolver_solapamientos_estaticos_eje(entidad_hitbox, entidad_rect, hitbox_offset_x, hitbox_offset_y, obstaculos, 'x', dx)
+        # --- Fase 1: Resolver Solapamientos Estáticos ---
+        # Primero, asegurar que la entidad no esté ya solapada con obstáculos estáticos.
+        # Esto se hace en dos sub-pasos, uno para cada eje, sin aplicar el movimiento del frame actual aún.
+        if log_habilitado: logger.debug("    CH_GMC: Iniciando Fase 1 - Resolver Solapamientos Estáticos (Eje X)", extra={"categoria_log": "log_collision_handler"})
+        resolver_solapamientos_estaticos_eje_func(entidad_actual, entidad_hitbox, obstaculos, 'x', dx)
+        if log_habilitado: logger.debug(f"    CH_GMC: Después de Fase 1 (Eje X). HB_Ent: {entidad_hitbox.topleft}", extra={"categoria_log": "log_collision_handler"})
         
-        if log_habilitado:
-            logger.debug("  CH: Fase 1 - Resolviendo solapamientos estáticos (Eje Y)...", extra={"categoria_log": "log_collision_handler"})
-        CollisionHandler._resolver_solapamientos_estaticos_eje(entidad_hitbox, entidad_rect, hitbox_offset_x, hitbox_offset_y, obstaculos, 'y', dy)
+        if log_habilitado: logger.debug("    CH_GMC: Iniciando Fase 1 - Resolver Solapamientos Estáticos (Eje Y)", extra={"categoria_log": "log_collision_handler"})
+        resolver_solapamientos_estaticos_eje_func(entidad_actual, entidad_hitbox, obstaculos, 'y', dy)
+        if log_habilitado: logger.debug(f"    CH_GMC: Después de Fase 1 (Eje Y). HB_Ent: {entidad_hitbox.topleft}", extra={"categoria_log": "log_collision_handler"})
+        print(f"DEBUG_CH: GESTIONAR_MOVIMIENTO_Y_COLISION ({ent_name_for_print}) - Después de Fase 1 (Resolver Solap. Estáticos Eje Y), HB: {entidad_hitbox.topleft}")
+
+        # Guardar la posición después de la Fase 1 como una "posición segura"
+        hb_pos_segura_fase1_x = entidad_hitbox.x
+        hb_pos_segura_fase1_y = entidad_hitbox.y
         
-        # Guardar la posición 'segura' después de la Fase 1. Esta es la posición a la que revertiremos
-        # si la Fase 2 (movimiento + colisión) resulta en un estado de colisión irresoluble.
-        pos_segura_fase1_hb_x, pos_segura_fase1_hb_y = entidad_hitbox.x, entidad_hitbox.y
-        if log_habilitado:
-            logger.debug(f"  CH: Fase 1 - Fin. Posición segura HB: ({pos_segura_fase1_hb_x}, {pos_segura_fase1_hb_y})", extra={"categoria_log": "log_collision_handler"})
+        # --- Fase 2: Aplicar Movimiento y Resolver Colisiones (Eje por Eje) ---
+        # El movimiento se aplica primero en X, luego en Y.
+        if log_habilitado: logger.debug(f"    --- CH: Inicio _aplicar_movimiento_y_colision_eje_x --- dx: {dx}, HB_in: {entidad_hitbox.topleft} (Esta HB_in es post-Fase1)", extra={"categoria_log": "log_collision_handler"})
+        dx_real_aplicado_a_hb_fase1 = aplicar_movimiento_y_colision_eje_x_func(entidad_hitbox, dx, obstaculos, mundo_ancho, mundo_alto)
+        entidad_hitbox.x = round(hb_pos_segura_fase1_x + dx_real_aplicado_a_hb_fase1) # Aplicar delta a la X de después de Fase 1
+        if log_habilitado: logger.debug(f"    --- CH: Fin _aplicar_movimiento_y_colision_eje_x --- HB_out X: {entidad_hitbox.x:.2f}", extra={"categoria_log": "log_collision_handler"})
+        if log_habilitado: logger.debug(f"    CH_GMC: Después de Fase 2 (Eje X). HB_Ent.x: {entidad_hitbox.x}", extra={"categoria_log": "log_collision_handler"})
+        print(f"DEBUG_CH: GESTIONAR_MOVIMIENTO_Y_COLISION ({ent_name_for_print}) - Después de Fase 2 (Aplicar Movimiento Eje X), HB.x: {entidad_hitbox.x}")
 
-        # --- Diagnóstico: Prevenir teletransportación por input excesivo o grandes ajustes en Fase 1 ---
-        # (Esta llamada se realiza ANTES de aplicar el movimiento de Fase 2, usando el dx, dy originales)
-        CollisionHandler._prevenir_teletransportacion(entidad_hitbox, dx, dy, pos_segura_fase1_hb_x, pos_segura_fase1_hb_y)
-
-        # --- FASE 2: Aplicar movimiento y resolver colisiones (eje por eje) ---
-        # Mover en X y resolver colisiones en X
-        if log_habilitado:
-            logger.debug("  CH: Fase 2 - Aplicando movimiento y colisión (Eje X)...", extra={"categoria_log": "log_collision_handler"})
-        CollisionHandler._aplicar_movimiento_y_colision_eje_x(entidad_hitbox, dx, obstaculos)
+        # La entidad_hitbox que entra a _aplicar_movimiento_y_colision_eje_y_func
+        # ya tiene su .x actualizado por el paso anterior. Su .y sigue siendo hb_pos_segura_fase1_y (el de después de Fase 1Y).
+        if log_habilitado: logger.debug(f"    --- CH: Inicio _aplicar_movimiento_y_colision_eje_y --- dy: {dy}, HB_in: {entidad_hitbox.topleft} (Esta HB_in es post-Fase1Y y post-Fase2X)", extra={"categoria_log": "log_collision_handler"})
+        dy_real_aplicado_a_hb_fase1 = aplicar_movimiento_y_colision_eje_y_func(entidad_hitbox, dy, obstaculos, mundo_ancho, mundo_alto)
+        entidad_hitbox.y = round(hb_pos_segura_fase1_y + dy_real_aplicado_a_hb_fase1) # Aplicar delta a la Y de después de Fase 1
+        if log_habilitado: logger.debug(f"    --- CH: Fin _aplicar_movimiento_y_colision_eje_y --- HB_out Y: {entidad_hitbox.y:.2f}", extra={"categoria_log": "log_collision_handler"})
+        if log_habilitado: logger.debug(f"    CH_GMC: Después de Fase 2 (Eje Y). HB_Ent.y: {entidad_hitbox.y}", extra={"categoria_log": "log_collision_handler"})
+        print(f"DEBUG_CH: GESTIONAR_MOVIMIENTO_Y_COLISION ({ent_name_for_print}) - Después de Fase 2 (Aplicar Movimiento Eje Y), HB.y: {entidad_hitbox.y}")
         
-        # Mover en Y y resolver colisiones en Y
-        if log_habilitado:
-            logger.debug("  CH: Fase 2 - Aplicando movimiento y colisión (Eje Y)...", extra={"categoria_log": "log_collision_handler"})
-        CollisionHandler._aplicar_movimiento_y_colision_eje_y(entidad_hitbox, dy, obstaculos)
-        if log_habilitado:
-            logger.debug(f"  CH: Fase 2 - Fin. Posición HB post-mov: {entidad_hitbox.topleft}", extra={"categoria_log": "log_collision_handler"})
-
-        # --- FASE 3: Verificación y Reversión Post-Fase 2 (Capa de Seguridad Adicional) ---
-        # Verifica si, después de todo el proceso de la Fase 2, la entidad AÚN está colisionando.
-        # Si es así, revierte a la posición segura de la Fase 1.
-        # Si incluso eso falla (caso crítico), revierte a la posición original global.
-        if log_habilitado:
-            logger.debug("  CH: Fase 3 - Verificando y revirtiendo colisión post-Fase 2...", extra={"categoria_log": "log_collision_handler"})
-        hubo_reversion = CollisionHandler._verificar_y_revertir_colision_post_fase2(
-            entidad_hitbox, obstaculos, 
-            pos_segura_fase1_hb_x, pos_segura_fase1_hb_y,
-            pos_original_global_hb_x, pos_original_global_hb_y
+        # --- Fase 3: Verificación Post-Fase2 y Prevención de Atascamientos ---
+        print(f"DEBUG_CH: GESTIONAR_MOVIMIENTO_Y_COLISION ({ent_name_for_print}) - ANTES de llamar a Fase 3 (_verificar_y_revertir_colision_post_fase2), HB: {entidad_hitbox.topleft}")
+        if log_habilitado: logger.debug(f"    --- CH: Inicio _verificar_y_revertir_colision_post_fase2 --- HB_Entrada: {entidad_hitbox.topleft}", extra={"categoria_log": "log_collision_handler"})
+        
+        # Guardamos los valores retornados por si los necesitamos, aunque la función modifica el hitbox por referencia.
+        revertido_f1, revertido_orig = verificar_y_revertir_colision_post_fase2_func(
+            entidad_actual, entidad_hitbox, obstaculos, 
+            hb_pos_segura_fase1_x, hb_pos_segura_fase1_y,
+            hb_original_x, hb_original_y,
+            dx, dy # Pasamos el intento de movimiento original del frame
         )
-        if log_habilitado:
-             logger.debug(f"  CH: Fase 3 - Fin. Hubo reversión: {hubo_reversion}. Posición HB final: {entidad_hitbox.topleft}", extra={"categoria_log": "log_collision_handler"})
+        print(f"DEBUG_CH: GESTIONAR_MOVIMIENTO_Y_COLISION ({ent_name_for_print}) - DESPUÉS de llamar a Fase 3 (_verificar_y_revertir_colision_post_fase2), HB: {entidad_hitbox.topleft}, RevertidoF1: {revertido_f1}, RevertidoORIG: {revertido_orig}")
 
-        # --- FASE 4: Actualizar la posición del rect visual de la entidad ---
-        # El rect de la entidad (usado para el dibujo) debe reflejar la posición final de la hitbox.
+        if log_habilitado: logger.debug(f"    CH_GMC: Después de Fase 3. HB_Ent: {entidad_hitbox.topleft}", extra={"categoria_log": "log_collision_handler"})
+        # print(f"DEBUG_CH: GESTIONAR_MOVIMIENTO_Y_COLISION ({ent_name_for_print}) - Después de Fase 3 (Verificar y Revertir), HB: {entidad_hitbox.topleft}") # <--- PRINT ANTERIOR COMENTADO/ELIMINADO
+
+        # --- Fase 4: Prevención de Teletransportación (Comparar con Fase 1 Segura) ---
+        print(f"DEBUG_CH: GESTIONAR_MOVIMIENTO_Y_COLISION ({ent_name_for_print}) - ANTES de llamar a Fase 4 (_prevenir_teletransportacion), HB: {entidad_hitbox.topleft}")
+        entidad_hitbox.x, entidad_hitbox.y = prevenir_teletransportacion_func(
+            entidad_hitbox, dx, dy, hb_pos_segura_fase1_x, hb_pos_segura_fase1_y
+        )
+
+        # --- Fase 5: Sincronizar Rect con Hitbox Final ---
+        # El rect de la entidad (usado para renderizar) debe actualizarse con la posición final del hitbox.
+        # La forma de hacerlo depende de cómo se relacione el rect con el hitbox (ej. hitbox centrado en rect).
+        # Asumimos la lógica de EntidadBase: rect.topleft se ajusta por los offsets.
         entidad_rect.x = entidad_hitbox.x - hitbox_offset_x
         entidad_rect.y = entidad_hitbox.y - hitbox_offset_y
-        
+        # O si el hitbox está centrado: entidad_rect.center = entidad_hitbox.center
+        if log_habilitado: logger.debug(f"    CH_GMC: Fase 5 - Sincronización Rect. Rect_Ent Final: {entidad_rect.topleft} (desde HB: {entidad_hitbox.topleft})", extra={"categoria_log": "log_collision_handler"})
+
+        # Calcular el delta de movimiento real del hitbox
+        delta_x_real_hb = entidad_hitbox.x - hb_original_x
+        delta_y_real_hb = entidad_hitbox.y - hb_original_y
+
         if log_habilitado:
-            logger.debug(f"CH: Fin gestionar_movimiento_y_colision. HB_out: {entidad_hitbox.topleft}, Rect_out: {entidad_rect.topleft}", extra={"categoria_log": "log_collision_handler"})
-        
-        # Devolver la posición final de la hitbox
-        return entidad_hitbox.x, entidad_hitbox.y
+            logger.info(f"--- CH_GMC Saliendo de gestionar_movimiento_y_colision para: {ent_name}_ID:{ent_id} ---", extra={"categoria_log": "log_collision_handler"})
+            logger.debug(f"    CH_GMC_OUTPUT: Delta Real (dx,dy): ({delta_x_real_hb}, {delta_y_real_hb}). HB_Ent Final: {entidad_hitbox.topleft}, Rect_Ent Final: {entidad_rect.topleft}", extra={"categoria_log": "log_collision_handler"})
+
+        print(f"DEBUG_CH: Saliendo de GESTIONAR_MOVIMIENTO_Y_COLISION para: {ent_name_for_print}, HB_Out: {entidad_hitbox.topleft}")
+        return delta_x_real_hb, delta_y_real_hb
 
     @staticmethod
     def resolver_colisiones_dinamicas_entidad_a_entidad(entidad_actual, otra_entidad):
         log_habilitado = settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_collision_handler", False)
-        # Obtener las hitboxes de ambas entidades
-        hitbox_actual = entidad_actual.hitbox
-        hitbox_otra = otra_entidad.hitbox
-
-        if hitbox_actual.colliderect(hitbox_otra):
+        if not hasattr(entidad_actual, 'hitbox') or not hasattr(otra_entidad, 'hitbox'):
             if log_habilitado:
-                # Usar nombre_log_entidad si existe para ambas entidades
-                nombre_actual = getattr(entidad_actual, 'nombre_log_entidad', f"{type(entidad_actual).__name__}_Desconocido")
-                nombre_otra = getattr(otra_entidad, 'nombre_log_entidad', f"{type(otra_entidad).__name__}_Desconocido")
-                logger.info(f"CH INFO: Colisión dinámica detectada entre {nombre_actual} (HB: {hitbox_actual.topleft}) y {nombre_otra} (HB: {hitbox_otra.topleft})", extra={"categoria_log": "log_collision_handler"})
+                logger.warning("CH_RCD: Intento de resolver colisión dinámica, pero una o ambas entidades no tienen hitbox.", extra={"categoria_log": "log_collision_handler"})
+            return False, None, None
+
+        if entidad_actual.hitbox.colliderect(otra_entidad.hitbox):
+            overlap_x = min(entidad_actual.hitbox.right, otra_entidad.hitbox.right) - max(entidad_actual.hitbox.left, otra_entidad.hitbox.left)
+            overlap_y = min(entidad_actual.hitbox.bottom, otra_entidad.hitbox.bottom) - max(entidad_actual.hitbox.top, otra_entidad.hitbox.top)
             
-            # TODO: Implementar lógica de resolución si es necesario (ej. empujar, detener, etc.)
-            # Por ahora, solo detecta y loguea. Podría devolver las entidades involucradas o un objeto de colisión.
-            return True
+            if log_habilitado:
+                nombre_actual_log = getattr(entidad_actual, 'nombre_log_entidad', type(entidad_actual).__name__)
+                id_actual_log = getattr(entidad_actual, 'id_entidad', 'N/A')
+                nombre_otra_log = getattr(otra_entidad, 'nombre_log_entidad', type(otra_entidad).__name__)
+                id_otra_log = getattr(otra_entidad, 'id_entidad', 'N/A')
+                logger.info(f"CH_RCD: Colisión detectada entre {nombre_actual_log}_ID:{id_actual_log} y {nombre_otra_log}_ID:{id_otra_log}. Overlap (x,y): ({overlap_x}, {overlap_y})", extra={"categoria_log": "log_collision_handler"})
+            return True, overlap_x, overlap_y
         
-        return False
-    # Fin def resolver_colisiones_dinamicas_entidad_a_entidad 
+        return False, None, None 

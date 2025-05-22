@@ -134,8 +134,11 @@ class EntidadBase(pygame.sprite.Sprite):
         self.rect.topleft = (self.hitbox.x - self.hitbox_offset_x,
                              self.hitbox.y - self.hitbox_offset_y)
 
-    def actualizar_animacion(self):
+    def actualizar_animacion(self, delta_time_ms=None):
         """Actualiza el fotograma actual de la animación de la entidad basado en el tiempo."""
+        # ---- LOG ADICIONAL ----
+        logger.critical(f"{self.nombre_log_entidad} INICIO EntidadBase.actualizar_animacion. Estado: {self.estado_animacion}, delta_time_ms: {delta_time_ms}")
+
         if not self.animaciones or not self.estado_animacion in self.animaciones or not self.animaciones[self.estado_animacion]:
             if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_animacion", False):
                 # logger_anim.debug(f"{self.nombre_log_entidad} No hay animación '{self.estado_animacion}' o está vacía. Saltando act. animación.")
@@ -153,62 +156,77 @@ class EntidadBase(pygame.sprite.Sprite):
                 logger.debug(f"{self.nombre_log_entidad} Anim '{self.estado_animacion}': Frame -> {self.indice_fotograma}/{len(self.animaciones[self.estado_animacion])-1}. Retraso: {self.retraso_animacion}ms", extra={"categoria_log": "log_animacion"})
 
     def recibir_dano(self, cantidad, tipo_dano="generico"):
-        if settings.DEBUG_PRINT_GESTION_DANO:
-            print(f"DEBUG_ENTIDAD_BASE: {self.nombre_log_entidad} Entrando a recibir_dano(). Cantidad: {cantidad}, Tipo: {tipo_dano}, Vida antes: {self.vida_actual}")
+        categoria_log_vida = "log_entidad_base"
+        if "Jugador" in self.nombre_entidad_tipo:
+            categoria_log_vida = "log_jugador_vida"
+        elif "Enemigo" in self.nombre_entidad_tipo:
+            categoria_log_vida = "log_enemigo" # Usar log_enemigo para info general de enemigos, incluida la vida
+
+        if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get(categoria_log_vida, False):
+            logger.debug(f"{self.nombre_log_entidad} Entrando a recibir_dano(). Cantidad: {cantidad}, Tipo: {tipo_dano}, Vida antes: {self.vida_actual}", extra={"categoria_log": categoria_log_vida})
         
         if self.ha_muerto: 
-            if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_entidad_base" if "Jugador" not in self.nombre_entidad_tipo and "Enemigo" not in self.nombre_entidad_tipo else ("log_jugador_cmb" if "Jugador" in self.nombre_entidad_tipo else "log_enemigo_cmb"), False):
-                logger.debug(f"{self.nombre_log_entidad} Ya está muerto. Daño de {cantidad} ({tipo_dano}) ignorado.", extra={"categoria_log": "log_entidad_base" if "Jugador" not in self.nombre_entidad_tipo and "Enemigo" not in self.nombre_entidad_tipo else ("log_jugador_cmb" if "Jugador" in self.nombre_entidad_tipo else "log_enemigo_cmb")})
+            # Usar la misma lógica de categoría que arriba
+            if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get(categoria_log_vida, False):
+                logger.debug(f"{self.nombre_log_entidad} Ya está muerto. Daño de {cantidad} ({tipo_dano}) ignorado.", extra={"categoria_log": categoria_log_vida})
             return False 
 
         ahora = pygame.time.get_ticks()
         if hasattr(self, 'cooldown_dano_general') and (ahora - self.ultimo_ataque_recibido < self.cooldown_dano_general):
-            if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_entidad_cmb", False):
-                logger.debug(f"{self.nombre_log_entidad} En cooldown de daño ({self.cooldown_dano_general}ms), daño ignorado. Ahora: {ahora}, Ultimo: {self.ultimo_ataque_recibido}", extra={"categoria_log": "log_entidad_cmb"})
+            # Usar la misma lógica de categoría que arriba para mensajes de cooldown
+            if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get(categoria_log_vida, False):
+                logger.debug(f"{self.nombre_log_entidad} En cooldown de daño ({self.cooldown_dano_general}ms), daño ignorado. Ahora: {ahora}, Ultimo: {self.ultimo_ataque_recibido}", extra={"categoria_log": categoria_log_vida})
             return False
 
         self.vida_actual -= cantidad
-        if settings.DEBUG_PRINT_GESTION_DANO:
-            print(f"DEBUG_ENTIDAD_BASE: {self.nombre_log_entidad} Vida después: {self.vida_actual}")
+        self.ultimo_ataque_recibido = ahora # Actualizar el tiempo del último golpe para el cooldown
+
+        if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get(categoria_log_vida, False):
+            logger.debug(f"{self.nombre_log_entidad} Vida después: {self.vida_actual}", extra={"categoria_log": categoria_log_vida})
         
-        if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_entidad_cmb", False):
-            logger.info(f"{self.nombre_log_entidad} recibió {cantidad} de daño ({tipo_dano}). Vida: {self.vida_actual}/{self.vida_maxima}", extra={"categoria_log": "log_entidad_cmb"})
+        # Usar categoria_log_vida para el mensaje de información sobre daño recibido
+        if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get(categoria_log_vida, True): # Asumir True para INFO si la categoría está activa
+            logger.info(f"{self.nombre_log_entidad} recibió {cantidad} de daño ({tipo_dano}). Vida: {self.vida_actual}/{self.vida_maxima}", extra={"categoria_log": categoria_log_vida})
         
         if self.vida_actual <= 0:
             self.vida_actual = 0
             self.morir()
         else:
             # Aplicar cooldown de invulnerabilidad si se especifica y la entidad no murió
-            if self.cooldown_invulnerabilidad_ms > 0:
+            if hasattr(self, 'cooldown_invulnerabilidad_ms') and self.cooldown_invulnerabilidad_ms > 0: # Verificar que cooldown_invulnerabilidad_ms exista
                 self.invulnerable_hasta = pygame.time.get_ticks() + self.cooldown_invulnerabilidad_ms
-                if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_entidad_cmb", False):
-                    logger.debug(f"{self.nombre_log_entidad} ahora invulnerable hasta {self.invulnerable_hasta}", extra={"categoria_log": "log_entidad_cmb"})
+                if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get(categoria_log_vida, False):
+                    logger.debug(f"{self.nombre_log_entidad} ahora invulnerable hasta {self.invulnerable_hasta}", extra={"categoria_log": categoria_log_vida})
         
         return True # Daño aplicado
 
     def morir(self):
         """Maneja la muerte de la entidad."""
+        # Determinar categoría de log basada en el tipo de entidad
+        categoria_log_actual = "log_entidad_base"
+        if "Jugador" in self.nombre_entidad_tipo:
+            categoria_log_actual = "log_jugador_vida" # Usar log_jugador_vida para la muerte del jugador
+        elif "Enemigo" in self.nombre_entidad_tipo:
+            categoria_log_actual = "log_enemigo" # Usar log_enemigo para la muerte del enemigo
+
         if self.ha_muerto: 
-            if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_entidad_base" if "Jugador" not in self.nombre_entidad_tipo and "Enemigo" not in self.nombre_entidad_tipo else ("log_jugador_cmb" if "Jugador" in self.nombre_entidad_tipo else "log_enemigo_cmb"), False):
-                logger.debug(f"{self.nombre_log_entidad} ya estaba marcado como muerto. Ignorando llamada a morir().", extra={"categoria_log": "log_entidad_base" if "Jugador" not in self.nombre_entidad_tipo and "Enemigo" not in self.nombre_entidad_tipo else ("log_jugador_cmb" if "Jugador" in self.nombre_entidad_tipo else "log_enemigo_cmb")})
+            if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get(categoria_log_actual, False):
+                logger.debug(f"{self.nombre_log_entidad} ya estaba marcado como muerto. Ignorando llamada a morir().", extra={"categoria_log": categoria_log_actual})
             return
 
-        categoria_combate_log = "log_general"
-        if "Jugador" in self.nombre_entidad_tipo:
-            categoria_combate_log = "log_jugador_cmb"
-        elif "Enemigo" in self.nombre_entidad_tipo:
-            categoria_combate_log = "log_enemigo_cmb"
-        
-        # logger_entidad_gen.info(f"{self.nombre_log_entidad} ha muerto.")
-        logger.info(f"{self.nombre_log_entidad} ha muerto.", extra={"categoria_log": categoria_combate_log})
-        self.ha_muerto = True
-        
-        # Podríamos querer cambiar la animación a una de muerte aquí, si existe
-        # Ejemplo: self.cambiar_estado_animacion("muerte")
+        # Loguear la muerte
+        if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get(categoria_log_actual, True): # Asumir True para INFO si la categoría está activa
+             logger.info(f"{self.nombre_log_entidad} ha muerto.", extra={"categoria_log": categoria_log_actual})
 
-        # La lógica de qué sucede después de morir (ej. eliminar sprite, mostrar game over)
-        # debería manejarse en el GestorEstado o Juego, no directamente aquí.
-        # Esta entidad solo se marca como muerta.
+        self.ha_muerto = True
+        # Aquí se podrían añadir lógicas adicionales como cambiar animación a "muerto",
+        # desactivar colisiones, iniciar un temporizador para desaparecer, etc.
+        # Por ejemplo, si hay una animación de muerte:
+        # if "muerte" in self.animaciones:
+        #    self.estado_animacion = "muerte"
+        #    self.indice_fotograma = 0 
+        # else:
+        #    self.kill() # Si no hay animación de muerte, eliminar sprite inmediatamente
 
     def update(self, *args, **kwargs):
         """Actualiza la entidad. Las subclases deben implementar su lógica específica."""

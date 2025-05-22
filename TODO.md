@@ -1,12 +1,20 @@
 # Lista de Tareas Pendientes
 
 ## Prioridad CRÍTICA
-1. 🐛 **[BUG - COLISIONES]** Resolver bug "Expulsión del Jugador"
-   - **Descripción**: El jugador es "expulsado" o experimenta un desplazamiento anómalo cuando está rodeado por múltiples enemigos que se mueven hacia él.
-   - **Hipótesis**: Problema en la resolución de múltiples colisiones simultáneas o lógica de empuje acumulado en `collision_handler.py`.
-   - [ ] Revisar `collision_handler.py`, `jugador.py`, `enemigo.py`.
-   - [ ] Analizar logs existentes o generar nuevos logs específicos.
-   - [ ] Aplicar estrategias de depuración detallada.
+1. ✨ **[NUEVO - COLISIONES/FÍSICAS]** Diseñar e Implementar Sistema de Empuje por Contacto basado en Vectores.
+   - **Descripción**: Reemplazar el sistema de empuje anterior en `collision_handler.py` por uno basado en la suma de vectores de fuerza para un comportamiento más robusto y predecible.
+   - **Subtareas (Diseño Conceptual):**
+     - [ ] Definir generación de vectores de empuje individuales (magnitud, dirección, origen).
+     - [ ] Definir comunicación y acumulación de vectores de empuje.
+     - [ ] Definir aplicación del vector resultante al movimiento de la entidad.
+   - **Subtareas (Implementación):**
+     - [ ] Implementación inicial simple (1 enemigo, 1 dirección).
+     - [ ] Pruebas y refinamiento.
+     - [ ] Extensión a múltiples empujes.
+
+2. 🐛 **[BUG - COLISIONES - SUSPENDIDO]** Resolver bug "Empuje Inconsistente en Eje Y" (Anteriormente "Expulsión del Jugador")
+   - **Estado**: Suspendido. Se abordará con el nuevo sistema de empuje vectorial.
+   - **Descripción Original**: El jugador no es empujado correctamente en el eje Y cuando hay colisiones directas con enemigos. Problemas de deslizamiento diagonal.
 
 ## Prioridad Alta (En Pausa Temporal)
 1. 🔥 **[RENDIMIENTO]** Investigar y resolver degradación de rendimiento del IDE

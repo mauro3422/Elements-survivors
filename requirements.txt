@@ -1,3 +1,4 @@
-pygame==2.5.2
+pygame==2.6.1
 typing-extensions==4.9.0
-colorlog 
+colorlog
+memory_profiler 

@@ -37,16 +37,16 @@ class DebugHUD:
         if event.type == pygame.KEYDOWN:
             if event.key == self.tecla_toggle_modo_debug_global:
                 settings.MODO_DEBUG_LOGS = not settings.MODO_DEBUG_LOGS
-                if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_general", False):
-                    logger.info(f"MODO_DEBUG_LOGS global cambiado a: {settings.MODO_DEBUG_LOGS}", extra={"categoria_log": "log_general"})
+                if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_hud", False):
+                    logger.info(f"MODO_DEBUG_LOGS global cambiado a: {settings.MODO_DEBUG_LOGS}", extra={"categoria_log": "log_hud"})
 
             if event.key in self.mapa_teclas_log:
                 indice_cat = self.mapa_teclas_log[event.key]
                 if 0 <= indice_cat < len(self.categorias_log_list):
                     nombre_cat = self.categorias_log_list[indice_cat]
                     settings.LOG_CATEGORIAS[nombre_cat] = not settings.LOG_CATEGORIAS[nombre_cat]
-                    if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_general", False):
-                        logger.debug(f"Categoría de log '{nombre_cat}' cambiada a: {settings.LOG_CATEGORIAS[nombre_cat]}", extra={"categoria_log": "log_general"})
+                    if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_hud", False):
+                        logger.debug(f"Categoría de log '{nombre_cat}' cambiada a: {settings.LOG_CATEGORIAS[nombre_cat]}", extra={"categoria_log": "log_hud"})
 
     def update(self):
         # Recolectar y almacenar la información necesaria para dibujar.

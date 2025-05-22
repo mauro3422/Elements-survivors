@@ -60,8 +60,8 @@ class Obstaculo(pygame.sprite.Sprite):
         self.hitbox = pygame.Rect(0, 0, hb_ancho, hb_alto)
         self._actualizar_posicion_hitbox()
 
-        if hasattr(settings, 'DEBUG_PRINT_ENTORNO') and settings.DEBUG_PRINT_ENTORNO:
-             print(f"DEBUG_ENTORNO: {self.nombre_log_entidad} creado en ({x},{y}). Hitbox: {self.hitbox.topleft}, Tamaño HB: ({self.hitbox.width},{self.hitbox.height})")
+        if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_entorno", False):
+            logger.debug(f"{self.nombre_log_entidad} creado en ({x},{y}). Hitbox: {self.hitbox.topleft}, Tamaño HB: ({self.hitbox.width},{self.hitbox.height})", extra={"categoria_log": "log_entorno"})
 
     def _cargar_y_escalar_animacion(self):
         for i in range(1, self.cantidad_frames_anim + 1):
@@ -106,8 +106,8 @@ class Obstaculo(pygame.sprite.Sprite):
                 self.tiempo_ultimo_fotograma = ahora
                 self.indice_fotograma = (self.indice_fotograma + 1) % len(self.animacion_frames_escalados)
                 self.image = self.animacion_frames_escalados[self.indice_fotograma]
-                if hasattr(settings, 'DEBUG_PRINT_ENTORNO_ANIM') and settings.DEBUG_PRINT_ENTORNO_ANIM:
-                    print(f"DEBUG_ENTORNO_ANIM: {self.nombre_log_entidad} frame actualizado a {self.indice_fotograma}")
+                if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_entorno", False):
+                    logger.debug(f"{self.nombre_log_entidad} frame actualizado a {self.indice_fotograma}", extra={"categoria_log": "log_entorno"})
 
     def dibujar_hitbox(self, superficie_destino, camara):
         if settings.DEBUG_VER_HITBOXES and hasattr(self, 'hitbox'):
@@ -128,8 +128,8 @@ class Arbol(Obstaculo):
                          hitbox_offsets=hitbox_offsets_arbol,
                          nombre_log_tipo="Arbol")
         
-        if hasattr(settings, 'DEBUG_PRINT_ENTORNO') and settings.DEBUG_PRINT_ENTORNO:
-            print(f"DEBUG_ENTORNO: Un {self.nombre_log_entidad} específicamente ha sido creado y configurado.")
+        if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_entorno", False):
+            logger.debug(f"Un {self.nombre_log_entidad} específicamente ha sido creado y configurado.", extra={"categoria_log": "log_entorno"})
 
 # Ejemplo de futura expansión:
 # class Roca(Obstaculo):

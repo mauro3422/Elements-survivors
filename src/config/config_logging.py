@@ -60,12 +60,14 @@ class DuplicateFilter(logging.Filter):
         return True
 
 def setup_logging():
+    print("DEBUG: config_logging.py - INICIO setup_logging()")
     global SESSION_LOGS_DIR
     if not os.path.exists(BASE_LOGS_DIR):
         try:
             os.makedirs(BASE_LOGS_DIR)
         except OSError as e:
             print(f"Error al crear el directorio base de logs '{BASE_LOGS_DIR}': {e}", file=sys.stderr)
+    print("DEBUG: config_logging.py - Antes de crear SESSION_LOGS_DIR")
     try:
         timestamp_actual = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         SESSION_LOGS_DIR = os.path.join(BASE_LOGS_DIR, timestamp_actual)
@@ -74,19 +76,23 @@ def setup_logging():
     except OSError as e:
         print(f"Error al crear el directorio de logs de sesión '{SESSION_LOGS_DIR}': {e}", file=sys.stderr)
         SESSION_LOGS_DIR = BASE_LOGS_DIR
+    print("DEBUG: config_logging.py - Después de crear SESSION_LOGS_DIR")
 
     log_level_str = settings.LOG_LEVEL_VERBOSE if settings.MODO_DEBUG_LOGS else settings.LOG_LEVEL_STANDARD
     numeric_log_level = getattr(logging, log_level_str.upper(), logging.INFO)
+    print(f"DEBUG: config_logging.py - Nivel de log numérico: {numeric_log_level}")
 
     shared_category_filter = CategoryFilter()
     shared_duplicate_filter = DuplicateFilter()
 
     root_logger = logging.getLogger()
-    root_logger.setLevel(numeric_log_level) 
+    root_logger.setLevel(numeric_log_level)
+    print("DEBUG: config_logging.py - Root logger nivel seteado")
 
     for handler in root_logger.handlers[:]:
         root_logger.removeHandler(handler)
         handler.close()
+    print("DEBUG: config_logging.py - Handlers antiguos removidos")
 
     console_formatter = colorlog.ColoredFormatter(
         "%(log_color)s%(asctime)s - %(name)s - [%(levelname)s] - %(message)s%(reset)s",
@@ -109,6 +115,7 @@ def setup_logging():
     console_handler.addFilter(shared_category_filter) 
     console_handler.addFilter(shared_duplicate_filter) 
     root_logger.addHandler(console_handler)
+    print("DEBUG: config_logging.py - Console handler añadido")
 
     file_formatter = logging.Formatter(
         '%(asctime)s - %(name)s - [%(levelname)s] - %(message)s',
@@ -116,6 +123,7 @@ def setup_logging():
     )
 
     if settings.MODO_DEBUG_LOGS and hasattr(settings, 'MODULOS_CON_LOG_PROPIO'):
+        print("DEBUG: config_logging.py - Configurando file handlers para módulos específicos")
         for module_name in settings.MODULOS_CON_LOG_PROPIO:
             try:
                 module_logger = logging.getLogger(module_name)
@@ -127,6 +135,7 @@ def setup_logging():
                     os.makedirs(module_log_dir)
                 log_file_path = os.path.join(module_log_dir, f"{module_name}.log")
                 # MODIFICACIÓN FIN
+                print(f"DEBUG: config_logging.py - Preparando file handler para {module_name} en {log_file_path}")
 
                 file_handler = logging.handlers.RotatingFileHandler(
                     log_file_path, mode='a', maxBytes=28*1024, backupCount=10, encoding='utf-8'
@@ -145,9 +154,11 @@ def setup_logging():
 
             except Exception as e:
                 logging.getLogger().error(f"No se pudo configurar el FileHandler para el módulo '{module_name}': {e}", exc_info=True, extra={'skip_duplicate_check': True})
+        print("DEBUG: config_logging.py - File handlers para módulos específicos configurados")
     
     if settings.MODO_DEBUG_LOGS:
         logging.getLogger().info(f"Sistema de Logging configurado. MODO_DEBUG_LOGS activo. Nivel: {log_level_str}", extra={"skip_duplicate_check": True})
         logging.getLogger().info(f"Logs de módulos específicos se guardarán en: {SESSION_LOGS_DIR}", extra={"skip_duplicate_check": True})
     else:
-        logging.getLogger().info(f"Sistema de Logging configurado. Nivel: {log_level_str}", extra={"skip_duplicate_check": True}) 
+        logging.getLogger().info(f"Sistema de Logging configurado. Nivel: {log_level_str}", extra={"skip_duplicate_check": True})
+    print("DEBUG: config_logging.py - FIN setup_logging()") 

@@ -61,8 +61,35 @@ MAPA_MODULOS_POR_CATEGORIA = {
             },
             "componentes_clave_internos": ["Función setup_logging()", "Clase CategoryFilter", "Clase DuplicateFilter"],
             "notas_adicionales": "Centraliza toda la configuración del sistema de logging. Los logs se guardan por sesión y por módulo."
+        },
+        {
+            "nombre_modulo": "game_initializer.py",
+            "categoria": "Core",
+            "ruta_relativa": "src/core/game_initializer.py",
+            "responsabilidad_principal": "Contiene la lógica para crear y configurar los elementos iniciales del juego (jugador, obstáculos, enemigos, cámara, HUD) al inicio del juego.",
+            "interacciones_principales": {
+                "entrantes": ["juego.py (lo llama para inicializar los elementos)"],
+                "salientes": [
+                    "settings.py (para configuraciones como ANCHO_MUNDO_JUEGO, etc.)", 
+                    "asset_manager.py (para obtener assets como fuentes)", 
+                    "jugador.py (para instanciar Jugador)",
+                    "enemigo.py (para instanciar Enemigo)", # Asumiendo que podría instanciar enemigos directamente o a través de gestor_nivel
+                    "entorno.py (para instanciar Obstaculo, Arbol, etc.)", # Asumiendo que podría instanciar entorno directamente o a través de gestor_nivel
+                    "gestor_nivel.py (para cargar elementos del nivel)", 
+                    "camara.py (para instanciar Camara2D)", 
+                    "hud.py (para instanciar DebugHUD)",
+                    "logging (usa getLogger('game_initializer') y la categoría 'log_game_initializer')"
+                ]
+            },
+            "componentes_clave_internos": ["Función crear_elementos_juego(asset_manager, gestor_nivel, factor_zoom_inicial, juego_ref_para_hud)"],
+            "variables_config_clave_settings": [
+                "ANCHO_PANTALLA", "ALTO_PANTALLA", "ANCHO_MUNDO_JUEGO", "ALTO_MUNDO_JUEGO", 
+                "MODO_DEBUG_LOGS", 
+                "LOG_CATEGORIAS (específicamente 'log_game_initializer', y condicionalmente 'log_camara')"
+            ],
+            "notas_adicionales": "Centraliza la creación de los objetos principales del juego. Su logger es 'game_initializer' y su categoría de log principal es 'log_game_initializer'. Es invocado por la clase Juego durante su inicialización."
         }
-        # Futuras entradas para config.py, game_initializer.py aquí
+        # Futuras entradas para config.py aquí (si config.py se separa de settings.py)
     ],
     "Entidades": [
         {
@@ -74,11 +101,12 @@ MAPA_MODULOS_POR_CATEGORIA = {
                 "entrantes": ["juego.py (para creación y updates)", "gestor_estado.py (para updates)"],
                 "salientes": [
                     "entidad_base.py (herencia)",
-                    "settings.py (configuraciones, incluyendo DEBUG_PRINT_JUGADOR_ATAQUE_CALCULO, DEBUG_PRINT_JUGADOR_RECIBIR_DANO_INFO)",
+                    "settings.py (para configuraciones del jugador y control de logging mediante MODO_DEBUG_LOGS y LOG_CATEGORIAS específicas del jugador)",
                     "asset_manager.py (para assets de animación)",
                     "collision_handler.py (para movimiento y colisión)",
                     "attack_profile_manager.py (para gestionar perfiles y parámetros de ataque)",
-                    "enemigo.py (para aplicar daño a instancias de Enemigo)"
+                    "enemigo.py (para aplicar daño a instancias de Enemigo)",
+                    "logging (para registrar eventos y depuración)"
                 ]
             },
             "componentes_clave_internos": [
@@ -90,6 +118,7 @@ MAPA_MODULOS_POR_CATEGORIA = {
                 "actualizar_ataque(self, enemigos): Gestiona la lógica de un ataque en curso, calcula hitbox de ataque, detecta colisiones con enemigos y aplica daño.",
                 "update(self, teclas_presionadas, obstaculos_solidos, enemigos_sprites_para_ataque, mundo_ancho, mundo_alto, delta_time): Método principal de actualización que llama a actualizar_movimiento y actualizar_ataque.",
                 "recibir_dano(self, cantidad, tipo_dano): Sobrescribe para manejar daño específico al jugador (y llama a super).",
+                "dibujar(self, superficie): Dibuja el sprite del jugador (heredado o propio si se define).",
                 "dibujar_debug_ataque(self, superficie_destino, camara): Dibuja el hitbox de ataque para depuración.",
                 "Variables de estado importantes: self.esta_atacando, self.pos_x_flotante, self.pos_y_flotante, self.attack_profile_manager (instancia)"
             ],
@@ -99,6 +128,12 @@ MAPA_MODULOS_POR_CATEGORIA = {
                 "recibir_dano": "Procesa el daño recibido por el jugador.",
                 "dibujar_debug_ataque": "Visualiza el hitbox de ataque para fines de depuración."
             },
+            "variables_config_clave_settings": [
+                "VIDA_MAXIMA_JUGADOR", "VELOCIDAD_JUGADOR", "JUGADOR_HITBOX_OFFSET_X", "JUGADOR_HITBOX_OFFSET_Y", 
+                "JUGADOR_HITBOX_AJUSTE_INFERIOR", "JUGADOR_DANO_BASE_ATAQUE", "JUGADOR_COOLDOWN_ATAQUE",
+                "MODO_DEBUG_LOGS", 
+                "LOG_CATEGORIAS (específicamente log_jugador_general, log_jugador_mov_detalle, log_jugador_ataque_calculo, log_jugador_ataque_debug, log_jugador_vida, log_jugador_anim)"
+            ],
             "notas_adicionales": "Su hitbox tiene un ajuste específico en la parte inferior. Utiliza posiciones flotantes para un movimiento más preciso antes de aplicar colisiones con deltas enteros."
         },
         {
@@ -110,7 +145,7 @@ MAPA_MODULOS_POR_CATEGORIA = {
                 "entrantes": ["Subclases como jugador.py, enemigo.py (por herencia)", "game_initializer.py o gestor_nivel.py (para instanciación)"],
                 "salientes": [
                     "asset_manager.py (para cargar imágenes/animaciones)",
-                    "settings.py (para configuraciones por defecto, categorías de log)",
+                    "settings.py (para configuraciones por defecto y control de logging mediante MODO_DEBUG_LOGS y LOG_CATEGORIAS)",
                     "logging (para registrar eventos y depuración)"
                 ]
             },
@@ -124,8 +159,10 @@ MAPA_MODULOS_POR_CATEGORIA = {
                 "image, rect, hitbox",
                 "vida_maxima, vida_actual, velocidad",
                 "ha_muerto (bool)",
+                "Método __init__(...): Inicialización básica y carga de assets/animaciones.",
                 "Método _cargar_animaciones_desde_config()",
                 "Método _actualizar_posicion_hitbox()",
+                "Método _actualizar_posicion_rect_desde_hitbox()",
                 "Método actualizar_animacion()",
                 "Método recibir_dano()",
                 "Método morir()",
@@ -135,8 +172,7 @@ MAPA_MODULOS_POR_CATEGORIA = {
             "variables_config_clave_settings": [
                 "MODO_DEBUG_LOGS",
                 "LOG_CATEGORIAS",
-                "DEBUG_VER_HITBOXES",
-                "DEBUG_PRINT_GESTION_DANO"
+                "DEBUG_VER_HITBOXES"
             ],
             "notas_adicionales": "Gestiona el ciclo de vida básico (daño, muerte) y la actualización de animaciones. El posicionamiento del hitbox por defecto es topleft del rect + offset. La lógica de movimiento es responsabilidad de las subclases."
         },
@@ -152,27 +188,26 @@ MAPA_MODULOS_POR_CATEGORIA = {
                 ],
                 "salientes": [
                     "entidad_base.py (herencia)",
-                    "settings.py (para configuraciones específicas del enemigo como vida, velocidad, IA)",
+                    "settings.py (para configuraciones del enemigo y control de logging mediante MODO_DEBUG_LOGS y LOG_CATEGORIAS específicas del enemigo)",
                     "collision_handler.py (para gestionar movimiento y colisiones con obstáculos y jugador)",
-                    "jugador.py (indirectamente, al obtener el rect del jugador como objetivo)"
+                    "jugador.py (indirectamente, al obtener el rect del jugador como objetivo)",
+                    "logging (para registrar eventos y depuración)"
                 ]
             },
             "componentes_clave_internos": [
                 "Clase Enemigo(EntidadBase)",
+                "Método __init__(...): Inicialización específica del enemigo.",
                 "Método update(objetivo_rect, grupo_obstaculos, delta_time): Lógica de IA y movimiento.",
                 "Método _actualizar_posicion_hitbox(): Sobrescribe para centrar el hitbox.",
                 "Método _mover_y_colisionar_con_obstaculos(...): Maneja la lógica de movimiento aplicando colisiones."
             ],
             "variables_config_clave_settings": [
-                "ENEMIGO_VIDA_MAXIMA",
-                "ENEMIGO_VELOCIDAD",
-                "ENEMIGO_HITBOX_OFFSET_X",
-                "ENEMIGO_HITBOX_OFFSET_Y",
-                "ENEMIGO_DANO_ATAQUE",
-                "ENEMIGO_RANGO_AGRO",
-                "ENEMIGO_DIST_MIN_JUGADOR"
+                "ENEMIGO_VIDA_MAXIMA", "ENEMIGO_VELOCIDAD", "ENEMIGO_HITBOX_OFFSET_X", "ENEMIGO_HITBOX_OFFSET_Y",
+                "ENEMIGO_DANO_ATAQUE", "ENEMIGO_RANGO_AGRO", "ENEMIGO_DIST_MIN_JUGADOR",
+                "MODO_DEBUG_LOGS",
+                "LOG_CATEGORIAS (específicamente log_enemigo, log_enemigo_ia, log_enemigo_mov, log_enemigo_col)"
             ],
-            "notas_adicionales": "Actualmente utiliza una imagen estática, pero la herencia de EntidadBase permitiría añadir animaciones. Su hitbox se centra en el rect, a diferencia del comportamiento por defecto de EntidadBase. El método dibujar() es redundante si se usa con un Sprite Group."
+            "notas_adicionales": "Actualmente utiliza una imagen estática, pero la herencia de EntidadBase permitiría añadir animaciones. Su hitbox se centra en el rect, a diferencia del comportamiento por defecto de EntidadBase."
         },
         {
             "nombre_modulo": "entorno.py",
@@ -188,25 +223,25 @@ MAPA_MODULOS_POR_CATEGORIA = {
                 "salientes": [
                     "pygame.sprite.Sprite (herencia para la clase Obstaculo)",
                     "asset_manager.py (para cargar las imágenes/frames de los elementos)",
-                    "settings.py (para configuraciones como DEBUG_VER_HITBOXES, DEBUG_PRINT_ENTORNO, categorías de log, etc.)"
+                    "settings.py (para configuraciones como DEBUG_VER_HITBOXES y control de logging mediante MODO_DEBUG_LOGS y LOG_CATEGORIAS como log_entorno)",
+                    "logging (para registrar eventos y depuración)"
                 ]
             },
             "componentes_clave_internos": [
                 "Clase Obstaculo(pygame.sprite.Sprite): Clase base para elementos estáticos del entorno. Gestiona assets, animación básica, escalado y hitbox.",
+                "  Método Obstaculo.__init__(...): Inicialización y carga de assets.",
                 "  Método Obstaculo._cargar_y_escalar_animacion(): Carga y escala frames una vez.",
+                "  Método Obstaculo._actualizar_posicion_hitbox()",
                 "  Método Obstaculo.update(): Actualiza la animación.",
                 "  Método Obstaculo.dibujar_hitbox(): Dibuja el hitbox para depuración.",
                 "Clase Arbol(Obstaculo): Representa un árbol, especialización de Obstaculo."
             ],
             "variables_config_clave_settings": [
-                "MODO_DEBUG_LOGS",
-                "LOG_CATEGORIAS (para 'log_entorno')",
-                "DEBUG_VER_HITBOXES",
-                "DEBUG_PRINT_ENTORNO",
-                "DEBUG_PRINT_ENTORNO_ANIM",
-                "ROJO_ERROR_ASSET"
+                "DEBUG_VER_HITBOXES", 
+                "MODO_DEBUG_LOGS", 
+                "LOG_CATEGORIAS (específicamente log_entorno)"
             ],
-            "notas_adicionales": "Diseñado para ser extensible con más tipos de obstáculos heredando de 'Obstaculo'. El escalado de imágenes se realiza una vez al cargar para optimizar."
+            "notas_adicionales": "Contiene elementos estáticos como árboles. La clase base Obstaculo podría extenderse para otros tipos de elementos del entorno."
         }
     ],
     "Sistemas": [
@@ -229,20 +264,22 @@ MAPA_MODULOS_POR_CATEGORIA = {
             },
             "componentes_clave_internos": [
                 "Clase CollisionHandler (contiene métodos estáticos)",
-                "Método estático principal: gestionar_movimiento_y_colision(entidad_hitbox, entidad_rect, hitbox_offset_x, hitbox_offset_y, dx, dy, obstaculos)",
+                "Método estático principal: gestionar_movimiento_y_colision(entidad_actual, entidad_hitbox, entidad_rect, hitbox_offset_x, hitbox_offset_y, dx, dy, obstaculos)",
                 "  Fase 1: _resolver_solapamientos_estaticos_eje (pre-movimiento, iterativo)",
                 "  Fase 2: _aplicar_movimiento_y_colision_eje_x / _aplicar_movimiento_y_colision_eje_y (movimiento y ajuste por eje)",
                 "  Fase 3: _verificar_y_revertir_colision_post_fase2 (capa de seguridad, revierte a Fase 1 o posición original si es necesario)",
-                "  Fase 4: Sincronización del rect visual de la entidad con la hitbox ajustada.",
-                "Método estático: resolver_colisiones_dinamicas_entidad_a_entidad(entidad_actual, otra_entidad) (detección simple, sin resolución)",
-                "Otros métodos estáticos privados de apoyo: _prevenir_teletransportacion (logging de movimientos grandes)."
+                "  Fase 4: _prevenir_teletransportacion (logging de movimientos grandes y prevención)",
+                "  Fase 5: Sincronización del rect visual de la entidad con la hitbox ajustada.",
+                "Método estático: resolver_colisiones_dinamicas_entidad_a_entidad(entidad_actual, otra_entidad) (detección simple, sin resolución)"
             ],
             "variables_config_clave_settings": [
                 "MODO_DEBUG_LOGS",
                 "LOG_CATEGORIAS['log_collision_handler']",
-                "MAX_PASADAS_RESOLUCION_ESTATICA"
+                "LOG_CATEGORIAS['log_collision_handler_detalle']",
+                "MAX_PASADAS_RESOLUCION_ESTATICA",
+                "FACTOR_UMBRAL_TELETRANSPORTACION"
             ],
-            "notas_adicionales": "Utiliza un enfoque de resolución de colisiones por fases, separando el movimiento en ejes X e Y y aplicando correcciones. Incluye múltiples capas de seguridad para evitar que las entidades se atasquen o atraviesen obstáculos. El movimiento se aplica con truncamiento a entero. El logging es muy detallado si está activado."
+            "notas_adicionales": "Utiliza un enfoque de resolución de colisiones por fases, separando el movimiento en ejes X e Y y aplicando correcciones. Incluye múltiples capas de seguridad para evitar que las entidades se atasquen o atraviesen obstáculos. El movimiento se aplica con truncamiento a entero. El logging es muy detallado si está activado y se divide en dos categorías (general y detalle)."
         },
         {
             "nombre_modulo": "gestor_eventos.py",
@@ -275,8 +312,8 @@ MAPA_MODULOS_POR_CATEGORIA = {
             ],
             "variables_config_clave_settings": [
                 "MODO_DEBUG_LOGS",
-                "LOG_CATEGORIAS['log_event_handler']",
-                "LOG_CATEGORIAS['log_event_handler_verbose']",
+                "LOG_CATEGORIAS['log_gestor_eventos']",
+                "LOG_CATEGORIAS['log_gestor_eventos_verbose']",
                 "FACTOR_ZOOM_PASO",
                 "FACTOR_ZOOM_MIN",
                 "FACTOR_ZOOM_MAX"
@@ -309,16 +346,210 @@ MAPA_MODULOS_POR_CATEGORIA = {
                 "método _manejar_colision_jugador_enemigo_contacto() (usa settings.ENEMIGO_DANO_CONTACTO_DEFAULT)"
             ],
             "variables_config_clave_settings": [
-                "MODO_DEBUG_LOGS", "LOG_CATEGORIAS ('log_gestor_estado', 'log_gestor_estado_detalle')",
+                "MODO_DEBUG_LOGS", 
+                "LOG_CATEGORIAS ('log_gestor_estado', 'log_gestor_estado_detalle', 'log_posiciones_debug')",
                 "ANCHO_MUNDO_JUEGO", "ALTO_MUNDO_JUEGO",
                 "ENEMIGO_DANO_CONTACTO_DEFAULT"
             ],
             "notas_adicionales": "Centraliza la lógica de 'quién está dónde' y 'qué está pasando'. La detección de daño por contacto entre jugador y enemigo está implementada pero puede activarse/desactivarse fácilmente. Pendiente: Optimizar la creación del grupo de obstáculos para cada enemigo si es necesario."
+        },
+        {
+            "nombre_modulo": "gestor_nivel.py",
+            "categoria": "Sistemas",
+            "ruta_relativa": "src/sistemas/gestor_nivel.py",
+            "responsabilidad_principal": "Carga y gestiona los datos de los niveles, incluyendo la creación de entidades (obstáculos, enemigos) basadas en la configuración del nivel y la disposición de elementos en el mundo del juego.",
+            "interacciones_principales": {
+                "entrantes": ["juego.py (para cargar el nivel actual)"],
+                "salientes": [
+                    "settings.py (para RUTA_NIVEL_1, MODO_DEBUG_LOGS y LOG_CATEGORIAS['log_gestor_nivel'], ['log_gestor_nivel_detalle'])", 
+                    "entorno.py (para crear instancias de Obstaculo, Arbol, etc.)", 
+                    "enemigo.py (para crear instancias de Enemigo)",
+                    "asset_manager.py (para pasar la instancia a las entidades creadas)",
+                    "logging (utiliza logging.getLogger('gestor_nivel') para registrar la carga y creación de entidades)"
+                ]
+            },
+            "componentes_clave_internos": [
+                "Clase GestorNivel", 
+                "Método cargar_nivel(ruta_archivo_nivel, asset_manager_instance, ...)",
+                "Método _crear_entidad_desde_datos(...)"
+            ],
+            "variables_config_clave_settings": [
+                "RUTA_NIVEL_1", 
+                "MODO_DEBUG_LOGS", 
+                "LOG_CATEGORIAS (específicamente 'log_gestor_nivel', 'log_gestor_nivel_detalle')"
+            ],
+            "notas_adicionales": "Lee archivos de configuración de nivel (ej. JSON) para construir el escenario. Es fundamental para la estructura y contenido de cada nivel."
+        },
+        {
+            "nombre_modulo": "attack_profile_manager.py",
+            "categoria": "Sistemas",
+            "ruta_relativa": "src/sistemas/attack_profile_manager.py",
+            "responsabilidad_principal": "Gestiona los perfiles de ataque del jugador, incluyendo la creación, carga, guardado, modificación y selección de perfiles. Proporciona una interfaz para acceder y modificar los parámetros de los perfiles de ataque. También calcula valores derivados como el número de segmentos de barrido y la duración de cada segmento.",
+            "interacciones_principales": {
+                "entrantes": ["jugador.py (para instanciación y uso)"],
+                "salientes": [
+                    "settings.py (para configuraciones de perfiles de ataque por defecto, ruta de archivo de configuración, nombre de perfil inicial)",
+                    "logging (utiliza logging.getLogger('attack_profile_manager') y la categoría 'log_attack_profile_manager')",
+                    "os, json (para leer/escribir el archivo JSON de perfiles)"
+                ]
+            },
+            "componentes_clave_internos": [
+                "Clase AttackProfileManager",
+                "__init__(self, ruta_base_proyecto_settings, archivo_config_settings, nombre_perfil_inicial_settings): Carga o crea perfiles.",
+                "_cargar_o_crear_perfiles_ataque(): Lógica para cargar desde JSON o crear perfiles por defecto.",
+                "_crear_perfil_ataque_por_defecto(nombre_perfil): Crea un perfil con valores de settings.py.",
+                "_forzar_creacion_perfil_default_y_guardar(): Crea y guarda el perfil por defecto.",
+                "guardar_todos_perfiles_ataque(): Guarda todos los perfiles en el archivo JSON.",
+                "seleccionar_perfil_ataque(nombre_perfil_solicitado): Cambia el perfil activo y recalcula propiedades.",
+                "get_parametro_ataque_activo(nombre_parametro, valor_defecto)",
+                "set_parametro_ataque_activo(nombre_parametro, valor)",
+                "Métodos para modificar parámetros (ej. modificar_ataque_offset)",
+                "Propiedades: num_segmentos_barrido_activo, duracion_segmento_barrido_activo",
+                "Atributos: perfiles_de_ataque (dict), nombre_perfil_ataque_activo"
+            ],
+            "variables_config_clave_settings": [
+                "RUTA_BASE_PROYECTO",
+                "ARCHIVO_CONFIG_ATAQUE",
+                "NOMBRE_PERFIL_ATAQUE_INICIAL",
+                "ATAQUE_BASE_OFFSET_DISTANCIA",
+                "ATAQUE_BASE_EXTENSION",
+                "ATAQUE_BASE_GROSOR",
+                "ATAQUE_BASE_DURACION_TOTAL_MS",
+                "ATAQUE_BASE_PLANTILLA_ANGULOS_GRADOS",
+                "ATAQUE_BASE_DANO_MODIFICADOR",
+                "ATAQUE_BASE_COOLDOWN_MODIFICADOR",
+                "LOG_CATEGORIAS['log_attack_profile_manager']"
+            ],
+            "notas_adicionales": "Centraliza toda la gestión de los perfiles de ataque del jugador. Los perfiles se guardan en un archivo JSON (config_ataque.json por defecto). El módulo es robusto contra errores de carga o ausencia del archivo, recreando perfiles por defecto si es necesario."
+        },
+        {
+            "nombre_modulo": "motor_fisica.py",
+            "categoria": "Sistemas",
+            "ruta_relativa": "src/sistemas/motor_fisica.py",
+            "responsabilidad_principal": "Gestiona cálculos relacionados con la física del juego, como la generación y suma de vectores de empuje, y potencialmente otras interacciones físicas (fricción, gravedad si aplica, etc.).",
+            "interacciones_principales": {
+                "entrantes": [
+                    "entidades (ej. enemigo.py, para solicitar cálculo de vector de empuje)",
+                    "collision_handler.py (potencialmente, para orquestar físicas tras una colisión)",
+                    "habilidades (futuro, si las habilidades aplican fuerzas)"
+                ],
+                "salientes": [
+                    "settings.py (para constantes físicas como magnitud de empuje base)",
+                    "pygame.math.Vector2 (uso extensivo)"
+                ]
+            },
+            "componentes_clave_internos": [
+                "Clase MotorFisica (puede ser estática o una instancia)",
+                "Función calcular_vector_empuje_simple(origen_pos_center, destino_pos_center, fuerza_magnitud)",
+                "Futuras funciones para sumar vectores, aplicar fuerzas, etc."
+            ],
+            "variables_config_clave_settings": [
+                "ENEMIGO_FUERZA_EMPUJE_BASE (nueva, a añadir)"
+            ],
+            "notas_adicionales": "Módulo nuevo destinado a centralizar la lógica de fuerzas y empujes, promoviendo un comportamiento más predecible y extensible."
         }
-        # Futuras entradas para gestor_nivel.py, etc. aquí
     ],
     "Renderizado": [
-        # Futuras entradas para renderer.py, hud.py, camara.py aquí
+        {
+            "nombre_modulo": "renderer.py",
+            "categoria": "Renderizado",
+            "ruta_relativa": "src/renderizado/renderer.py",
+            "responsabilidad_principal": "Encargado de dibujar todos los elementos visuales del juego en la pantalla, incluyendo el fondo, los sprites (jugador, enemigos, entorno) y elementos de depuración como hitboxes. Aplica transformaciones de cámara (zoom, desplazamiento) y ordenamiento por profundidad.",
+            "interacciones_principales": {
+                "entrantes": ["juego.py (para inicialización y llamadas de renderizado)"],
+                "salientes": [
+                    "settings.py (para configuraciones de renderizado, colores, y control de logging)",
+                    "asset_manager.py (para obtener assets como el tile de fondo)",
+                    "camara.py (para obtener sprites visibles, aplicar transformaciones)",
+                    "hud.py (para renderizar la instancia del HUD)",
+                    "pygame (para operaciones de dibujo, escalado, blitting)",
+                    "logging (usa getLogger('renderer') y las categorías 'log_renderer', 'log_renderer_verbose', 'log_renderer_hitbox')"
+                ]
+            },
+            "componentes_clave_internos": [
+                "Clase Renderer",
+                "__init__(self, pantalla, camara, asset_manager)",
+                "_renderizar_fondo_tileado(self, superficie_destino, factor_zoom)",
+                "_renderizar_sprites_juego(self, superficie_destino, todos_los_sprites, factor_zoom)",
+                "_renderizar_hitboxes_debug(self, superficie_destino, todos_los_sprites, factor_zoom)",
+                "render_escena_completa(self, todos_los_sprites, factor_zoom)",
+                "render_hud(self, hud_instance)"
+            ],
+            "variables_config_clave_settings": [
+                "MODO_DEBUG_LOGS",
+                "LOG_CATEGORIAS (específicamente 'log_renderer', 'log_renderer_verbose', 'log_renderer_hitbox')",
+                "DEBUG_VER_HITBOXES",
+                "HITBOX_COLOR_COLISION", "GROSOR_HITBOX_COLISION_DEBUG",
+                "HITBOX_COLOR_RECT_SPRITE", "GROSOR_RECT_SPRITE_DEBUG",
+                "HITBOX_COLOR_ATAQUE", "GROSOR_HITBOX_ATAQUE_DEBUG",
+                "NEGRO" # Usado como fallback para fondo
+            ],
+            "notas_adicionales": "Gestiona el dibujado de la escena completa. El fondo se dibuja tileado y se escala con el zoom. Los sprites se ordenan por su coordenada Y antes de dibujarlos. Incluye lógica detallada para dibujar hitboxes de depuración si está activado."
+        },
+        {
+            "nombre_modulo": "hud.py",
+            "categoria": "Renderizado",
+            "ruta_relativa": "src/renderizado/hud.py",
+            "responsabilidad_principal": "Muestra información de depuración en pantalla (DebugHUD), como la posición del jugador, el estado del zoom, detalles del perfil de ataque activo, y los estados de las categorías de log. También permite modificar el estado de MODO_DEBUG_LOGS y las categorías individuales de LOG_CATEGORIAS mediante teclas.",
+            "interacciones_principales": {
+                "entrantes": [
+                    "juego.py (para inicialización y llamadas a draw)", 
+                    "gestor_eventos.py (para pasarle eventos de input para el manejo de toggles de log)"
+                ],
+                "salientes": [
+                    "settings.py (para leer y modificar MODO_DEBUG_LOGS y LOG_CATEGORIAS, y para leer constantes de layout y colores del HUD)",
+                    "jugador.py (para obtener información del jugador y su attack_profile_manager)",
+                    "juego.py (referencia para obtener el factor_zoom_actual)",
+                    "pygame (para renderizar texto)",
+                    "logging (usa getLogger('hud') y la categoría 'log_hud' para mensajes sobre cambios en los toggles de logging)"
+                ]
+            },
+            "componentes_clave_internos": [
+                "Clase DebugHUD",
+                "__init__(self, jugador, fuente, juego_ref)",
+                "manejar_input_hud(self, event): Procesa teclas para cambiar MODO_DEBUG_LOGS y LOG_CATEGORIAS.",
+                "update(self): Recolecta y cachea información a mostrar.",
+                "draw(self, superficie): Dibuja la información en la pantalla."
+            ],
+            "variables_config_clave_settings": [
+                "MODO_DEBUG_LOGS", "LOG_CATEGORIAS",
+                "BLANCO", "VERDE", "ROJO", # Colores del HUD
+                "HUD_PADDING_X", "HUD_PADDING_Y", "HUD_LINE_HEIGHT", "HUD_ESPACIO_ENTRE_SECCIONES" # Layout
+            ],
+            "notas_adicionales": "Proporciona una interfaz visual para el estado del juego y los controles de logging. Cachea datos en su método update() para optimizar el dibujado."
+        },
+        {
+            "nombre_modulo": "camara.py",
+            "categoria": "Renderizado",
+            "ruta_relativa": "src/renderizado/camara.py",
+            "responsabilidad_principal": "Gestiona la vista del juego, siguiendo a una entidad objetivo (jugador) y aplicando zoom. Calcula qué parte del mundo es visible y transforma las coordenadas del mundo a coordenadas de pantalla. También determina qué sprites son visibles.",
+            "interacciones_principales": {
+                "entrantes": [
+                    "juego.py (para inicialización y llamadas a update)", 
+                    "renderer.py (para obtener sprites visibles y aplicar transformaciones a rects)"
+                ],
+                "salientes": [
+                    "settings.py (para leer MODO_DEBUG_LOGS, LOG_CATEGORIAS, y dimensiones físicas de pantalla y del mundo)",
+                    "pygame.Rect (para representar la vista de la cámara y los rects transformados)",
+                    "logging (usa getLogger('camara') y las categorías 'log_camara', 'log_camara_verbose')"
+                ]
+            },
+            "componentes_clave_internos": [
+                "Clase Camara2D",
+                "__init__(self, ancho_mundo, alto_mundo, ancho_pantalla_fisica, alto_pantalla_fisica)",
+                "update(self, objetivo, factor_zoom_actual): Actualiza la posición y tamaño de la vista de la cámara.",
+                "apply(self, rect_mundo, factor_zoom_actual): Transforma un rect del mundo a coordenadas de pantalla.",
+                "get_sprites_visibles_ordenados(self, todos_los_sprites): Devuelve sprites visibles y ordenados.",
+                "Atributo: self.camera_rect (pygame.Rect que representa la vista de la cámara en el mundo)"
+            ],
+            "variables_config_clave_settings": [
+                "MODO_DEBUG_LOGS",
+                "LOG_CATEGORIAS (específicamente 'log_camara', 'log_camara_verbose')",
+                "ANCHO_MUNDO_JUEGO", "ALTO_MUNDO_JUEGO",
+                "ANCHO_PANTALLA", "ALTO_PANTALLA" # Usadas indirectamente a través de los parámetros del constructor
+            ],
+            "notas_adicionales": "La cámara se centra en un objetivo y se mantiene dentro de los límites del mundo. El zoom afecta el tamaño de la porción del mundo que es visible."
+        }
     ],
     "Utilidades": [
         # Futuras entradas para utils.py aquí (asset_manager.py podría ir aquí o en Sistemas)

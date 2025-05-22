@@ -66,6 +66,14 @@ Al finalizar una tarea o un conjunto de cambios significativos, el colaborador (
 
 Este feedback proactivo ayuda a mantener la transparencia, facilita la revisión y asegura que el proyecto evoluciona de manera coherente y alineada con las directrices establecidas.
 
+### Protocolo Específico para Colaboración con Jules (Agente de Codificación Experimental)
+
+Para directrices detalladas sobre cómo interactuar y colaborar eficazmente con Jules, el agente de codificación experimental de Google, consultar el siguiente documento dedicado:
+
+*   **[`docs/JULES_COLLABORATION_PROTOCOL.md`](docs/JULES_COLLABORATION_PROTOCOL.md)**
+
+Este protocolo cubre la preparación del repositorio, formulación de prompts, revisión de planes y código, y el flujo de trabajo general al utilizar Jules.
+
 **Reglas de Desarrollo:**
 
 1.  **Antes de crear nueva funcionalidad o modificar código existente:**
@@ -102,6 +110,32 @@ Este feedback proactivo ayuda a mantener la transparencia, facilita la revisión
     *   Ideas pendientes o próximos pasos planificados.
     *   Cualquier configuración temporal de depuración que se haya activado.
 *   **Actualización:** Actualizar este archivo al final de cada sesión de trabajo significativa.
+
+#### Ciclo de Vida y Transición de `dev_notes.md` a `CHANGELOG.md`
+
+Para mantener la claridad en `dev_notes.md` y asegurar que `CHANGELOG.md` capture los hitos relevantes, se sigue el siguiente proceso:
+
+1.  **Registro Continuo en `dev_notes.md`**:
+    *   Durante el desarrollo activo, `dev_notes.md` sirve como un borrador de trabajo. Se anotan tareas en curso, bugs identificados, ideas, decisiones de diseño, y el estado de las investigaciones (ej. "Investigando bug X - parece relacionado con Y").
+    *   Los elementos pueden marcarse informalmente (ej., con `[PENDIENTE]`, `[EN PROGRESO]`, `[RESUELTO - PENDIENTE DE PRUEBA]`, `[SOLUCIONADO TEMPORALMENTE]`).
+
+2.  **Marcado de Elementos Resueltos en `dev_notes.md`**:
+    *   Cuando un bug específico o una subtarea listada en `dev_notes.md` se considera **completamente resuelta y verificada** (idealmente a través de pruebas o ejecución del juego), se marcará explícitamente como `[RESUELTO Y VERIFICADO]` o similar directamente en `dev_notes.md`.
+    *   Se puede añadir una breve nota sobre la solución si es concisa.
+
+3.  **Consolidación y Actualización del `CHANGELOG.md`**:
+    *   Al alcanzar un hito de desarrollo significativo (ej. finalización de una característica mayor, corrección de varios bugs importantes, preparación para una "versión" interna) o al final de una sesión de trabajo extensa, se revisará `dev_notes.md`.
+    *   Los elementos marcados como `[RESUELTO Y VERIFICADO]` (o equivalentes que indiquen finalización y fiabilidad) se agruparán y se redactará una entrada cohesiva para `CHANGELOG.md`.
+    *   La entrada en `CHANGELOG.md` debe seguir el formato establecido, ser clara, y enfocarse en el impacto para el usuario o el proyecto (ej. "Corregido bug X que causaba Y", "Implementada nueva característica Z que permite A").
+
+4.  **Limpieza de `dev_notes.md`**:
+    *   Una vez que la información de los elementos resueltos y verificados ha sido transferida satisfactoriamente a `CHANGELOG.md`, las entradas correspondientes en `dev_notes.md` pueden ser:
+        *   **Eliminadas**: Si la información ya está completamente capturada en `CHANGELOG.md` y no se necesita para contexto inmediato.
+        *   **Archivadas**: Si contienen detalles de la investigación o del proceso de solución que podrían ser útiles para referencia futura pero no son adecuados para `CHANGELOG.md`. Esto podría implicar moverlas a una sección de "Archivo" dentro de `dev_notes.md` o a un documento separado de notas técnicas detalladas si el proyecto lo requiriese. La preferencia es mantener `dev_notes.md` enfocado en el trabajo *actual y reciente*.
+    *   El objetivo es que `dev_notes.md` se mantenga relevante para el estado actual del desarrollo y no se sobrecargue con historial ya documentado oficialmente.
+
+5.  **Actualización de `TODO.md`**:
+    *   Paralelamente, las tareas correspondientes en `TODO.md` también deben marcarse como completadas o actualizarse según corresponda.
 
 ## Guía de Desarrollo
 
@@ -723,3 +757,31 @@ Recuerda que los logs son una pieza del rompecabezas. Para un análisis de rendi
     *   Si se estaba trabajando con un asistente IA, proporcionarle un resumen breve basado en `dev_notes.md` para reanudar la colaboración.
 
 **Este protocolo es crucial para la eficiencia y para evitar la frustración de perder el hilo del trabajo debido a problemas técnicos del entorno.**
+
+### X.2. Protocolo de Sincronización y Actualización de Documentación al Cierre de Sesión/Hito
+
+Al finalizar una sesión de trabajo significativa o alcanzar un hito importante (ej. cierre de una tarea mayor en `TODO.md`, corrección de un bug importante, implementación de una nueva característica):
+
+1.  **Actualizar `dev_notes.md`**:
+    *   Resumir el trabajo realizado durante la sesión.
+    *   Documentar el estado actual de la tarea en curso (si aplica).
+    *   Identificar cualquier problema nuevo, bug encontrado, o decisión de diseño tomada.
+    *   Esbozar los próximos pasos planeados para la siguiente sesión.
+    *   **Asegurarse de que la fecha y hora de "Última Actualización" al inicio de `dev_notes.md` se actualice.**
+
+2.  **Actualizar `TODO.md`**:
+    *   Marcar tareas completadas.
+    *   Añadir nuevas tareas si surgieron.
+    *   Revisar y ajustar prioridades si es necesario.
+
+3.  **Actualizar `CHANGELOG.md`**:
+    *   Añadir una entrada concisa para los cambios significativos implementados, siguiendo el formato establecido. Referenciar versiones si aplica.
+
+4.  **Comunicación (si aplica)**:
+    *   Informar al usuario (humano) sobre las actualizaciones realizadas en la documentación y los resultados clave de la sesión.
+
+5.  **Verificación Asistida (Propuesta para IA)**:
+    *   Al cierre, la IA puede proponer un checklist de estos puntos para confirmar con el usuario.
+    *   Al inicio de una nueva sesión, si la IA detecta una discrepancia significativa entre la fecha/hora de "Última Actualización" de `dev_notes.md` y la fecha/hora actual, o entre el último `CHANGELOG.md` y las notas, deberá señalarlo proactivamente como un posible indicador de que el contexto puede estar desactualizado y solicitar una aclaración antes de proceder.
+
+El objetivo es mantener estos documentos como fuentes de verdad vivas y actualizadas, facilitando la continuidad y la comprensión del estado del proyecto.

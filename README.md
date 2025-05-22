@@ -189,15 +189,30 @@ Para una colaboración más efectiva y eficiente con un asistente de IA avanzado
     *   `CHANGELOG.md`: Para conocer los últimos cambios implementados y su impacto.
     *   `TODO.md`: Para identificar las tareas pendientes y sus prioridades.
 
-2.  **Análisis y Síntesis:**
-    *   Identificar problemas críticos o bloqueantes.
-    *   Determinar el contexto de la última sesión de trabajo.
-    *   Establecer las prioridades actuales basadas en la documentación.
+2.  **Revisión del Historial de Conversación Reciente y Detección de Interrupciones (Si aplica y está disponible):**
+    *   Analizar los últimos intercambios de la conversación para capturar el contexto inmediato, tareas específicas en curso antes del reinicio, y cualquier instrucción o decisión reciente.
+    *   **Prestar especial atención a si la conversación parece haberse interrumpido abruptamente mientras una tarea estaba en progreso.**
+    *   Comparar la información del chat con los hallazgos de `dev_notes.md`, `CHANGELOG.md` y `TODO.md` para cruzar referencias y buscar consistencias o discrepancias.
 
-3.  **Comunicación del Contexto:**
-    *   Informar brevemente sobre los hallazgos clave de la lectura.
-    *   Destacar cualquier problema crítico identificado.
-    *   Proponer los siguientes pasos basados en las prioridades encontradas.
+3.  **Análisis, Síntesis y Formulación de Hipótesis (en caso de interrupción):**
+    *   Identificar problemas críticos o bloqueantes basándose en todos los documentos y el chat.
+    *   Determinar el contexto general de la última sesión de trabajo.
+    *   **Si se detectó una posible interrupción abrupta de una tarea (del paso 2):**
+        *   Formular una hipótesis clara sobre cuál era la tarea específica en curso.
+        *   Analizar cómo esta hipótesis se alinea con el contenido de `dev_notes.md` y si los logs recientes (si fueron revisados como parte del contexto general) la respaldan o contradicen.
+    *   Establecer las prioridades generales basadas en la documentación y la conversación.
+    *   Verificar si es necesario actualizar `mapa_conceptual_modulos.py` u otros documentos clave.
+
+4.  **Comunicación del Contexto y Confirmación de Tarea Interrumpida (si aplica):**
+    *   Informar brevemente sobre los hallazgos clave de la lectura de los archivos de estado (`dev_notes.md`, `CHANGELOG.md`, `TODO.md`) y la revisión general del chat.
+    *   Destacar cualquier problema crítico o discrepancia importante identificada entre las fuentes.
+    *   **Si se formuló una hipótesis sobre una tarea interrumpida (del paso 3):**
+        *   Presentar claramente la hipótesis: "Parece que antes de la interrupción estábamos trabajando en [describir la tarea hipotética]".
+        *   Justificar brevemente la hipótesis: "Esto se basa en [mencionar el final del chat / la última acción clara] y parece [consistente/parcialmente consistente/no mencionado] en `dev_notes.md` porque [explicación breve]. Los logs recientes [mencionar si apoyan, contradicen o no son concluyentes, si fueron analizados]".
+        *   **Preguntar explícitamente para confirmación:** "Corrígeme si me equivoco, pero ¿es esta la tarea que debemos retomar? ¿Hay algo más que debería considerar de la última sesión?"
+    *   Proponer los siguientes pasos (o la continuación de la tarea confirmada) basados en las prioridades y la información recopilada. Sugerir actualizaciones a la documentación si es necesario.
+
+5.  **Verificación Final de Inicialización:** Presentar el checklist actualizado al usuario (como se hace actualmente, pero reflejando el nuevo paso, similar al definido en `ai_overall_conduct_and_workflow_entry.mdc`).
 
 Este protocolo es OBLIGATORIO y debe ejecutarse automáticamente al inicio de cada nueva conversación o después de un reinicio del IDE, incluso antes de recibir instrucciones específicas del usuario. El objetivo es mantener la continuidad del desarrollo y asegurar que todas las decisiones y acciones se tomen con pleno conocimiento del contexto actual del proyecto.
 
