@@ -28,6 +28,14 @@ JUGADOR_DANO_BASE_ATAQUE_DEFAULT = 10
 JUGADOR_COOLDOWN_GENERAL_ATAQUE_MS = 500 # Tiempo en ms
 JUGADOR_MAX_FUERZA_EMPUJE_FRAME = 7.0 # Límite a la fuerza de empuje total que el jugador puede recibir en un frame.
 
+# Constantes para el sistema de empuje con fricción del jugador
+FACTOR_FRICCION_EMPUJE_JUGADOR = 0.85 # Factor por el cual se multiplica la fuerza de empuje acumulada cada frame.
+UMBRAL_FUERZA_EMPUJE_MINIMA_JUGADOR = 0.5 # Si la magnitud de la fuerza de empuje cae por debajo de esto, se resetea a cero.
+
+# Constantes genéricas para MotorFisica (usadas como fallback si no se especifican al instanciar)
+FACTOR_FRICCION_GENERICO = 0.90 # Un valor un poco menos agresivo que el del jugador
+UMBRAL_FUERZA_MINIMA_GENERICO = 0.1 # Un umbral más bajo para fuerzas genéricas
+
 # --- Configuración Base de Parámetros de Ataque (usados como fallback si no están en perfil) ---
 ATAQUE_BASE_OFFSET_DISTANCIA = 25.0
 ATAQUE_BASE_EXTENSION = 30.0
@@ -44,9 +52,13 @@ ENEMIGO_HITBOX_OFFSET_X = 3
 ENEMIGO_HITBOX_OFFSET_Y = 3
 ENEMIGO_DANO_ATAQUE = 1 # Daño que hace el enemigo (si tuviera un ataque explícito)
 ENEMIGO_RANGO_AGRO = 200 # Distancia a la que el enemigo detecta y persigue al jugador
-ENEMIGO_DIST_MIN_JUGADOR = 30 # Distancia mínima que el enemigo intenta mantener con el jugador
+ENEMIGO_DIST_MIN_JUGADOR = 5 # REDUCIDO de 22 a 5 para prueba de empuje
 ENEMIGO_DANO_CONTACTO_DEFAULT = 10 # Daño por defecto que inflige un enemigo por contacto
-ENEMIGO_FUERZA_EMPUJE_BASE = 2.5 # Nueva constante para la magnitud del empuje del enemigo (píxeles/frame tentativo)
+ENEMIGO_FUERZA_EMPUJE_BASE = 300.0 # AUMENTADO de 60.0 a 300.0 para un empuje inicial más fuerte
+ENEMIGO_VELOCIDAD_ANIMACION = 0.1
+ENEMIGO_AREA_EMPUJE_INFLATE_X = 16
+ENEMIGO_AREA_EMPUJE_INFLATE_Y = 16
+ENEMIGO_COOLDOWN_EMPUJE = 0.5 # Segundos de cooldown para que un enemigo pueda volver a empujar
 
 # --- Configuración del Zoom de la Cámara ---
 # Factor de zoom inicial. Un valor mayor significa más zoom (objetos más grandes, vista más cercana).
@@ -88,9 +100,26 @@ VERDE_DEBUG = (0, 255, 0, 150) # Verde semitransparente para debug (RGBA)
 COLOR_HITBOX = (255, 0, 0)  # Rojo para hitboxes de colisión
 COLOR_ATAQUE_HITBOX = (255, 255, 0) # Amarillo para hitboxes de ataque
 COLOR_FONDO_DEFAULT = (100, 100, 100) # Gris oscuro, tomado de config.py
+ROJO_ERROR_ASSET = (255, 0, 255) # Magenta brillante para assets no cargados o errores
+FUCSIA = (255, 0, 255) # Fucsia, mismo que ROJO_ERROR_ASSET, para errores de renderizado
+
+# Colores para Debug de Hitboxes (Renderer)
+HITBOX_COLOR_COLISION = (255, 0, 0, 180)       # Rojo semitransparente para colisión
+HITBOX_COLOR_RECT_SPRITE = (0, 0, 255, 120)  # Azul semitransparente para sprite.rect
+
+# Grosores para Debug de Hitboxes (Renderer)
+GROSOR_HITBOX_COLISION_DEBUG = 1
+GROSOR_RECT_SPRITE_DEBUG = 1
+GROSOR_HITBOX_ATAQUE_DEBUG = 2
 
 # Colores HUD
 COLOR_HUD_TEXTO = BLANCO # Usar el blanco ya definido
+
+# Configuración del HUD de Depuración
+HUD_PADDING_X = 10
+HUD_PADDING_Y = 10
+HUD_LINE_HEIGHT = 20
+HUD_ESPACIO_ENTRE_SECCIONES = 15
 
 # --- Rutas del Proyecto y Assets ---
 RUTA_BASE_PROYECTO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -104,9 +133,17 @@ INCREMENTO_AJUSTE_DEBUG = 2
 INCREMENTO_DURACION_DEBUG = 10
 ARCHIVO_CONFIG_ATAQUE = "config_ataque.json"
 NOMBRE_PERFIL_ATAQUE_INICIAL = "espada_predeterminada"
+DEBUG_JUGADOR_MOVIMIENTO = False # Controla prints específicos de depuración en el movimiento del jugador
+DEBUG_ENEMIGO_MOVIMIENTO = False # Controla prints específicos de depuración en el movimiento del enemigo
+DEBUG_COLLISION_HANDLER = False # Controla prints específicos de depuración en CollisionHandler
 
 # Nueva constante para el umbral de contacto en píxeles
 PIXEL_CONTACT_THRESHOLD = 1 # Umbral para considerar contacto, usado en colisiones
+
+# Constantes para la lógica de resolución de colisiones
+MAX_PASADAS_RESOLUCION_ESTATICA = 5 # Número máximo de iteraciones para resolver solapamientos estáticos.
+UMBRAL_MOV_FLOTANTE_ENTIDAD_PARA_COLISION = 0.1 # Umbral para que un delta flotante se considere para colisión (igual que el del jugador/enemigo)
+PREVENIR_TELETRANSPORTACION_CH = True # Activa/desactiva la lógica de prevención de teletransportación en CollisionHandler
 
 # DEBUG_PRINT_GESTION_DANO = False # Se manejará por log_enemigo_vida o log_gestor_estado
 
@@ -132,6 +169,8 @@ LOG_CATEGORIAS = {
     "log_jugador_ataque_debug": False,   # MANTENER ACTIVADO PARA PRUEBA # CAMBIADO A False TEMPORALMENTE
     "log_jugador_vida": False,         # ACTIVADO PARA PRUEBA DE DAÑO # CAMBIADO A False TEMPORALMENTE
     "log_jugador_anim": False,         # Logs específicos de la animación del jugador
+    "log_jugador_empuje": True,        # <--- NUEVA CATEGORÍA AÑADIDA Y ACTIVADA
+    "log_jugador_mov_input": False,    # Logs para el input de movimiento del jugador (teclas, deltas iniciales)
     "log_enemigo": False,              # ACTIVADO PARA PRUEBA DE DAÑO # CAMBIADO A False TEMPORALMENTE
     "log_enemigo_ia": True,           # ACTIVADO PARA DEBUG DE EMPUJE
     "log_enemigo_mov": False,          # Logs del movimiento del enemigo
@@ -148,7 +187,7 @@ LOG_CATEGORIAS = {
     "log_gestor_nivel": False,
     "log_gestor_nivel_detalle": False, # Nueva categoría para logs detallados de GestorNivel
     "log_attack_profile_manager": False,
-    "log_renderer": False,             # Logs del sistema de renderizado (si se implementa un logger específico)
+    "log_renderer": False,             # Logs del sistema de renderizado
     "log_renderer_verbose": False,     # Para logs detallados del renderer
     "log_renderer_hitbox": False,      # Para logs específicos del renderizado de hitboxes
     "log_hud": False,                  # Logs del HUD
@@ -158,6 +197,7 @@ LOG_CATEGORIAS = {
     "log_inventario": False,           # Logs del sistema de inventario
     "log_misiones": False,             # Logs del sistema de misiones
     "log_motor_fisica": True,          # ACTIVADO PARA DEBUG DE EMPUJE
+    "log_motor_fisica_verbose": False, # Para logs más detallados del motor de física (ej. aplicación de fuerzas cero)
 
     # Categorías para Debugging Específico (Usar con moderación)
     "log_debug_temporal": True,       # Para logs temporales durante una sesión de debugging específica # CAMBIADO A True PARA VER ERRORES
@@ -210,13 +250,9 @@ GROSOR_HITBOX_COLISION_DEBUG = 1
 GROSOR_RECT_SPRITE_DEBUG = 1
 GROSOR_HITBOX_ATAQUE_DEBUG = 2
 
-# --- Configuraciones de Layout del HUD de Depuración ---
-HUD_PADDING_X = 10
-HUD_PADDING_Y = 10
-HUD_LINE_HEIGHT = 20
-HUD_ESPACIO_ENTRE_SECCIONES = 25
-
 # --- Constantes de Gameplay/Física ---
-UMBRAL_MOV_FLOTANTE_ENTIDAD = 0.0001
+UMBRAL_MOV_FLOTANTE_ENTIDAD = 0.001 # Si el delta flotante es menor que esto, se considera 0 para movimiento.
 FACTOR_UMBRAL_TELETRANSPORTACION = 1.5
-MAX_PASADAS_RESOLUCION_ESTATICA = 4
+
+# --- Settings del Jugador ---
+PLAYER_START_X, PLAYER_START_Y = 400, 300

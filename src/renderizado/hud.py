@@ -1,12 +1,9 @@
 # hud.py
 import pygame
-from src.config import settings # MODIFICADO
-import logging # Para el logger del HUD
+from src.config import settings
+import logging
 
 logger = logging.getLogger("hud")
-# if not logger.handlers: # Evitar duplicación de handlers si el módulo se recarga
-# logger.setLevel(logging.DEBUG) # Permitir que pasen mensajes DEBUG
-# La configuración centralizada de logging ya se encarga del nivel.
 
 class DebugHUD:
     def __init__(self, jugador, fuente=None, juego_ref=None): # Añadir juego_ref para zoom

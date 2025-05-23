@@ -193,6 +193,30 @@ def formatear_tiempo(segundos: float) -> str:
     segundos = int(segundos % 60)
     return f"{minutos:02d}:{segundos:02d}"
 
+def convertir_deltas_a_enteros_para_colision(dx_float: float, dy_float: float, umbral_movimiento: float) -> Tuple[int, int]:
+    """
+    Convierte deltas de movimiento flotantes a enteros para el sistema de colisiones.
+    Si el valor absoluto de un delta es menor que el umbral, se considera cero.
+    De lo contrario, se redondea hacia afuera (ceil para positivos, floor para negativos).
+
+    Args:
+        dx_float: Delta de movimiento en X (flotante).
+        dy_float: Delta de movimiento en Y (flotante).
+        umbral_movimiento: Valor absoluto mínimo para que un delta se considere movimiento.
+
+    Returns:
+        Tuple[int, int]: (dx_entero, dy_entero)
+    """
+    dx_para_colision = 0
+    if abs(dx_float) >= umbral_movimiento:
+        dx_para_colision = math.ceil(dx_float) if dx_float > 0 else math.floor(dx_float)
+    
+    dy_para_colision = 0
+    if abs(dy_float) >= umbral_movimiento:
+        dy_para_colision = math.ceil(dy_float) if dy_float > 0 else math.floor(dy_float)
+        
+    return int(dx_para_colision), int(dy_para_colision)
+
 def collide_rect_extended(sprite1, sprite2) -> bool:
     """Verifica colisión entre dos sprites, usando 'hitbox' si está disponible, sino 'rect'."""
     # Asumimos que sprite1 y sprite2 son objetos que podrían tener 'hitbox' o 'rect'.

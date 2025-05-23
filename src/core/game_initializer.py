@@ -73,6 +73,6 @@ def crear_elementos_juego(asset_manager, gestor_nivel, factor_zoom_inicial, jueg
     # Alternativamente, se podría obtener el logger de "camara" aquí si el mensaje es puramente sobre la cámara.
     # Por consistencia, se usará "log_game_initializer" ya que este log está en game_initializer.py
     if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_camara", False):
-        logger.debug(f"  GameInitializer: Cámara actualizada inicialmente. Zoom: {factor_zoom_inicial}", extra={"categoria_log": "log_game_initializer"})
+        logger.debug(f"  GameInitializer: Cámara actualizada inicialmente. Zoom: {factor_zoom_inicial}", extra={"categoria_log": "log_camara"})
 
     return jugador, obstaculos, enemigos, todos_los_sprites, camara, hud 

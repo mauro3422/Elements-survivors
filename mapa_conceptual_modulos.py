@@ -21,14 +21,14 @@ MAPA_MODULOS_POR_CATEGORIA = {
             "nombre_modulo": "juego.py",
             "categoria": "Core",
             "ruta_relativa": "juego.py", # Se actualizará a "src/core/juego.py"
-            "responsabilidad_principal": "Clase principal que orquesta el flujo del juego. Maneja el bucle de juego, los estados (a través de gestor_estado), eventos (gestor_eventos), actualizaciones de entidades, renderizado (renderer) y colisiones (collision_handler).",
+            "responsabilidad_principal": "Clase principal que orquesta el flujo del juego. Maneja el bucle de juego, los estados (a través de gestor_estado), eventos (gestor_eventos), actualizaciones de entidades, renderizado (renderer).",
             "interacciones_principales": {
                 "entrantes": ["main.py"],
                 "salientes": [
                     "settings.py", "game_initializer.py", "gestor_eventos.py",
                     "gestor_estado.py", "gestor_nivel.py", "asset_manager.py", "renderer.py",
-                    "hud.py", "camara.py", "collision_handler.py", "jugador.py",
-                    "enemigo.py", "entorno.py"
+                    "hud.py", "camara.py", # CollisionHandler es usado por entidades, no directamente por Juego (a verificar)
+                    "logging" # Añadido logging
                 ]
             },
             "componentes_clave_internos": ["Clase Juego", "método run()", "método _manejar_eventos()", "método _actualizar()", "método _renderizar()"],
@@ -96,14 +96,16 @@ MAPA_MODULOS_POR_CATEGORIA = {
             "nombre_modulo": "jugador.py",
             "categoria": "Entidades",
             "ruta_relativa": "src/entidades/jugador.py",
-            "responsabilidad_principal": "Representa al personaje principal controlado por el usuario. Gestiona su movimiento, animaciones (heredadas de EntidadBase), colisiones, y la iniciación y lógica de ataques a través del AttackProfileManager.",
+            "responsabilidad_principal": "Representa al personaje principal controlado por el usuario. Gestiona su movimiento (con ayuda de CollisionHandler), animaciones (heredadas de EntidadBase), la iniciación y lógica de ataques (AttackProfileManager), y la recepción y manejo de empujes (con una instancia de MotorFisica).",
             "interacciones_principales": {
                 "entrantes": ["juego.py (para creación y updates)", "gestor_estado.py (para updates)"],
                 "salientes": [
                     "entidad_base.py (herencia)",
-                    "settings.py (para configuraciones del jugador y control de logging mediante MODO_DEBUG_LOGS y LOG_CATEGORIAS específicas del jugador)",
+                    "settings.py (para configuraciones del jugador y control de logging)",
                     "asset_manager.py (para assets de animación)",
-                    "collision_handler.py (para movimiento y colisión)",
+                    "collision_handler.py (instancia, para movimiento y colisión)",
+                    "motor_fisica.py (instancia para empuje, y para cálculos estáticos si se usaran)",
+                    "utils.py (para funciones de utilidad como convertir_deltas_a_enteros_para_colision)",
                     "attack_profile_manager.py (para gestionar perfiles y parámetros de ataque)",
                     "enemigo.py (para aplicar daño a instancias de Enemigo)",
                     "logging (para registrar eventos y depuración)"
@@ -111,10 +113,11 @@ MAPA_MODULOS_POR_CATEGORIA = {
             },
             "componentes_clave_internos": [
                 "Clase Jugador(EntidadBase)",
-                "__init__(self, x, y, asset_manager_instance): Inicialización, carga de animaciones, configuración de hitbox específico, inicialización del AttackProfileManager.",
-                "actualizar_movimiento(self, teclas_presionadas, obstaculos, mundo_ancho, mundo_alto, delta_time): Procesa input, calcula movimiento flotante, maneja colisiones con límites y llama a _mover_y_colisionar.",
-                "_mover_y_colisionar(self, dx, dy, obstaculos): Wrapper para CollisionHandler.gestionar_movimiento_y_colision.",
-                "atacar(self): Inicia una secuencia de ataque si no está en cooldown, usando AttackProfileManager.",
+                "__init__(self, x, y, asset_manager_instance): Inicialización, carga de animaciones, config. hitbox, inicialización de AttackProfileManager, instancia de MotorFisica para empuje.",
+                "actualizar_movimiento(self, teclas_presionadas, obstaculos, mundo_ancho, mundo_alto, delta_time): Procesa input, aplica empuje de MotorFisica, calcula movimiento flotante, maneja colisiones con límites y llama a _mover_y_colisionar.",
+                "_mover_y_colisionar(self, dx, dy, obstaculos): Usa una instancia de CollisionHandler.",
+                "aplicar_fuerza_de_empuje(self, vector_empuje): Agrega fuerza al MotorFisica del jugador.",
+                "actualizar_empuje(self, delta_time): Este método probablemente ya no exista o su lógica se integró en actualizar_movimiento con MotorFisica.",
                 "actualizar_ataque(self, enemigos): Gestiona la lógica de un ataque en curso, calcula hitbox de ataque, detecta colisiones con enemigos y aplica daño.",
                 "update(self, teclas_presionadas, obstaculos_solidos, enemigos_sprites_para_ataque, mundo_ancho, mundo_alto, delta_time): Método principal de actualización que llama a actualizar_movimiento y actualizar_ataque.",
                 "recibir_dano(self, cantidad, tipo_dano): Sobrescribe para manejar daño específico al jugador (y llama a super).",
@@ -180,7 +183,7 @@ MAPA_MODULOS_POR_CATEGORIA = {
             "nombre_modulo": "enemigo.py",
             "categoria": "Entidades",
             "ruta_relativa": "src/entidades/enemigo.py",
-            "responsabilidad_principal": "Representa a las entidades hostiles del juego. Implementa IA básica de seguimiento, manejo de colisiones y atributos de combate. Hereda de EntidadBase.",
+            "responsabilidad_principal": "Representa a las entidades hostiles del juego. Implementa IA básica de seguimiento, manejo de colisiones (con CollisionHandler y utils.py), aplicación de empuje (con MotorFisica) y atributos de combate. Hereda de EntidadBase.",
             "interacciones_principales": {
                 "entrantes": [
                     "gestor_estado.py (para creación, updates y gestión de su ciclo de vida)",
@@ -188,18 +191,20 @@ MAPA_MODULOS_POR_CATEGORIA = {
                 ],
                 "salientes": [
                     "entidad_base.py (herencia)",
-                    "settings.py (para configuraciones del enemigo y control de logging mediante MODO_DEBUG_LOGS y LOG_CATEGORIAS específicas del enemigo)",
-                    "collision_handler.py (para gestionar movimiento y colisiones con obstáculos y jugador)",
-                    "jugador.py (indirectamente, al obtener el rect del jugador como objetivo)",
+                    "settings.py (para configuraciones del enemigo y control de logging)",
+                    "collision_handler.py (instancia, para gestionar movimiento y colisiones)",
+                    "motor_fisica.py (instancia, para aplicar/recibir empuje y gestionar movimiento basado en fuerzas)",
+                    "utils.py (para funciones de utilidad como convertir_deltas_a_enteros_para_colision)",
+                    "jugador.py (para obtener el rect del jugador como objetivo y aplicar empuje)",
                     "logging (para registrar eventos y depuración)"
                 ]
             },
             "componentes_clave_internos": [
                 "Clase Enemigo(EntidadBase)",
-                "Método __init__(...): Inicialización específica del enemigo.",
-                "Método update(objetivo_rect, grupo_obstaculos, delta_time): Lógica de IA y movimiento.",
-                "Método _actualizar_posicion_hitbox(): Sobrescribe para centrar el hitbox.",
-                "Método _mover_y_colisionar_con_obstaculos(...): Maneja la lógica de movimiento aplicando colisiones."
+                "__init__(...): Inicialización específica, incluyendo MotorFisica y CollisionHandler.",
+                "update(self, jugador_rect, grupo_obstaculos, delta_time): Lógica de IA, movimiento (usando MotorFisica y _mover_y_colisionar), y empuje.",
+                "_mover_y_colisionar(self, dx, dy, obstaculos_colision): Usa una instancia de CollisionHandler.",
+                "empujar_jugador(self, jugador_obj, fuerza_base): Calcula y aplica fuerza de empuje al jugador a través del MotorFisica del jugador."
             ],
             "variables_config_clave_settings": [
                 "ENEMIGO_VIDA_MAXIMA", "ENEMIGO_VELOCIDAD", "ENEMIGO_HITBOX_OFFSET_X", "ENEMIGO_HITBOX_OFFSET_Y",
@@ -249,53 +254,43 @@ MAPA_MODULOS_POR_CATEGORIA = {
             "nombre_modulo": "collision_handler.py",
             "categoria": "Sistemas",
             "ruta_relativa": "src/sistemas/collision_handler.py",
-            "responsabilidad_principal": "Gestiona la detección y resolución de colisiones entre entidades móviles y obstáculos estáticos del entorno. Proporciona un sistema de movimiento seguro en varias fases para evitar que las entidades atraviesen objetos sólidos. También incluye una función básica para detectar colisiones entre dos entidades dinámicas.",
+            "responsabilidad_principal": "Proporciona métodos para detectar y resolver colisiones entre entidades y el entorno. Maneja el movimiento con colisión, asegurando que las entidades no atraviesen obstáculos. Ya no usa @staticmethod, se instancia donde se necesita (ej. en Entidades).",
             "interacciones_principales": {
                 "entrantes": [
-                    "jugador.py (y otras entidades móviles como enemigo.py) para solicitar movimiento y resolución de colisiones.",
-                    "juego.py (potencialmente, si se centraliza la lógica de colisión de ataques u otras interacciones)"
+                    "jugador.py (instanciado y usado para movimiento)", 
+                    "enemigo.py (instanciado y usado para movimiento)",
+                    "gestor_estado.py (potencialmente para colisiones entre otras entidades)"
                 ],
                 "salientes": [
-                    "settings.py (para acceder a MODO_DEBUG_LOGS, LOG_CATEGORIAS['log_collision_handler'], MAX_PASADAS_RESOLUCION_ESTATICA)",
-                    "logging (para un registro detallado del proceso de colisión)",
-                    "Entidades (accede a sus 'hitbox' y 'rect')",
-                    "Obstaculos (accede a sus 'hitbox' o 'rect')"
+                    "settings.py (para constantes como UMBRAL_MOV_FLOTANTE_ENTIDAD_PARA_COLISION, MAX_PASADAS_RESOLUCION_ESTATICA, PIXEL_CONTACT_THRESHOLD)",
+                    "logging (para depuración de colisiones)"
                 ]
             },
             "componentes_clave_internos": [
-                "Clase CollisionHandler (contiene métodos estáticos)",
-                "Método estático principal: gestionar_movimiento_y_colision(entidad_actual, entidad_hitbox, entidad_rect, hitbox_offset_x, hitbox_offset_y, dx, dy, obstaculos)",
-                "  Fase 1: _resolver_solapamientos_estaticos_eje (pre-movimiento, iterativo)",
-                "  Fase 2: _aplicar_movimiento_y_colision_eje_x / _aplicar_movimiento_y_colision_eje_y (movimiento y ajuste por eje)",
-                "  Fase 3: _verificar_y_revertir_colision_post_fase2 (capa de seguridad, revierte a Fase 1 o posición original si es necesario)",
-                "  Fase 4: _prevenir_teletransportacion (logging de movimientos grandes y prevención)",
-                "  Fase 5: Sincronización del rect visual de la entidad con la hitbox ajustada.",
-                "Método estático: resolver_colisiones_dinamicas_entidad_a_entidad(entidad_actual, otra_entidad) (detección simple, sin resolución)"
+                "Clase CollisionHandler",
+                "gestionar_movimiento_y_colision_con_entorno(self, entidad_movil_rect_original, hitbox_original, dx, dy, grupo_sprites_colisionables_estaticos, entidad_movil_obj=None): Lógica principal de movimiento y resolución.",
+                "resolver_colisiones_multiples_ejes(self, rect_movil, hitbox_movil, dx, dy, sprites_colisionables, entidad_movil_obj=None): Resuelve iterativamente.",
+                "Funciones auxiliares internas para detección y resolución de solapamientos por eje."
             ],
             "variables_config_clave_settings": [
-                "MODO_DEBUG_LOGS",
-                "LOG_CATEGORIAS['log_collision_handler']",
-                "LOG_CATEGORIAS['log_collision_handler_detalle']",
-                "MAX_PASADAS_RESOLUCION_ESTATICA",
-                "FACTOR_UMBRAL_TELETRANSPORTACION"
+                "UMBRAL_MOV_FLOTANTE_ENTIDAD_PARA_COLISION", "MAX_PASADAS_RESOLUCION_ESTATICA", "PIXEL_CONTACT_THRESHOLD",
+                "PREVENIR_TELETRANSPORTACION_CH", "MODO_DEBUG_LOGS", "LOG_CATEGORIAS (log_collision_handler, log_collision_handler_detalle)"
             ],
-            "notas_adicionales": "Utiliza un enfoque de resolución de colisiones por fases, separando el movimiento en ejes X e Y y aplicando correcciones. Incluye múltiples capas de seguridad para evitar que las entidades se atasquen o atraviesen obstáculos. El movimiento se aplica con truncamiento a entero. El logging es muy detallado si está activado y se divide en dos categorías (general y detalle)."
+            "notas_adicionales": "Se instancia por entidad que necesite manejar sus propias colisiones de movimiento (Jugador, Enemigo). Las funciones ya no son estáticas. Usa un umbral para convertir deltas flotantes a enteros para la detección de colisión (ahora delegado a utils.py pero el concepto es relevante)."
         },
         {
             "nombre_modulo": "gestor_eventos.py",
             "categoria": "Sistemas",
             "ruta_relativa": "src/sistemas/gestor_eventos.py",
-            "responsabilidad_principal": "Maneja todos los eventos de entrada del usuario (teclado, ratón, cierre de ventana) de Pygame. Traduce estos eventos en acciones como movimiento, ataque, zoom, cambio de perfiles de ataque y solicitud de salida del juego.",
+            "responsabilidad_principal": "Maneja todos los eventos de entrada de Pygame (teclado, ratón, cierre de ventana). Traduce estos eventos en acciones dentro del juego, como mover al jugador, atacar, cambiar zoom de cámara, o salir del juego. También interactúa con el HUD para eventos específicos de la UI.",
             "interacciones_principales": {
-                "entrantes": [
-                    "juego.py (recibe la lista de eventos de Pygame y consulta si debe salir)"
-                ],
+                "entrantes": ["juego.py (recibe la lista de eventos de pygame)"],
                 "salientes": [
-                    "jugador.py (para iniciar ataques, acceder y modificar AttackProfileManager)",
-                    "hud.py (para pasarle eventos y que el HUD los maneje)",
-                    "juego.py (para actualizar el factor de zoom)",
-                    "settings.py (para configuraciones de zoom, logging y teclas F)",
-                    "logging (para registrar eventos procesados)"
+                    "settings.py (para leer configuraciones de zoom, control de logging, etc.)",
+                    "jugador.py (para invocar acciones como atacar, o acceder a su attack_profile_manager para cambiar perfiles/parámetros)",
+                    "hud.py (para pasarle eventos que el HUD pueda necesitar manejar, ej. clicks en botones si existieran)",
+                    "juego.py (referencia para actualizar el factor de zoom global)",
+                    "logging (usa getLogger('gestor_eventos') y categorías como 'log_gestor_eventos', 'log_gestor_eventos_verbose')"
                 ]
             },
             "componentes_clave_internos": [
@@ -312,13 +307,10 @@ MAPA_MODULOS_POR_CATEGORIA = {
             ],
             "variables_config_clave_settings": [
                 "MODO_DEBUG_LOGS",
-                "LOG_CATEGORIAS['log_gestor_eventos']",
-                "LOG_CATEGORIAS['log_gestor_eventos_verbose']",
-                "FACTOR_ZOOM_PASO",
-                "FACTOR_ZOOM_MIN",
-                "FACTOR_ZOOM_MAX"
+                "LOG_CATEGORIAS (específicamente 'log_gestor_eventos', 'log_gestor_eventos_verbose')",
+                "FACTOR_ZOOM_PASO", "FACTOR_ZOOM_MIN", "FACTOR_ZOOM_MAX"
             ],
-            "notas_adicionales": "Centraliza el manejo de input. La lógica de modificación de parámetros con teclas F es detallada. Introduce nuevas categorías de log para controlar la verbosidad de los eventos."
+            "notas_adicionales": "Mantiene un estado interno 'solicitud_salir'. El bloque if __name__ == '__main__' para pruebas ha sido comentado."
         },
         {
             "nombre_modulo": "gestor_estado.py",
@@ -330,9 +322,9 @@ MAPA_MODULOS_POR_CATEGORIA = {
                 "salientes": [
                     "settings.py", 
                     "jugador.py", "enemigo.py", "entidad_base.py", "entorno.py", 
-                    "collision_handler.py (para obtener colisiones específicas)",
+                    "utils.py (para funciones como collide_rect_extended)",
                     "pygame.sprite (para gestión de grupos)",
-                    "logging"
+                    "logging (usa getLogger('gestor_estado') y categorías como 'log_gestor_estado', 'log_gestor_estado_detalle', 'log_posiciones_debug')"
                 ]
             },
             "componentes_clave_internos": [
@@ -343,7 +335,7 @@ MAPA_MODULOS_POR_CATEGORIA = {
                 "self.proyectiles (pygame.sprite.Group)",
                 "método actualizar_entidades()",
                 "método _eliminar_entidades_muertas()",
-                "método _manejar_colision_jugador_enemigo_contacto() (usa settings.ENEMIGO_DANO_CONTACTO_DEFAULT)"
+                "método _manejar_colision_jugador_enemigo_contacto() (usa settings.ENEMIGO_DANO_CONTACTO_DEFAULT y utils.collide_rect_extended)"
             ],
             "variables_config_clave_settings": [
                 "MODO_DEBUG_LOGS", 
@@ -357,28 +349,36 @@ MAPA_MODULOS_POR_CATEGORIA = {
             "nombre_modulo": "gestor_nivel.py",
             "categoria": "Sistemas",
             "ruta_relativa": "src/sistemas/gestor_nivel.py",
-            "responsabilidad_principal": "Carga y gestiona los datos de los niveles, incluyendo la creación de entidades (obstáculos, enemigos) basadas en la configuración del nivel y la disposición de elementos en el mundo del juego.",
+            "responsabilidad_principal": "Gestiona la carga y la disposición de los elementos del nivel, como obstáculos, enemigos, y potencialmente elementos decorativos y zonas especiales. Actualmente carga elementos de forma hardcodeada, con funcionalidad básica para cargar mapas TMX (de Tiled).",
             "interacciones_principales": {
-                "entrantes": ["juego.py (para cargar el nivel actual)"],
+                "entrantes": ["game_initializer.py (para cargar los elementos iniciales del nivel)"],
                 "salientes": [
-                    "settings.py (para RUTA_NIVEL_1, MODO_DEBUG_LOGS y LOG_CATEGORIAS['log_gestor_nivel'], ['log_gestor_nivel_detalle'])", 
-                    "entorno.py (para crear instancias de Obstaculo, Arbol, etc.)", 
-                    "enemigo.py (para crear instancias de Enemigo)",
-                    "asset_manager.py (para pasar la instancia a las entidades creadas)",
-                    "logging (utiliza logging.getLogger('gestor_nivel') para registrar la carga y creación de entidades)"
+                    "settings.py (para leer configuraciones de nivel, rutas y control de logging)",
+                    "asset_manager.py (para pasar a las entidades que crea, como Arbol y Enemigo)",
+                    "entorno.py (para instanciar Obstaculo, Arbol)",
+                    "enemigo.py (para instanciar Enemigo)",
+                    "pytmx (librería externa para cargar mapas .tmx)",
+                    "pygame.sprite (para gestionar grupos de sprites internamente)",
+                    "logging (usa getLogger('gestor_nivel') y categorías como 'log_gestor_nivel', 'log_gestor_nivel_detalle')"
                 ]
             },
             "componentes_clave_internos": [
-                "Clase GestorNivel", 
-                "Método cargar_nivel(ruta_archivo_nivel, asset_manager_instance, ...)",
-                "Método _crear_entidad_desde_datos(...)"
+                "Clase GestorNivel",
+                "__init__(self, asset_manager)",
+                "cargar_elementos_nivel_inicial(self): Llama a métodos privados para carga hardcodeada.",
+                "_cargar_obstaculos_hardcodeados(self)",
+                "_generar_enemigos_hardcodeados(self)",
+                "cargar_mapa_desde_tmx(self, nombre_mapa_tmx): Lógica para cargar y parsear (parcialmente) un archivo TMX.",
+                "get_obstaculos(self), get_enemigos(self), get_elementos_decorativos(self), get_zonas_especiales(self): Getters para los grupos de sprites.",
+                "get_tile_data(self, capa_nombre, x, y): Para obtener propiedades de tiles de un mapa TMX.",
+                "Atributos: self.mapa_tmx, self.obstaculos (Group), self.enemigos (Group), self.elementos_decorativos (Group), self.zonas_especiales (dict)"
             ],
             "variables_config_clave_settings": [
-                "RUTA_NIVEL_1", 
-                "MODO_DEBUG_LOGS", 
-                "LOG_CATEGORIAS (específicamente 'log_gestor_nivel', 'log_gestor_nivel_detalle')"
+                "MODO_DEBUG_LOGS",
+                "LOG_CATEGORIAS (específicamente 'log_gestor_nivel', 'log_gestor_nivel_detalle')",
+                "RUTA_ASSETS_MAPAS (para cargar mapas TMX)"
             ],
-            "notas_adicionales": "Lee archivos de configuración de nivel (ej. JSON) para construir el escenario. Es fundamental para la estructura y contenido de cada nivel."
+            "notas_adicionales": "La funcionalidad de carga de TMX está presente pero el procesamiento detallado de capas y objetos aún está en desarrollo (comentarios en el código). El bloque if __name__ == '__main__' para pruebas ha sido comentado."
         },
         {
             "nombre_modulo": "attack_profile_manager.py",
@@ -426,27 +426,34 @@ MAPA_MODULOS_POR_CATEGORIA = {
             "nombre_modulo": "motor_fisica.py",
             "categoria": "Sistemas",
             "ruta_relativa": "src/sistemas/motor_fisica.py",
-            "responsabilidad_principal": "Gestiona cálculos relacionados con la física del juego, como la generación y suma de vectores de empuje, y potencialmente otras interacciones físicas (fricción, gravedad si aplica, etc.).",
+            "responsabilidad_principal": "Clase instanciable que gestiona la acumulación, decaimiento (fricción, umbral) y aplicación de fuerzas (ej. empujes) para una entidad. Cada entidad con física de empuje propia (ej. Jugador) puede tener su propia instancia. También provee métodos estáticos para cálculos de física simples (ej. calcular_vector_empuje_simple).",
             "interacciones_principales": {
                 "entrantes": [
-                    "entidades (ej. enemigo.py, para solicitar cálculo de vector de empuje)",
-                    "collision_handler.py (potencialmente, para orquestar físicas tras una colisión)",
-                    "habilidades (futuro, si las habilidades aplican fuerzas)"
+                    "jugador.py (para aplicar y actualizar empuje/fuerzas a través de una instancia)",
+                    "enemigo.py (para usar el método estático calcular_vector_empuje_simple y potencialmente para instanciar para su propio movimiento si evoluciona)"
                 ],
                 "salientes": [
-                    "settings.py (para constantes físicas como magnitud de empuje base)",
-                    "pygame.math.Vector2 (uso extensivo)"
+                    "settings.py (para constantes como FACTOR_FRICCION_GENERICO, UMBRAL_FUERZA_MINIMA_GENERICO, y control de logging)",
+                    "logging (para depuración)"
                 ]
             },
             "componentes_clave_internos": [
-                "Clase MotorFisica (puede ser estática o una instancia)",
-                "Función calcular_vector_empuje_simple(origen_pos_center, destino_pos_center, fuerza_magnitud)",
-                "Futuras funciones para sumar vectores, aplicar fuerzas, etc."
+                "Clase MotorFisica",
+                "__init__(self, factor_friccion, umbral_fuerza_minima, nombre_entidad_log)",
+                "fuerzas_acumuladas (pygame.math.Vector2)",
+                "agregar_fuerza(self, vector_fuerza)",
+                "actualizar_estado_fuerzas(self, delta_time)",
+                "get_vector_movimiento_resultante_del_frame(self, delta_time)",
+                "resetear_fuerzas(self)",
+                "tiene_fuerzas_activas(self)",
+                "Método estático: calcular_vector_empuje_simple(origen, destino, magnitud)"
             ],
             "variables_config_clave_settings": [
-                "ENEMIGO_FUERZA_EMPUJE_BASE (nueva, a añadir)"
+                "FACTOR_FRICCION_EMPUJE_JUGADOR", "UMBRAL_FUERZA_EMPUJE_MINIMA_JUGADOR",
+                "FACTOR_FRICCION_GENERICO", "UMBRAL_FUERZA_MINIMA_GENERICO",
+                "MODO_DEBUG_LOGS", "LOG_CATEGORIAS (log_motor_fisica, log_motor_fisica_verbose)"
             ],
-            "notas_adicionales": "Módulo nuevo destinado a centralizar la lógica de fuerzas y empujes, promoviendo un comportamiento más predecible y extensible."
+            "notas_adicionales": "Permite una física de movimiento basada en fuerzas persistentes y con decaimiento. El método estático sigue disponible para cálculos puntuales de vectores de empuje."
         }
     ],
     "Renderizado": [
@@ -454,16 +461,15 @@ MAPA_MODULOS_POR_CATEGORIA = {
             "nombre_modulo": "renderer.py",
             "categoria": "Renderizado",
             "ruta_relativa": "src/renderizado/renderer.py",
-            "responsabilidad_principal": "Encargado de dibujar todos los elementos visuales del juego en la pantalla, incluyendo el fondo, los sprites (jugador, enemigos, entorno) y elementos de depuración como hitboxes. Aplica transformaciones de cámara (zoom, desplazamiento) y ordenamiento por profundidad.",
+            "responsabilidad_principal": "Encargado de dibujar todos los elementos visibles del juego en la pantalla, incluyendo el fondo, los sprites (ordenados y escalados por la cámara) y las hitboxes de depuración. Es instanciado por Juego.",
             "interacciones_principales": {
-                "entrantes": ["juego.py (para inicialización y llamadas de renderizado)"],
+                "entrantes": ["juego.py (para renderizar la escena completa y el HUD)"],
                 "salientes": [
-                    "settings.py (para configuraciones de renderizado, colores, y control de logging)",
-                    "asset_manager.py (para obtener assets como el tile de fondo)",
-                    "camara.py (para obtener sprites visibles, aplicar transformaciones)",
-                    "hud.py (para renderizar la instancia del HUD)",
-                    "pygame (para operaciones de dibujo, escalado, blitting)",
-                    "logging (usa getLogger('renderer') y las categorías 'log_renderer', 'log_renderer_verbose', 'log_renderer_hitbox')"
+                    "settings.py (para colores, grosores de debug, y control de logging)",
+                    "asset_manager.py (para obtener assets como el fondo)",
+                    "camara.py (para obtener sprites visibles y aplicar transformaciones)",
+                    "hud.py (para dibujar la instancia del HUD)",
+                    "logging (para depuración del renderizado)"
                 ]
             },
             "componentes_clave_internos": [
@@ -476,15 +482,12 @@ MAPA_MODULOS_POR_CATEGORIA = {
                 "render_hud(self, hud_instance)"
             ],
             "variables_config_clave_settings": [
-                "MODO_DEBUG_LOGS",
-                "LOG_CATEGORIAS (específicamente 'log_renderer', 'log_renderer_verbose', 'log_renderer_hitbox')",
-                "DEBUG_VER_HITBOXES",
-                "HITBOX_COLOR_COLISION", "GROSOR_HITBOX_COLISION_DEBUG",
-                "HITBOX_COLOR_RECT_SPRITE", "GROSOR_RECT_SPRITE_DEBUG",
-                "HITBOX_COLOR_ATAQUE", "GROSOR_HITBOX_ATAQUE_DEBUG",
-                "NEGRO" # Usado como fallback para fondo
+                "DEBUG_VER_HITBOXES", "HITBOX_COLOR_COLISION", "GROSOR_HITBOX_COLISION_DEBUG", 
+                "HITBOX_COLOR_RECT_SPRITE", "GROSOR_RECT_SPRITE_DEBUG", "COLOR_ATAQUE_HITBOX", "GROSOR_HITBOX_ATAQUE_DEBUG",
+                "NEGRO", "ROJO_ERROR_ASSET", "FUCSIA", "COLOR_FONDO_DEFAULT",
+                "MODO_DEBUG_LOGS", "LOG_CATEGORIAS (log_renderer, log_renderer_verbose, log_renderer_hitbox)"
             ],
-            "notas_adicionales": "Gestiona el dibujado de la escena completa. El fondo se dibuja tileado y se escala con el zoom. Los sprites se ordenan por su coordenada Y antes de dibujarlos. Incluye lógica detallada para dibujar hitboxes de depuración si está activado."
+            "notas_adicionales": "Trabaja en conjunto con Camara2D para el posicionamiento y escalado de elementos en el mundo."
         },
         {
             "nombre_modulo": "hud.py",
@@ -551,8 +554,75 @@ MAPA_MODULOS_POR_CATEGORIA = {
             "notas_adicionales": "La cámara se centra en un objetivo y se mantiene dentro de los límites del mundo. El zoom afecta el tamaño de la porción del mundo que es visible."
         }
     ],
+    "Assets y Datos": [
+        {
+            "nombre_modulo": "asset_manager.py",
+            "categoria": "Assets y Datos",
+            "ruta_relativa": "src/utils/asset_manager.py",
+            "responsabilidad_principal": "Gestiona la carga y gestión de assets (texturas, sprites, sonidos, etc.) del juego. Proporciona una interfaz para acceder y gestionar estos assets.",
+            "interacciones_principales": {
+                "entrantes": [
+                    "renderer.py (para obtener assets como el tile de fondo)",
+                    "camara.py (para obtener sprites visibles y aplicar transformaciones)",
+                    "juego.py (para cargar assets para entidades)",
+                    "settings.py (para acceder a rutas de assets)",
+                    "gestor_nivel.py (para cargar assets para entidades)",
+                    "logging (para registrar eventos y depuración)"
+                ],
+                "salientes": [
+                    "settings.py (para acceder a rutas de assets)",
+                    "logging (para registrar eventos y depuración)"
+                ]
+            },
+            "componentes_clave_internos": [
+                "Función cargar_asset(ruta_asset)",
+                "Función obtener_sprites_visibles(ruta_asset)",
+                "Función obtener_tile_de_fondo(ruta_fondo)",
+                "Función obtener_sonido(ruta_sonido)",
+                "Función obtener_texto(ruta_texto)",
+                "Función obtener_animacion(ruta_animacion)",
+                "Función obtener_hitbox(ruta_hitbox)",
+                "Función obtener_configuracion(ruta_configuracion)",
+                "Función obtener_fuentes(ruta_fuentes)",
+                "Función obtener_texturas(ruta_texturas)"
+            ],
+            "variables_config_clave_settings": [
+                "MODO_DEBUG_LOGS", "LOG_CATEGORIAS (log_asset_manager)",
+                "RUTA_BASE_PROYECTO", "RUTA_ASSETS", "RUTA_IMAGENES", "RUTA_SONIDOS", "RUTA_TEXTOS", "RUTA_ANIMACIONES", "RUTA_HITBOXES", "RUTA_CONFIGURACIONES", "RUTA_FUENTES", "RUTA_TEXTURAS"
+            ],
+            "notas_adicionales": "Debe manejar errores de carga de forma robusta, devolviendo placeholders si un asset no se encuentra."
+        }
+        # gestor_nivel.py podría ir aquí o en Sistemas dependiendo de su enfoque.
+    ],
     "Utilidades": [
-        # Futuras entradas para utils.py aquí (asset_manager.py podría ir aquí o en Sistemas)
+        {
+            "nombre_modulo": "utils.py",
+            "categoria": "Utilidades",
+            "ruta_relativa": "src/utils/utils.py",
+            "responsabilidad_principal": "Proporciona funciones de utilidad genéricas que pueden ser usadas por múltiples módulos del proyecto. Ejemplos: manipulación de vectores, conversiones de datos (como deltas flotantes a enteros para colisiones), formateo de strings, etc.",
+            "interacciones_principales": {
+                "entrantes": [
+                    "jugador.py (para convertir_deltas_a_enteros_para_colision)",
+                    "enemigo.py (para convertir_deltas_a_enteros_para_colision)",
+                    "Cualquier otro módulo que necesite funciones de utilidad comunes."
+                ],
+                "salientes": [
+                    "settings.py (potencialmente para alguna constante de utilidad o control de logging)",
+                    "logging (si las funciones de utilidad realizan logging)"
+                ]
+            },
+            "componentes_clave_internos": [
+                "Función convertir_deltas_a_enteros_para_colision(dx_float, dy_float, umbral_movimiento)",
+                "Función calcular_vector_hacia_objetivo(punto_origen, punto_destino)",
+                "Función normalizar_vector(vector)",
+                "Función formatear_tiempo(segundos)"
+                # ... otras funciones de utilidad ...
+            ],
+            "variables_config_clave_settings": [
+                "MODO_DEBUG_LOGS", "LOG_CATEGORIAS (log_utils)" # Si se añade logging a utils
+            ],
+            "notas_adicionales": "Módulo destinado a contener código reutilizable y genérico para evitar duplicación y mantener otros módulos más enfocados en su responsabilidad principal."
+        }
     ]
 }
 

@@ -6,7 +6,8 @@ import logging
 from src.entidades.entidad_base import EntidadBase
 from src.sistemas.attack_profile_manager import AttackProfileManager
 from src.sistemas.collision_handler import CollisionHandler
-from src.sistemas.collision_handler import logger as logger_ch_externo
+from src.utils import utils
+from src.sistemas.motor_fisica import MotorFisica
 
 # Unificar loggers
 logger = logging.getLogger("jugador")
@@ -80,8 +81,14 @@ class Jugador(EntidadBase):
         self.pos_x_flotante = float(self.hitbox.x)
         self.pos_y_flotante = float(self.hitbox.y)
 
-        # Vector para acumular fuerzas de empuje en el frame actual
-        self.fuerzas_de_empuje_acumuladas_frame = pygame.math.Vector2(0, 0)
+        # Instancia de MotorFisica para gestionar el empuje
+        factor_friccion_cfg = getattr(settings, "FACTOR_FRICCION_EMPUJE_JUGADOR", 0.85)
+        umbral_fuerza_cfg = getattr(settings, "UMBRAL_FUERZA_EMPUJE_MINIMA_JUGADOR", 0.5)
+        self.motor_fisica_empuje = MotorFisica(
+            factor_friccion=factor_friccion_cfg, 
+            umbral_fuerza_minima=umbral_fuerza_cfg,
+            nombre_entidad_log=self.nombre_log_entidad + "_MFEmpuje"
+        )
 
         # Log de hitbox recalculado
         if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_jugador_mov_detalle", False):
@@ -89,32 +96,51 @@ class Jugador(EntidadBase):
 
     def aplicar_fuerza_de_empuje(self, vector_empuje: pygame.math.Vector2):
         """
-        Aplica un vector de fuerza de empuje a las fuerzas acumuladas del jugador para este frame.
-        Estas fuerzas se procesarán en la actualización de movimiento.
+        Agrega un vector de fuerza de empuje al MotorFisica del jugador.
+        Estas fuerzas, gestionadas por MotorFisica (con fricción y umbral),
+        contribuirán al movimiento en frames subsecuentes.
 
         Args:
             vector_empuje (pygame.math.Vector2): El vector de empuje a aplicar.
         """
-        if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_jugador_mov_detalle", False): # Podríamos necesitar una nueva categoría de log para empujes
-            logger.debug(f"{self.nombre_log_entidad} INICIO aplicar_fuerza_de_empuje. Acumulado actual: {self.fuerzas_de_empuje_acumuladas_frame}, Aplicando: {vector_empuje}", extra={"categoria_log": "log_jugador_mov_detalle"})
+        if not isinstance(vector_empuje, pygame.math.Vector2):
+            if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_jugador_empuje", False):
+                 logger.warning(f"{self.nombre_log_entidad} Intento de aplicar fuerza de empuje NO VÁLIDA (no es Vector2): {vector_empuje}", extra={"categoria_log": "log_jugador_empuje"})
+            return
 
-        if vector_empuje and isinstance(vector_empuje, pygame.math.Vector2):
-            self.fuerzas_de_empuje_acumuladas_frame += vector_empuje
-            if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_jugador_mov_detalle", False): # Podríamos necesitar una nueva categoría de log para empujes
-                logger.debug(f"{self.nombre_log_entidad} Fuerza de empuje aplicada: {vector_empuje}. Acumulado AHORA: {self.fuerzas_de_empuje_acumuladas_frame}", extra={"categoria_log": "log_jugador_mov_detalle"})
-        elif settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_jugador_mov_detalle", False):
-             logger.warning(f"{self.nombre_log_entidad} Intento de aplicar fuerza de empuje no válida: {vector_empuje}", extra={"categoria_log": "log_jugador_mov_detalle"})
+        if vector_empuje.length_squared() == 0:
+            if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_jugador_empuje_verbose", False): # Usar verbose para no saturar
+                 logger.info(f"{self.nombre_log_entidad} Intento de aplicar fuerza de empuje CERO. No se acumula. Vector: {vector_empuje}", extra={"categoria_log": "log_jugador_empuje_verbose"})
+            return
+
+        if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_jugador_empuje", False):
+            logger.info(f"{self.nombre_log_entidad} RECIBIENDO FUERZA EMPUJE para MotorFisica. Aplicando AHORA: {vector_empuje}", extra={"categoria_log": "log_jugador_empuje"})
+
+        self.motor_fisica_empuje.agregar_fuerza(vector_empuje)
+        
+        if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_jugador_empuje", False):
+            logger.info(f"{self.nombre_log_entidad} FUERZA EMPUJE APLICADA a MotorFisica. MotorFisica acumulado: {self.motor_fisica_empuje.fuerzas_acumuladas}", extra={"categoria_log": "log_jugador_empuje"})
 
     # --- Métodos de Movimiento y Colisión (específicos o usan CollisionHandler) ---
     def _mover_y_colisionar(self, dx, dy, obstaculos, mundo_ancho, mundo_alto):
-        print(f"DEBUG_JUGADOR: {self.nombre_log_entidad} - ENTRANDO A _mover_y_colisionar() con dx={dx}, dy={dy}, mundo_ancho={mundo_ancho}, mundo_alto={mundo_alto}")
+        if settings.DEBUG_JUGADOR_MOVIMIENTO:
+            print(f"DEBUG_JUGADOR: {self.nombre_log_entidad} - ENTRANDO A _mover_y_colisionar() con dx={dx}, dy={dy}, mundo_ancho={mundo_ancho}, mundo_alto={mundo_alto}")
+        
+        # Convertido a log:
+        if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_jugador_mov_input", False):
+            logger.debug(f"{self.nombre_log_entidad} Entrando a _mover_y_colisionar. Input: dx={dx:.2f}, dy={dy:.2f}. Mundo: ({mundo_ancho}, {mundo_alto})", extra={"categoria_log": "log_jugador_mov_input"})
         """
         Intenta mover la entidad y maneja las colisiones.
         Esta función llama al CollisionHandler y actualiza el rect y hitbox de la entidad.
         Devuelve el delta_x_real y delta_y_real del movimiento del hitbox.
         """
-        dx_para_colision = int(round(dx))
-        dy_para_colision = int(round(dy))
+        # dx_para_colision = int(round(dx))
+        # dy_para_colision = int(round(dy))
+
+        # Nueva lógica para convertir deltas flotantes a enteros para colisión usando la utilidad
+        dx_para_colision, dy_para_colision = utils.convertir_deltas_a_enteros_para_colision(
+            dx, dy, settings.UMBRAL_MOV_FLOTANTE_ENTIDAD_PARA_COLISION
+        )
 
         delta_mov_x_hb = 0 # Inicializar deltas
         delta_mov_y_hb = 0
@@ -130,16 +156,19 @@ class Jugador(EntidadBase):
                 else:
                     logger.warning(f"{self.nombre_log_entidad} CH NO TIENE el método gestionar_movimiento_y_colision.", extra={"categoria_log": "log_jugador_mov_detalle"})
 
-            if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_collision_handler", False):
-                 logger_ch_externo.critical(f"TEST LOG DESDE JUGADOR ({self.nombre_log_entidad}) USANDO LOGGER_CH_EXTERNO ANTES DE LLAMADA CH (_mover_y_colisionar).", extra={"categoria_log": "log_collision_handler"})
+            # Convertido a log:
+            if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_jugador_mov_debug", False):
+                logger.debug(f"{self.nombre_log_entidad} ANTES de llamar a collision_handler.gestionar_movimiento_y_colision", extra={"categoria_log": "log_jugador_mov_debug"})
             
-            print(f"DEBUG_JUGADOR: {self.nombre_log_entidad} - ANTES de llamar a collision_handler.gestionar_movimiento_y_colision") # <--- NUEVO PRINT DE CONTROL
             delta_mov_x_hb, delta_mov_y_hb = self.collision_handler.gestionar_movimiento_y_colision(
                 self, self.hitbox, self.rect, self.hitbox_offset_x, self.hitbox_offset_y,
                 dx_para_colision, dy_para_colision, obstaculos,
                 mundo_ancho, mundo_alto # <--- ARGUMENTOS AÑADIDOS
             )
-            print(f"DEBUG_JUGADOR: {self.nombre_log_entidad} - DESPUÉS de llamar a collision_handler.gestionar_movimiento_y_colision. Deltas HB: ({delta_mov_x_hb}, {delta_mov_y_hb})") # <--- NUEVO PRINT DE CONTROL
+
+            # Convertido a log:
+            if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_jugador_mov_debug", False):
+                logger.debug(f"{self.nombre_log_entidad} DESPUÉS de llamar a collision_handler.gestionar_movimiento_y_colision. Deltas HB: ({delta_mov_x_hb}, {delta_mov_y_hb})", extra={"categoria_log": "log_jugador_mov_debug"})
 
             if delta_mov_x_hb != 0:
                 self.ultima_direccion_mov_x = 1 if delta_mov_x_hb > 0 else -1
@@ -157,7 +186,39 @@ class Jugador(EntidadBase):
         return delta_mov_x_hb, delta_mov_y_hb
 
     def actualizar_movimiento(self, teclas_presionadas, obstaculos, mundo_ancho, mundo_alto, delta_time):
-        print(f"DEBUG_JUGADOR: {self.nombre_log_entidad} - INICIO actualizar_movimiento()") # PRINT 4
+        """
+        Actualiza el movimiento del jugador basado en el input del teclado y las fuerzas de empuje.
+
+        Primero, actualiza el estado de las fuerzas de empuje en el MotorFisica (aplicando fricción/umbral).
+        Luego, obtiene el vector de movimiento resultante del empuje para este frame.
+        Combina el movimiento del input del teclado con el movimiento por empuje.
+        La posición flotante del jugador se actualiza con este movimiento total.
+        Finalmente, se llama a _mover_y_colisionar para manejar las colisiones con obstáculos y límites del mundo,
+        y la posición flotante se sincroniza con la posición final del hitbox.
+
+        Args:
+            teclas_presionadas: Estado de las teclas presionadas.
+            obstaculos: Grupo de sprites de obstáculos sólidos.
+            mundo_ancho (int): Ancho total del mundo del juego.
+            mundo_alto (int): Alto total del mundo del juego.
+            delta_time (float): Tiempo transcurrido desde el último frame.
+        """
+        # Convertido a log:
+        if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_jugador_mov_input", False):
+            logger.debug(f"{self.nombre_log_entidad} Inicio actualizar_movimiento(). Delta_time: {delta_time:.4f}", extra={"categoria_log": "log_jugador_mov_input"})
+        
+        # Actualizar el estado de las fuerzas de empuje (aplicar fricción, umbral)
+        self.motor_fisica_empuje.actualizar_estado_fuerzas(delta_time)
+        
+        # Obtener el vector de movimiento resultante del empuje para este frame
+        vector_mov_empuje = self.motor_fisica_empuje.get_vector_movimiento_resultante_del_frame(delta_time)
+
+        if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_jugador_empuje", False):
+            if vector_mov_empuje.length_squared() > 0:
+                logger.debug(f"{self.nombre_log_entidad} Vector de empuje de MotorFisica para este frame: {vector_mov_empuje} (Velocidad por empuje)", extra={"categoria_log": "log_jugador_empuje"})
+            elif self.motor_fisica_empuje.tiene_fuerzas_activas(): # Loguear si tiene fuerzas pero el delta es 0 (por delta_time = 0?)
+                logger.debug(f"{self.nombre_log_entidad} MotorFisica tiene fuerzas ({self.motor_fisica_empuje.fuerzas_acumuladas}) pero el mov_empuje del frame es {vector_mov_empuje}", extra={"categoria_log": "log_jugador_empuje"})
+
         mov_x_input_raw = 0 
         mov_y_input_raw = 0
 
@@ -178,93 +239,69 @@ class Jugador(EntidadBase):
         # ---- LOG ADICIONAL ----
         logger.critical(f"{self.nombre_log_entidad} INICIO ACTUALIZAR_MOVIMIENTO. Delta_time: {delta_time}")
 
-        dx_flotante_intentado_input = mov_x_input_raw * delta_time
-        dy_flotante_intentado_input = mov_y_input_raw * delta_time
+        dx_input_con_velocidad = mov_x_input_raw * delta_time
+        dy_input_con_velocidad = mov_y_input_raw * delta_time
 
-        # ---- LOG DETALLADO DE COMPONENTES DE MOVIMIENTO ----
-        if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_jugador_mov_detalle", True): # Temporalmente True para forzar el log
-            logger.debug(f"{self.nombre_log_entidad} PRE-SUMA EMPUJE: dx_input={dx_flotante_intentado_input:.4f}, dy_input={dy_flotante_intentado_input:.4f}", extra={"categoria_log": "log_jugador_mov_detalle"})
-            logger.debug(f"{self.nombre_log_entidad} PRE-SUMA EMPUJE: fuerzas_acumuladas_X={self.fuerzas_de_empuje_acumuladas_frame.x:.4f}, fuerzas_acumuladas_Y={self.fuerzas_de_empuje_acumuladas_frame.y:.4f}", extra={"categoria_log": "log_jugador_mov_detalle"})
-        # ---- FIN LOG DETALLADO ----
+        # Sumar el movimiento por empuje al movimiento por input
+        dx_total_flotante_frame = dx_input_con_velocidad + vector_mov_empuje.x
+        dy_total_flotante_frame = dy_input_con_velocidad + vector_mov_empuje.y
 
-        # Limitar la magnitud máxima del vector de empuje acumulado
-        fuerza_max_empuje_por_frame = getattr(settings, "JUGADOR_MAX_FUERZA_EMPUJE_FRAME", 10.0) 
-        if self.fuerzas_de_empuje_acumuladas_frame.length_squared() > fuerza_max_empuje_por_frame**2:
-            magnitud_original = self.fuerzas_de_empuje_acumuladas_frame.length()
-            self.fuerzas_de_empuje_acumuladas_frame.scale_to_length(fuerza_max_empuje_por_frame)
-            if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_jugador_mov_detalle", False):
-                logger.warning(f"{self.nombre_log_entidad} CLAMP aplicado a fuerzas de empuje. Original (mag: {magnitud_original:.2f}) > {fuerza_max_empuje_por_frame:.2f}. Nuevo: {self.fuerzas_de_empuje_acumuladas_frame} (mag: {self.fuerzas_de_empuje_acumuladas_frame.length():.2f})", extra={"categoria_log": "log_jugador_mov_detalle"})
+        # Convertido a log:
+        if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_jugador_mov_debug", False):
+            logger.debug(f"{self.nombre_log_entidad} Actualizar_mov: Input(dx,dy):({dx_input_con_velocidad:.4f}, {dy_input_con_velocidad:.4f}), Empuje(dx,dy):({vector_mov_empuje.x:.4f}, {vector_mov_empuje.y:.4f}), TotalFrame(dx,dy):({dx_total_flotante_frame:.4f}, {dy_total_flotante_frame:.4f})", extra={"categoria_log": "log_jugador_mov_debug"})
 
-        # Aplicar fuerzas de empuje acumuladas al movimiento flotante intentado
-        # Estas fuerzas vienen de interacciones externas (ej. empujes de enemigos) y se acumulan durante el frame.
-        print(f"DEBUG_JUGADOR: {self.nombre_log_entidad} - Antes de sumar fuerzas de empuje. dx_input={dx_flotante_intentado_input}, dy_input={dy_flotante_intentado_input}, empuje_acumulado={self.fuerzas_de_empuje_acumuladas_frame}")
-        dx_flotante_intentado_total = dx_flotante_intentado_input + self.fuerzas_de_empuje_acumuladas_frame.x
-        dy_flotante_intentado_total = dy_flotante_intentado_input + self.fuerzas_de_empuje_acumuladas_frame.y
-        print(f"DEBUG_JUGADOR: {self.nombre_log_entidad} - Después de sumar fuerzas de empuje. dx_total={dx_flotante_intentado_total}, dy_total={dy_flotante_intentado_total}")
+        self.pos_x_flotante += dx_total_flotante_frame
+        self.pos_y_flotante += dy_total_flotante_frame
+
+        # Convertido a log:
+        if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_jugador_mov_debug", False):
+            logger.debug(f"{self.nombre_log_entidad} Pos flotante (post-input y empuje): ({self.pos_x_flotante:.4f}, {self.pos_y_flotante:.4f})", extra={"categoria_log": "log_jugador_mov_debug"})
+
+        # Restaurar la posición del hitbox a la posición flotante antes de la colisión
+        # Esto es crucial porque _mover_y_colisionar espera que el hitbox esté en la posición "actual"
+        # antes de calcular el delta que realmente se puede mover.
+        hitbox_x_original_antes_de_colision = self.hitbox.x
+        hitbox_y_original_antes_de_colision = self.hitbox.y
+
+        self.hitbox.x = int(round(self.pos_x_flotante - dx_total_flotante_frame)) 
+        self.hitbox.y = int(round(self.pos_y_flotante - dy_total_flotante_frame)) 
         
-        # Resetear las fuerzas acumuladas para el próximo frame
-        if self.fuerzas_de_empuje_acumuladas_frame.length_squared() > 0: # Log solo si hubo empuje
-            if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_jugador_mov_detalle", False):
-                logger.debug(f"{self.nombre_log_entidad} Fuerzas empuje aplicadas este frame: {self.fuerzas_de_empuje_acumuladas_frame}", extra={"categoria_log": "log_jugador_mov_detalle"})
-        self.fuerzas_de_empuje_acumuladas_frame.xy = (0, 0) 
-
         if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_jugador_mov_detalle", False):
-            logger.debug(f"{self.nombre_log_entidad} Delta flotante (input): dx={dx_flotante_intentado_input:.4f}, dy={dy_flotante_intentado_input:.4f}", extra={"categoria_log": "log_jugador_mov_detalle"})
-            logger.debug(f"{self.nombre_log_entidad} Delta flotante TOTAL (input+empuje): dx={dx_flotante_intentado_total:.4f}, dy={dy_flotante_intentado_total:.4f} (delta_time: {delta_time:.4f})", extra={"categoria_log": "log_jugador_mov_detalle"})
+            logger.debug(f"{self.nombre_log_entidad} Hitbox REAJUSTADO a pos flotante ANTERIOR al frame actual, ANTES de _mover_y_colisionar: TL={self.hitbox.topleft}", extra={"categoria_log": "log_jugador_mov_detalle"})
 
-        # --- NUEVO ORDEN ---
-        # 1. Intentar mover y colisionar con el delta total (input + empuje)
-        # _mover_y_colisionar espera deltas enteros, así que redondeamos aquí.
-        # El método _mover_y_colisionar actualizará self.hitbox y self.rect internamente.
-        print(f"DEBUG_JUGADOR: {self.nombre_log_entidad} - Antes de llamar a self._mover_y_colisionar con dx_total={dx_flotante_intentado_total}, dy_total={dy_flotante_intentado_total}") # PRINT 6
-        
-        # ---- LLAMADA A _mover_y_colisionar ----
-        # Asegurarse de que se pasan mundo_ancho y mundo_alto
-        delta_hb_x, delta_hb_y = self._mover_y_colisionar(dx_flotante_intentado_total, dy_flotante_intentado_total, obstaculos, mundo_ancho, mundo_alto)
-        # ---- FIN LLAMADA ----
-        print(f"DEBUG_JUGADOR: {self.nombre_log_entidad} - Después de llamar a self._mover_y_colisionar. Movimiento real HB: ({delta_hb_x},{delta_hb_y})") # PRINT 7
+        delta_x_movido_hb, delta_y_movido_hb = self._mover_y_colisionar(
+            dx_total_flotante_frame, 
+            dy_total_flotante_frame, 
+            obstaculos, 
+            mundo_ancho, 
+            mundo_alto
+        )
 
-        # 2. Sincronizar pos_flotante con la posición del hitbox DESPUÉS de la colisión
-        # Esto es crucial porque _mover_y_colisionar puede haber ajustado la posición.
-        self.pos_x_flotante = float(self.hitbox.x)
+        # Actualizar la posición flotante final basada en cuánto se movió realmente el hitbox
+        # Esto asegura que la posición flotante refleje la posición real después de las colisiones.
+        self.pos_x_flotante = float(self.hitbox.x) 
         self.pos_y_flotante = float(self.hitbox.y)
 
         if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_jugador_mov_detalle", False):
-            logger.debug(f"{self.nombre_log_entidad} Pos flotante (post-CH, pre-límites): ({self.pos_x_flotante:.4f}, {self.pos_y_flotante:.4f})", extra={"categoria_log": "log_jugador_mov_detalle"})
+            logger.debug(f"{self.nombre_log_entidad} Pos flotante FINAL (post _m_y_c y sinc con HB): ({self.pos_x_flotante:.4f}, {self.pos_y_flotante:.4f}). HB Final: {self.hitbox.topleft}", extra={"categoria_log": "log_jugador_mov_detalle"})
 
-        # 3. Ahora, aplicar colisión con Límites del Mundo a pos_flotante
-        pos_x_antes_limites = self.pos_x_flotante
-        pos_y_antes_limites = self.pos_y_flotante
-
-        if self.pos_x_flotante < 0: # No se necesita int() aquí, pos_flotante ya es numérico
-            self.pos_x_flotante = 0.0
-        elif self.pos_x_flotante + self.hitbox.width > mundo_ancho:
-            self.pos_x_flotante = float(mundo_ancho - self.hitbox.width)
-        
-        if self.pos_y_flotante < 0:
-            self.pos_y_flotante = 0.0
-        elif self.pos_y_flotante + self.hitbox.height > mundo_alto:
-            self.pos_y_flotante = float(mundo_alto - self.hitbox.height)
+        # Mantener al jugador dentro de los límites del mundo (aplicado al hitbox)
+        self.hitbox.clamp_ip(pygame.Rect(0, 0, mundo_ancho, mundo_alto)) 
+        self._actualizar_posicion_rect_desde_hitbox()
+        # Sincronizar pos_flotante nuevamente si clamp_ip hizo algún cambio
+        if self.hitbox.x != self.pos_x_flotante or self.hitbox.y != self.pos_y_flotante:
+            if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_jugador_mov_clamp", False):
+                logger.debug(f"{self.nombre_log_entidad} CLAMP Limites Mundo: HB cambió de ({self.pos_x_flotante},{self.pos_y_flotante}) a ({self.hitbox.x},{self.hitbox.y}). Resincronizando pos_flotante.", extra={"categoria_log": "log_jugador_mov_clamp"})
+            self.pos_x_flotante = float(self.hitbox.x)
+            self.pos_y_flotante = float(self.hitbox.y)
 
         if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_jugador_mov_detalle", False):
-            if self.pos_x_flotante != pos_x_antes_limites or self.pos_y_flotante != pos_y_antes_limites:
-                logger.debug(f"{self.nombre_log_entidad} Pos flotante (post-límites): ({self.pos_x_flotante:.4f}, {self.pos_y_flotante:.4f}). ANTES: ({pos_x_antes_limites:.4f}, {pos_y_antes_limites:.4f})", extra={"categoria_log": "log_jugador_mov_detalle"})
-            else:
-                logger.debug(f"{self.nombre_log_entidad} Pos flotante (post-límites): ({self.pos_x_flotante:.4f}, {self.pos_y_flotante:.4f}) (sin cambios por límites)", extra={"categoria_log": "log_jugador_mov_detalle"})
-
-        # 4. Sincronizar FINALMENTE el hitbox y el rect con pos_flotante (que ahora está limitado por el mundo)
-        # Esto asegura que la representación visual y de colisión sea la final.
-        self.hitbox.topleft = (round(self.pos_x_flotante), round(self.pos_y_flotante))
-        self.rect.center = self.hitbox.center # O la lógica de alineación de rect que se prefiera
-
-        # Log de la posición final del hitbox para este frame
-        if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_jugador_mov_detalle", False):
-            logger.debug(f"{self.nombre_log_entidad} Posición POST CH y Límites (actualizar_movimiento): HB: {self.hitbox.topleft}, PosFlotante: ({self.pos_x_flotante:.2f}, {self.pos_y_flotante:.2f})", extra={"categoria_log": "log_jugador_mov_detalle"})
+            logger.debug(f"{self.nombre_log_entidad} FIN actualizar_movimiento. Pos Flotante Final: ({self.pos_x_flotante:.2f}, {self.pos_y_flotante:.2f}). HB: {self.hitbox.topleft}", extra={"categoria_log": "log_jugador_mov_detalle"})
 
         # Actualizar animación basado en si hubo movimiento REAL del hitbox
         # ---- LOG ADICIONAL ----
-        logger.critical(f"{self.nombre_log_entidad} ANTES de setear self.estado_animacion. Movimiento real?: dx_hb_real={delta_hb_x}, dy_hb_real={delta_hb_y}")
-        if delta_hb_x != 0 or delta_hb_y != 0:
+        logger.critical(f"{self.nombre_log_entidad} ANTES de setear self.estado_animacion. Movimiento real?: dx_hb_real={delta_x_movido_hb}, dy_hb_real={delta_y_movido_hb}")
+        if delta_x_movido_hb != 0 or delta_y_movido_hb != 0:
             # self.estado_animacion = "corriendo" # Asumiendo que tienes una animación "corriendo"
             pass # Lógica de animación de movimiento aquí si es necesario
         else:
@@ -275,19 +312,9 @@ class Jugador(EntidadBase):
         logger.critical(f"{self.nombre_log_entidad} ANTES de llamar a self.actualizar_animacion({delta_time})")
 
         self.actualizar_animacion(delta_time)
-        print(f"DEBUG_JUGADOR: {self.nombre_log_entidad} - FIN actualizar_movimiento()") # PRINT 8
-
-    def actualizar_posicion_y_limites_mundo(self, mundo_ancho, mundo_alto): # ESTA FUNCIÓN YA NO ES NECESARIA SI LA LÓGICA ESTÁ EN actualizar_movimiento
-        """
-        DEPRECATED: La lógica de límites del mundo se ha movido a actualizar_movimiento.
-        Mantiene al jugador dentro de los límites del mundo del juego.
-        Ajusta self.pos_x_flotante y self.pos_y_flotante.
-        """
-        # Esta función puede ser eliminada o dejada vacía si ya no se llama.
-        # Por seguridad, si se llama, que no haga nada o loguee una advertencia.
-        if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_jugador_general", True): # Temporalmente a True
-            logger.warning(f"{self.nombre_log_entidad} actualizar_posicion_y_limites_mundo() fue llamada pero está DEPRECADA.", extra={"categoria_log": "log_jugador_general"})
-        pass
+        # Convertido a log:
+        if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_jugador_mov_debug", False):
+            logger.debug(f"{self.nombre_log_entidad} FIN actualizar_movimiento()", extra={"categoria_log": "log_jugador_mov_debug"})
 
     # --- Métodos de Ataque (usan AttackProfileManager) ---
     def atacar(self):

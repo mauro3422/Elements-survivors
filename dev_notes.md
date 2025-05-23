@@ -1,6 +1,21 @@
 # Notas de Desarrollo - Estado Actual
 
-## Última Actualización: 2025-05-22 (Fecha Actual de la Conversación Simulada tras reinicio)
+## Última Actualización: 2025-05-22 21:05:00 (Argentina)
+
+**Protocolo de Limpieza y Estructura del Código (Fase 1 Completada):**
+
+*   Se refactorizó `MotorFisica.py` a una clase instanciable para manejar fuerzas persistentes (empuje) con fricción y umbral.
+*   `Jugador.py` fue actualizado para utilizar la nueva instancia de `MotorFisica`, simplificando su lógica de empuje.
+*   Se añadieron configuraciones relevantes (`FACTOR_FRICCION_GENERICO`, `UMBRAL_FUERZA_MINIMA_GENERICO`, `log_motor_fisica_verbose`) a `src/config/settings.py`.
+*   Se actualizaron los docstrings en `Jugador.py` para reflejar estos cambios.
+*   Se actualizó `mapa_conceptual_modulos.py`.
+*   Se revisaron `gestor_estado.py`, `gestor_eventos.py`, `gestor_nivel.py`, `enemigo.py` en busca de `print`s no controlados y oportunidades de limpieza inicial; se encontraron en buen estado general respecto a los prints y logging.
+*   **Pendiente:** Decisión sobre el código comentado de "daño por contacto" en `gestor_estado.py` (línea 134: `# self.jugador.recibir_dano(dano, tipo_dano) # <--- DAÑO POR CONTACTO ACTUALMENTE DESACTIVADO PARA PRUEBAS`).
+
+**Próximos Pasos:**
+*   Verificación rápida de ejecución del juego para asegurar que la refactorización del sistema de empuje funciona como se espera.
+*   Resolver la decisión sobre el daño por contacto en `gestor_estado.py`.
+*   Continuar con otras tareas de `TODO.md` o siguientes fases del protocolo de limpieza si es necesario.
 
 ### Estado Actual del Proyecto
 - Versión: 0.3.1
@@ -52,63 +67,35 @@
 
 **Última Actualización del Plan:** 2025-05-22 (Después del análisis de logs de la sesión `..._01-47-30`)
 
-**PRIORIDAD 0: Resolución de "Teletransportes / Saltos Anómalos" en `CollisionHandler`**
+**PRIORIDAD 0: Resolución de Problemas con el Empuje Vertical del Jugador**
+    *   **Objetivo:** Asegurar que el empuje vertical aplicado por los enemigos al jugador funcione de manera consistente y predecible, especialmente cuando hay múltiples enemigos o están alineados.
+    *   **Contexto del Problema:** El jugador reporta que el movimiento vertical de empuje no funciona correctamente. Los logs iniciales muestran que los vectores de empuje con componentes Y se calculan y aplican, pero el efecto final no es el esperado.
+    *   **Hipótesis Actuales (a investigar con más logging):
+        *   Magnitud del empuje vertical es demasiado pequeña en relación con otros movimientos o se ve disminuida por el `JUGADOR_MAX_FUERZA_EMPUJE_FRAME`.
+        *   Interferencia de la lógica de `CollisionHandler` que podría estar anulando o modificando el movimiento vertical intentado tras el empuje.
+    *   **Próximos Pasos Inmediatos (Plan Actual):
+        1.  Añadir logging más detallado en `jugador.py` para verificar si se activa el clamp de `JUGADOR_MAX_FUERZA_EMPUJE_FRAME` y cómo afecta la componente Y.
+        2.  Añadir logging más detallado en `CollisionHandler._aplicar_movimiento_y_colision_eje_y` para observar el `dy_aplicado` al inicio y el `dy_real_aplicado_hb` al final.
+        3.  Ejecutar el juego y analizar los nuevos logs.
+
+**PRIORIDAD 1: Refinamiento General del Sistema de Empuje y Adición de "Resistencia"**
+    *   **Objetivo:** Una vez que el empuje funcione correctamente en todas las direcciones, pulir las interacciones y considerar añadir un sistema de "resistencia" o "inercia" al jugador para que los empujes se sientan más naturales.
+    *   **Estado:** Pendiente hasta resolver la Prioridad 0.
+
+**PRIORIDAD 2: (Anterior PRIORIDAD 0) Resolución de "Teletransportes / Saltos Anómalos" en `CollisionHandler` (Observación)**
     *   **Objetivo:** Eliminar los saltos de posición inesperados causados por `CollisionHandler`.
-    *   **Análisis de Logs Reciente (Sesión `..._01-47-30`):**
-        *   Los logs combinados de `jugador.log` y `collision_handler.log` confirman el salto anómalo. Ejemplo: Jugador entra a `gestionar_movimiento_y_colision` en `y=220` y sale en `y=388` (salto de +168px).
-        *   El `collision_handler.log` actual para `_resolver_solapamientos_estaticos_eje (y)` (Fase 1 - Eje Y) muestra que la entidad ya tiene la coordenada `y` "saltada" (`y=388`) al inicio de la porción logueada de esta función.
-        *   Esto sugiere que el gran desplazamiento ocurre ANTES de la lógica de resolución de solapamientos del eje Y que se está logueando actualmente, posiblemente en la resolución de solapamientos del eje X (Fase 1 - Eje X) o en una etapa inicial no logueada de `gestionar_movimiento_y_colision`.
-    *   **Acción 1: Mejorar Logging en `CollisionHandler.py` (CRÍTICO):**
-        *   **Función `gestionar_movimiento_y_colision`:**
-            *   Añadir un log al INICIO MISMO de esta función para registrar el `HB_Ent` (hitbox de la entidad) y los `dx, dy` de entrada originales, ANTES de cualquier otra operación.
-        *   **Función `_resolver_solapamientos_estaticos_eje` (Fase 1):**
-            *   Añadir un log AL INICIO de esta función que registre claramente para QUÉ EJE (`'x'` o `'y'`) se está ejecutando y el estado del `HB_Ent` en ese preciso instante.
-            *   Dentro del bucle de corrección:
-                *   Loguear `HB_Ent` ANTES de cualquier ajuste.
-                *   Loguear con QUÉ tile/obstáculo específico se está colisionando/solapando.
-                *   Loguear CÓMO se calcula el ajuste de posición (el vector de corrección).
-                *   Loguear `HB_Ent` DESPUÉS de cada ajuste.
-        *   **Salida de `gestionar_movimiento_y_colision`:**
-            *    Revisar y asegurar que el log del `Delta Real (dx,dy)` final refleje con precisión el movimiento neto efectivo aplicado a la entidad en relación con su posición de entrada a la función.
-    *   **Acción 2: Revisar Lógica de `_resolver_solapamientos_estaticos_eje` (para AMBOS ejes):**
-        *   Utilizando el logging mejorado, analizar por qué se producen los grandes desplazamientos. La función solo debería "des-solapar" la entidad del tile, no moverla a coordenadas lejanas. Prestar especial atención a la ejecución para el eje X.
-    *   **Acción 3 (Opcional, si es necesario): Investigar Discrepancia Timestamps `main.log` y Configuración `juego.log`**. (Se mantiene como tarea secundaria).
+    *   **Estado Actual:** Aunque el foco se ha movido al empuje, se seguirá observando si este comportamiento general persiste una vez solucionado el tema del empuje. Los logs de la sesión `..._01-47-30` mostraban saltos que podrían o no estar relacionados con el sistema de empuje actual.
 
-**A. Diseño e Implementación Sistema de Empuje Vectorial (En Pausa hasta resolver Prioridad 0):**
-    1.  **Limpieza de Código (Completado):**
-        *   **Acción:** Se comentó la lógica de "empuje especial promedio" en `src/sistemas/collision_handler.py`.
-        *   **Estado:** Completado.
-    2.  **Actualización de Documentos de Seguimiento (En Curso):**
-        *   **Acción:** Modificar `dev_notes.md` y `TODO.md` para reflejar el cambio de enfoque y los hallazgos.
-        *   **Estado:** `dev_notes.md` actualizado tras análisis de logs. `TODO.md` pendiente de revisión detallada. `CHANGELOG.md` pendiente.
-    3.  **Investigación y Depuración (Basado en Análisis de Logs - Próximos Pasos):**
-        *   **Subtarea 1: Empuje de Múltiples Enemigos:**
-            *   **Objetivo:** Asegurar que múltiples enemigos cercanos empujen al jugador como se espera.
-            *   **Acción:** Revisar `enemigo.py` para `Enemigo_1`. ¿Por qué `ZonaInfluenciaHB.colliderect(JugadorHB)` es `False` en los logs cuando se esperaba `True`? Analizar posiciones relativas, tamaño de `ZonaInfluenciaHB` y cualquier otra lógica condicional en `Enemigo.update_ia` o `Enemigo._intentar_empujar_jugador`.
-        *   **Subtarea 2: "Temblor" del Jugador:**
-            *   **Objetivo:** Eliminar el temblor del jugador al ser empujado diagonalmente.
-            *   **Acción:** Investigar en `jugador.py` (método `actualizar_movimiento` o similar, después de la llamada a `_mover_y_colisionar` y la aplicación de `mantener_dentro_de_limites`) por qué la `posicion_flotante.y` del jugador es ajustada (ej., de `1779.0` a `1778.0`) de una forma que podría causar el temblor. Considerar la interacción entre las posiciones enteras de `pygame.Rect` y las posiciones flotantes internas del jugador, especialmente al aplicar límites del mundo.
-            *   **Subtarea 3: Verificación del Clamp de Fuerza (Si aplica con múltiples enemigos):**
-            *   **Objetivo:** Una vez que múltiples enemigos empujen, verificar que `JUGADOR_MAX_FUERZA_EMPUJE_FRAME` funcione correctamente.
-            *   **Acción:** Añadir logs en `jugador.py` donde se aplica este clamp para observar su comportamiento cuando se sumen fuerzas de múltiples enemigos.
-    4.  **Diseño Conceptual del Empuje Vectorial (Continuación - Preguntas Clave Persisten):**
-        *   Una vez resueltos los bugs anteriores, continuar con el diseño si es necesario. Las preguntas originales siguen siendo relevantes:
-            *   ¿Dónde se generarán los vectores de empuje individuales (ej. en `Enemigo.update` al detectar colisión con el jugador, o en `CollisionHandler`)?
-            *   ¿Cómo se determinará la magnitud y dirección de cada vector de empuje individual (ej. basado en `ENEMIGO_VELOCIDAD`, una nueva constante `ENEMIGO_FUERZA_EMPUJE`)?
-            *   ¿Cómo se comunicarán estos vectores al jugador o a la entidad que los recibe?
-            *   ¿Dónde se sumarán los vectores si hay múltiples empujes simultáneos? (¿El jugador acumula fuerzas?)
-            *   ¿Cómo modificará el vector de empuje resultante el movimiento del jugador? (¿Se aplica como un `dx`, `dy` adicional antes de la detección de colisiones del propio jugador, o se integra de otra forma?)
-            *   ¿Se considerará la masa/resistencia del jugador en esta primera implementación? (Probablemente no, para simplificar).
-        *   **Entregable:** Un esquema o descripción en `dev_notes.md` de cómo funcionará (puede evolucionar con la depuración).
-    5.  **Implementación Iterativa (Continuación):**
-        *   Expandir para múltiples enemigos (vinculado a Subtarea 1).
-        *   Probar y refinar.
+## Plan de Trabajo Sesión Actual / Próximos Pasos Generales
 
-**B. Discusiones Pendientes / Mejoras de Proceso:**
-    1.  **Sistema de Empuje Avanzado (Vinculado a A):**
-        *   **Tema:** Una vez que el empuje vectorial básico funcione, cómo integrar "peso", "nivel" y "prioridad" de habilidades (del `DESIGN_VISION.md`).
-    2.  **Documentación del Protocolo de "Plan de Acción":**
-        *   **Tema:** Añadir formalmente a `DEVELOPMENT_PROTOCOLS.md` las reglas para el uso y actualización de esta sección.
+1.  **Implementar Protocolo de Actualización de Documentos al Inicio de Tarea:** (Esta tarea)
+2.  **Continuar con Prioridad 0:** Añadir logging para el empuje vertical.
+3.  Analizar logs y, si es necesario, realizar ajustes en el código de empuje o `CollisionHandler`.
+
+## Notas Adicionales y Observaciones
+
+*   Se ha creado y referenciado `docs/JULES_COLLABORATION_PROTOCOL.md`.
+*   Se ha discutido la importancia de verificar los timestamps de los logs y de `dev_notes.md` para mantener la sincronización.
 
 ### Estado de la Documentación
 -   `dev_notes.md`: Actualizado con el análisis de logs de la sesión `2025-05-21_22-32-07` y próximos pasos.
@@ -132,4 +119,31 @@
 - Se propusieron soluciones: Usar Python 3.11.x, buscar wheel de Pygame para Python 3.13, o instalar `setuptools`.
 - Se añadió `memory_profiler` a `requirements.txt`.
 
---- 
+---
+
+## Dev Notes - 22 de Mayo de 2025 - 19:00 (Argentina)
+
+**Contexto Actual:**
+
+*   **¡ÉXITO MAYOR!** Se ha implementado y perfeccionado la mecánica de **empuje del enemigo al jugador**.
+    *   Inicialmente, el empuje era instantáneo y se sentía como "ticks" o "golpecitos" porque la fuerza de empuje aplicada al jugador se reseteaba en cada frame.
+    *   Se modificó `jugador.py` para introducir un sistema de **fricción** a las `fuerzas_de_empuje_acumuladas_frame`. Ahora, la fuerza de empuje persiste a través de los frames y decae gradualmente, resultando en un efecto de **deslizamiento** que el USER ha confirmado como "espectacular" y "funciona como yo quería".
+    *   Se añadieron (o se usarán por defecto si no existen en `settings.py`) las constantes `FACTOR_FRICCION_EMPUJE_JUGADOR` (e.g., 0.85) y `UMBRAL_FUERZA_EMPUJE_MINIMA_JUGADOR` (e.g., 0.5) para controlar este comportamiento.
+*   Las colisiones generales y el movimiento de entidades parecen estables después de las correcciones previas.
+
+**Próximos Pasos (Planificados para la siguiente sesión después del reinicio del IDE):**
+
+1.  **Actualización del Mapa Conceptual (`mapa_conceptual_modulos.py`):**
+    *   Reflejar los cambios recientes y la lógica actual de interacciones, especialmente en lo referente al sistema de empuje y colisiones.
+2.  **Protocolo de Limpieza y Estructura del Código:**
+    *   Revisar la estructura general del proyecto.
+    *   Aplicar buenas prácticas de codificación y organización.
+    *   Asegurar que la estructura sea clara y mantenible para facilitar la colaboración (incluyendo con otras IAs).
+    *   Esto podría implicar refactorizaciones menores para mejorar la claridad y la cohesión.
+3.  **Revisión General de `TODO.md` y `CHANGELOG.md`:**
+    *   Asegurar que estén completamente al día después de estos cambios significativos.
+
+**Notas Adicionales:**
+
+*   El USER está muy satisfecho con la sensación actual del empuje.
+*   La sesión actual concluirá para reiniciar el IDE, y se retomará con las tareas de limpieza y actualización estructural. 

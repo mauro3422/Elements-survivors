@@ -1,20 +1,13 @@
 # Lista de Tareas Pendientes
 
 ## Prioridad CRÍTICA
-1. ✨ **[NUEVO - COLISIONES/FÍSICAS]** Diseñar e Implementar Sistema de Empuje por Contacto basado en Vectores.
-   - **Descripción**: Reemplazar el sistema de empuje anterior en `collision_handler.py` por uno basado en la suma de vectores de fuerza para un comportamiento más robusto y predecible.
-   - **Subtareas (Diseño Conceptual):**
-     - [ ] Definir generación de vectores de empuje individuales (magnitud, dirección, origen).
-     - [ ] Definir comunicación y acumulación de vectores de empuje.
-     - [ ] Definir aplicación del vector resultante al movimiento de la entidad.
-   - **Subtareas (Implementación):**
-     - [ ] Implementación inicial simple (1 enemigo, 1 dirección).
-     - [ ] Pruebas y refinamiento.
-     - [ ] Extensión a múltiples empujes.
+1. ✨ **[RESUELTO - COLISIONES/FÍSICAS]** Sistema de Empuje Vectorial con Fricción Implementado Satisfactoriamente.
+   - **Descripción**: Se ha implementado y perfeccionado la mecánica de empuje del enemigo al jugador. El sistema de empuje por contacto basado en vectores, con la adición de un mecanismo de fricción en `jugador.py`, ha resultado en un comportamiento de deslizamiento que cumple con las expectativas del USER. Esto incluye el correcto funcionamiento del empuje en todas las direcciones, incluyendo el vertical.
+   - **Estado**: ¡COMPLETADO Y VALIDADO POR EL USER! 🎉
 
-2. 🐛 **[BUG - COLISIONES - SUSPENDIDO]** Resolver bug "Empuje Inconsistente en Eje Y" (Anteriormente "Expulsión del Jugador")
-   - **Estado**: Suspendido. Se abordará con el nuevo sistema de empuje vectorial.
-   - **Descripción Original**: El jugador no es empujado correctamente en el eje Y cuando hay colisiones directas con enemigos. Problemas de deslizamiento diagonal.
+2. 🐛 **[BUG - COLISIONES - OBSERVACIÓN]** Observar si persisten "Teletransportes / Saltos Anómalos" en `CollisionHandler`.
+   - **Estado**: En observación. Se prioriza el bug de empuje vertical.
+   - **Descripción Original**: Saltos de posición inesperados causados por `CollisionHandler`.
 
 ## Prioridad Alta (En Pausa Temporal)
 1. 🔥 **[RENDIMIENTO]** Investigar y resolver degradación de rendimiento del IDE
@@ -122,18 +115,49 @@
 - Mantener actualizada esta lista
 
 ## Formato para Nuevas Tareas
-```markdown
-### [TAREA-XXX] Título de la Tarea
-**Descripción**: Breve descripción de la tarea.
 
-**Requisitos**:
-- Requisito 1
-- Requisito 2
+## Tareas Pendientes (Priorizadas)
 
-**Dependencias**:
-- [TAREA-YYY] Tarea de la que depende
+### Próxima Sesión (Después de Reinicio de IDE) -> ¡AHORA!
+- **[CRÍTICA - EN CURSO] Protocolo de Limpieza y Estructura del Código:**
+  - Revisar la estructura general del proyecto (directorios, módulos).
+  - Aplicar buenas prácticas de codificación y organización de manera consistente.
+  - Asegurar que la estructura sea clara, mantenible y fácilmente accesible para colaboración (humanos e IAs).
+  - Considerar posibles refactorizaciones menores para mejorar la claridad, cohesión y acoplamiento.
+  - Verificar y asegurar la correcta conexión y comunicación entre módulos.
+  - **Detalles Adicionales (según feedback del USER):**
+    - Identificar y mover funciones reutilizables a `src/utils/` (ej. `utils.py`).
+    - Asegurar el uso consistente de variables globales/constantes desde `src/config/settings.py`.
+    - Limpiar sentencias `print()`: convertirlas a logging estructurado (usando `self.logger` y categorías de `settings.LOG_CATEGORIAS`) o a prints de depuración condicionales (controlados por flags en `settings.py`).
+    - Aplicar consistentemente el sistema de logging y depuración definido.
+- **[ALTA] Actualización del Mapa Conceptual (`mapa_conceptual_modulos.py`):**
+  - Reflejar todos los cambios recientes en la lógica y las interacciones de los módulos.
+  - Especial atención a los sistemas de colisión, empuje, y movimiento de entidades.
+  - Asegurar que el mapa sea un fiel reflejo del estado actual del código para guiar el desarrollo futuro.
+- **[MEDIA] Revisión y Actualización Completa de Documentos de Seguimiento:**
+  - Asegurar que `CHANGELOG.md`, `TODO.md` y `dev_notes.md` estén completamente actualizados y sincronizados con el estado del proyecto post-limpieza.
 
-**Notas**:
-- Notas adicionales
-- Consideraciones especiales
-```
+### En Curso / Desarrollo Activo
+- **Mecánica de Empuje del Enemigo al Jugador:**
+  - ~~Implementar reseteo de fuerzas de empuje en el jugador para evitar deslizamiento infinito.~~ (HECHO - Implementada fricción en su lugar)
+  - **[HECHO Y RESUELTO]** ~~Empuje se siente como "ticks". Investigar y corregir para que sea un empuje más fluido o con inercia.~~ (Corregido con sistema de fricción, el USER está satisfecho).
+
+### General (Backlog / Ideas a Futuro)
+- **[MEDIA] Implementar sistema de habilidades para el jugador (y potencialmente enemigos).**
+  - Definir diferentes tipos de habilidades (ataque, defensa, utilidad).
+  - Crear sistema para activar y gestionar cooldowns de habilidades.
+- **[MEDIA] Mejorar IA de los Enemigos:**
+  - Comportamientos más variados (patrullaje, evasión, ataque coordinado si hay varios).
+  - Diferentes tipos de enemigos con distintas estadísticas y patrones de ataque.
+- **[BAJA] Sistema de Niveles/Escenarios:**
+  - Carga de diferentes mapas o configuraciones de nivel.
+  - Transiciones entre niveles o zonas.
+- **[BAJA] UI y HUD Mejorado:**
+  - Indicadores visuales más claros para vida, energía (si aplica), cooldowns.
+  - Menús del juego (inicio, pausa, opciones).
+- **[BAJA] Efectos de Sonido y Música.**
+
+### Consideraciones de Diseño / Refactorización (A revisar durante el protocolo de limpieza)
+- Evaluar la cohesión y acoplamiento de los módulos actuales (especialmente `CollisionHandler`, `EntidadBase`, `Jugador`, `Enemigo`).
+- Revisar el flujo de datos y la comunicación entre `GestorEstado` y las entidades.
+- Considerar la creación de un sistema de eventos más robusto si es necesario.

@@ -1,5 +1,5 @@
 import pygame
-from src.config import settings # MODIFICADO
+from src.config import settings
 import logging
 
 # Logger para GestorEventos
@@ -17,17 +17,15 @@ class GestorEventos:
             hud: Instancia del HUD para pasarle eventos.
             juego_ref: Referencia a la instancia principal del juego.
         """
-        print("DEBUG: GestorEventos.__init__()") # Print de prueba
+        logger.debug("GestorEventos.__init__()", extra={"categoria_log": "log_gestor_eventos"})
         self.jugador = jugador
         self.hud = hud
         self.juego_ref = juego_ref
         
-        # Estado interno que puede ser consultado por la clase Juego
         self.solicitud_salir = False
-        self.ultimo_scroll_time = 0
-        self.scroll_delay = 100 # ms, ajustar según sea necesario
+        # self.ultimo_scroll_time = 0 # Eliminado por no usarse
+        # self.scroll_delay = 100 # ms, ajustar según sea necesario # Eliminado por no usarse
 
-        # Evaluar condición de log una vez
         log_ev_handler_enabled = settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_gestor_eventos", False)
         if log_ev_handler_enabled:
             logger.debug("GestorEventos inicializado.", extra={"categoria_log": "log_gestor_eventos"})
@@ -39,23 +37,19 @@ class GestorEventos:
         Args:
             eventos_pygame: La lista de eventos obtenida de pygame.event.get().
         """
-        print("DEBUG: GestorEventos.procesar_eventos() - INICIO")
-        # Evaluar condiciones de log una vez al inicio del método
+        logger.debug("GestorEventos.procesar_eventos() - INICIO", extra={"categoria_log": "log_gestor_eventos_verbose"})
         log_ev_handler_enabled = settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_gestor_eventos", False)
         log_ev_verbose_enabled = settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_gestor_eventos_verbose", False)
 
         if log_ev_verbose_enabled:
             logger.debug(f"Procesando {len(eventos_pygame)} eventos...", extra={"categoria_log": "log_gestor_eventos_verbose"})
 
-        # Obtener el factor de zoom actual desde la instancia de Juego
         factor_zoom_actual = self.juego_ref.factor_zoom_actual
 
-        # Primero, verificar si hay eventos. Si no, salir temprano.
         if not eventos_pygame:
-            # Este log es útil para saber si Pygame no está generando eventos o si se están consumiendo en otro lado.
             if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_gestor_eventos_verbose", False):
                 logger.debug("Procesar eventos llamado sin eventos en la lista.", extra={"categoria_log": "log_gestor_eventos_verbose"})
-            print("DEBUG: GestorEventos.procesar_eventos() - No hay eventos, retornando.")
+            logger.debug("GestorEventos.procesar_eventos() - No hay eventos, retornando.", extra={"categoria_log": "log_gestor_eventos_verbose"})
             return
 
         for event in eventos_pygame:
@@ -73,12 +67,12 @@ class GestorEventos:
 
                 if event.type == pygame.MOUSEWHEEL: 
                     delta_zoom = settings.FACTOR_ZOOM_PASO if event.y > 0 else -settings.FACTOR_ZOOM_PASO
-                    calculo_nuevo_zoom = factor_zoom_actual + delta_zoom # Calculamos el zoom deseado
-                    nuevo_factor_zoom = max(settings.FACTOR_ZOOM_MIN, min(calculo_nuevo_zoom, settings.FACTOR_ZOOM_MAX)) # Aplicamos límites
+                    calculo_nuevo_zoom = factor_zoom_actual + delta_zoom
+                    nuevo_factor_zoom = max(settings.FACTOR_ZOOM_MIN, min(calculo_nuevo_zoom, settings.FACTOR_ZOOM_MAX))
                     
-                    if nuevo_factor_zoom != factor_zoom_actual: # Solo actualizar si realmente cambió
+                    if nuevo_factor_zoom != factor_zoom_actual:
                         self.juego_ref.actualizar_factor_zoom(nuevo_factor_zoom)
-                        factor_zoom_actual = nuevo_factor_zoom # ACTUALIZAMOS LA VARIABLE LOCAL
+                        factor_zoom_actual = nuevo_factor_zoom
                         if log_ev_handler_enabled:
                             logger.debug(f"GestorEventos: MOUSEWHEEL. Zoom actual: {factor_zoom_actual:.2f}, Solicitado nuevo: {calculo_nuevo_zoom:.2f}, Aplicado: {nuevo_factor_zoom:.2f}", extra={"categoria_log": "log_gestor_eventos"})
 
@@ -115,7 +109,7 @@ class GestorEventos:
                                 if log_ev_handler_enabled:
                                     logger.warning(f"GestorEventos: Perfil activo '{apm.nombre_perfil_ataque_activo}' no en lista. Seleccionando el primero.", extra={"categoria_log": "log_gestor_eventos"})
                                 apm.seleccionar_perfil_ataque(nombres_perfiles[0])
-                                indice_actual = 0 # Asumir el primero
+                                indice_actual = 0
 
                             nuevo_indice = indice_actual
                             if event.key == pygame.K_PAGEUP:
@@ -166,96 +160,90 @@ class GestorEventos:
                 import traceback
                 logger.error(f"Traza de error: {traceback.format_exc()}", extra={"categoria_log": "log_gestor_eventos", "skip_duplicate_check": True})
 
-        print("DEBUG: GestorEventos.procesar_eventos() - FIN")
+        logger.debug("GestorEventos.procesar_eventos() - FIN", extra={"categoria_log": "log_gestor_eventos_verbose"})
 
     def debe_salir(self):
         """Chequea si se ha solicitado salir del juego."""
         return self.solicitud_salir
 
 # Ejemplo de uso (requiere un settings.py mínimo y stubs para Jugador/HUD si se prueba aislado)
-if __name__ == '__main__':
-    # Configuración mínima de logging para prueba
-    if not logging.getLogger().hasHandlers():
-        logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - [%(levelname)s] - %(message)s')
-
-    # Crear stubs para las dependencias
-    class MockJugador:
-        def __init__(self):
-            self.attack_profile_manager = MockAttackProfileManager()
-        def atacar(self):
-            logger.info("MockJugador.atacar() llamado", extra={"categoria_log": "log_gestor_eventos"})
-
-    class MockAttackProfileManager:
-        def __init__(self):
-            self.perfil_actual_nombre = "default"
-            self.params = {"damage": 10, "attack_cooldown": 500}
-            self.nombres_perfiles_disponibles = ["default", "otro"]
-            self.nombre_perfil_ataque_activo = "default"
-        def get_nombres_perfiles_disponibles(self):
-            return self.nombres_perfiles_disponibles
-        def seleccionar_perfil_ataque(self, nombre_perfil):
-            self.nombre_perfil_ataque_activo = nombre_perfil
-            logger.info(f"MockAPM.seleccionar_perfil_ataque({nombre_perfil})", extra={"categoria_log": "log_gestor_eventos"})
-        def get_parametro_ataque_activo(self, nombre_param, default=None):
-            return self.params.get(nombre_param, default)
-        def set_parametro_ataque_activo(self, nombre_param, valor):
-            self.params[nombre_param] = valor
-            logger.info(f"MockAPM.set_parametro_ataque_activo({nombre_param}, {valor})", extra={"categoria_log": "log_gestor_eventos"})
-
-    class MockHUD:
-        def manejar_input_hud(self, event):
-            pass
-
-    class MockJuego:
-        def __init__(self):
-            self.factor_zoom_actual = 1.0
-        def actualizar_factor_zoom(self, nuevo_zoom):
-            self.factor_zoom_actual = nuevo_zoom
-            logger.info(f"MockJuego.actualizar_factor_zoom({nuevo_zoom})", extra={"categoria_log": "log_gestor_eventos"})
-
-    # Para que este __main__ funcione con el settings.py real, nos aseguramos que MODO_DEBUG_LOGS está True
-    # y las categorías relevantes también.
-    # Idealmente, settings sería inyectado o mockeado de forma más robusta en un framework de test.
-    
-    # Guardar estado original de settings y modificarlo para la prueba
-    original_modo_debug_logs = settings.MODO_DEBUG_LOGS
-    original_log_event_handler = settings.LOG_CATEGORIAS.get("log_gestor_eventos")
-    original_log_event_handler_verbose = settings.LOG_CATEGORIAS.get("log_gestor_eventos_verbose")
-
-    settings.MODO_DEBUG_LOGS = True
-    settings.LOG_CATEGORIAS["log_gestor_eventos"] = True
-    settings.LOG_CATEGORIAS["log_gestor_eventos_verbose"] = True
-
-    pygame.init()
-    pantalla = pygame.display.set_mode((settings.ANCHO_PANTALLA, settings.ALTO_PANTALLA))
-    pygame.display.set_caption("Test GestorEventos")
-
-    jugador_mock = MockJugador()
-    hud_mock = MockHUD()
-    juego_mock = MockJuego()
-
-    gestor = GestorEventos(jugador_mock, hud_mock, juego_mock)
-
-    print("\n--- Probando GestorEventos --- Triggear eventos manualmente ---")
-    print("Presiona ESCAPE para salir, ESPACIO para atacar, PAGEUP/PAGEDOWN para cambiar perfil, F-keys para params, rueda del mouse para zoom.")
-
-    # Simulación de bucle de juego para pruebas
-    reloj = pygame.time.Clock()
-    running = True
-    while running:
-        eventos = pygame.event.get()
-        gestor.procesar_eventos(eventos)
-
-        if gestor.debe_salir():
-            running = False
-
-        pygame.display.flip()
-        reloj.tick(settings.FPS)
-    
-    print("--- Fin Prueba GestorEventos ---")
-    # Restaurar settings
-    settings.MODO_DEBUG_LOGS = original_modo_debug_logs
-    if original_log_event_handler is not None: settings.LOG_CATEGORIAS["log_gestor_eventos"] = original_log_event_handler
-    if original_log_event_handler_verbose is not None: settings.LOG_CATEGORIAS["log_gestor_eventos_verbose"] = original_log_event_handler_verbose
-    
-    pygame.quit() 
+# if __name__ == '__main__':
+#     # Configuración mínima de logging para prueba
+#     if not logging.getLogger().hasHandlers():
+#         logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - [%(levelname)s] - %(message)s')
+# 
+#     # Crear stubs para las dependencias
+#     class MockJugador:
+#         def __init__(self):
+#             self.attack_profile_manager = MockAttackProfileManager()
+#         def atacar(self):
+#             logger.info("MockJugador.atacar() llamado", extra={"categoria_log": "log_gestor_eventos"})
+# 
+#     class MockAttackProfileManager:
+#         def __init__(self):
+#             self.perfil_actual_nombre = "default"
+#             self.params = {"damage": 10, "attack_cooldown": 500}
+#             self.nombres_perfiles_disponibles = ["default", "otro"]
+#             self.nombre_perfil_ataque_activo = "default"
+#         def get_nombres_perfiles_disponibles(self):
+#             return self.nombres_perfiles_disponibles
+#         def seleccionar_perfil_ataque(self, nombre_perfil):
+#             self.nombre_perfil_ataque_activo = nombre_perfil
+#             logger.info(f"MockAPM.seleccionar_perfil_ataque({nombre_perfil})", extra={"categoria_log": "log_gestor_eventos"})
+#         def get_parametro_ataque_activo(self, nombre_param, default=None):
+#             return self.params.get(nombre_param, default)
+#         def set_parametro_ataque_activo(self, nombre_param, valor):
+#             self.params[nombre_param] = valor
+#             logger.info(f"MockAPM.set_parametro_ataque_activo({nombre_param}, {valor})", extra={"categoria_log": "log_gestor_eventos"})
+# 
+#     class MockHUD:
+#         def manejar_input_hud(self, event):
+#             # logger.debug(f"MockHUD.manejar_input_hud({event})", extra={"categoria_log": "log_gestor_eventos"})
+#             pass # Simular manejo de input del HUD
+# 
+#     class MockJuego:
+#         def __init__(self):
+#             self.factor_zoom_actual = 1.0
+#         def actualizar_factor_zoom(self, nuevo_zoom):
+#             self.factor_zoom_actual = nuevo_zoom
+#             logger.info(f"MockJuego.actualizar_factor_zoom({nuevo_zoom})", extra={"categoria_log": "log_gestor_eventos"})
+# 
+#     # Crear instancias mock
+#     mock_jugador = MockJugador()
+#     mock_hud = MockHUD()
+#     mock_juego_ref = MockJuego()
+# 
+#     # Crear instancia del GestorEventos
+#     gestor = GestorEventos(mock_jugador, mock_hud, mock_juego_ref)
+# 
+#     # Simular algunos eventos de Pygame
+#     # Nota: Necesitarías un settings.py real con las claves usadas (FACTOR_ZOOM_PASO, etc.)
+#     # o modificar el código para que no dependa de settings para esta prueba aislada.
+#     # Aquí asumiremos que settings.py existe y tiene lo mínimo.
+#     class SettingsMock:
+#         MODO_DEBUG_LOGS = True
+#         LOG_CATEGORIAS = {
+#             "log_gestor_eventos": True,
+#             "log_gestor_eventos_verbose": True
+#         }
+#         FACTOR_ZOOM_PASO = 0.1
+#         FACTOR_ZOOM_MIN = 0.5
+#         FACTOR_ZOOM_MAX = 2.0
+#     settings = SettingsMock() # Sobrescribir la importación de settings para la prueba
+# 
+#     eventos_simulados = [
+#         pygame.event.Event(pygame.KEYDOWN, key=pygame.K_SPACE),
+#         pygame.event.Event(pygame.MOUSEWHEEL, y=1),
+#         pygame.event.Event(pygame.MOUSEWHEEL, y=-1),
+#         pygame.event.Event(pygame.KEYDOWN, key=pygame.K_ESCAPE),
+#     ]
+# 
+#     logger.info("--- INICIANDO PRUEBA DE GESTOR DE EVENTOS ---", extra={"categoria_log": "log_gestor_eventos"})
+#     gestor.procesar_eventos(eventos_simulados)
+# 
+#     if gestor.debe_salir():
+#         logger.info("Prueba: Solicitud de salir detectada correctamente.", extra={"categoria_log": "log_gestor_eventos"})
+#     else:
+#         logger.error("Prueba: Solicitud de salir NO detectada.", extra={"categoria_log": "log_gestor_eventos"})
+#     logger.info(f"Prueba: Zoom final: {mock_juego_ref.factor_zoom_actual}", extra={"categoria_log": "log_gestor_eventos"})
+#     logger.info("--- FIN DE PRUEBA DE GESTOR DE EVENTOS ---", extra={"categoria_log": "log_gestor_eventos"}) 

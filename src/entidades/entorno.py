@@ -1,10 +1,10 @@
 import pygame
 import os
-from src.config import settings # Necesario para RUTA_ASSETS si no se usa AssetManager, pero ahora sí
-import logging # <--- AÑADIR IMPORT
+from src.config import settings # Para constantes de color, depuración y categorías de log
+import logging
 
 # Logger para el módulo de entorno
-logger = logging.getLogger("entorno") # <--- AÑADIR LOGGER
+logger = logging.getLogger("entorno")
 
 class Obstaculo(pygame.sprite.Sprite):
     """
@@ -43,7 +43,7 @@ class Obstaculo(pygame.sprite.Sprite):
             self.image = self.animacion_frames_escalados[self.indice_fotograma]
         else:
             self.image = pygame.Surface(self.escala_renderizado)
-            self.image.fill(settings.ROJO_ERROR_ASSET if hasattr(settings, 'ROJO_ERROR_ASSET') else (255,0,0))
+            self.image.fill(settings.ROJO_ERROR_ASSET)
             if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_entorno", False):
                 logger.error(f"{self.nombre_log_entidad} Animación no encontrada o error de escalado. Usando placeholder.", extra={"categoria_log": "log_entorno"})
 
@@ -78,12 +78,12 @@ class Obstaculo(pygame.sprite.Sprite):
                         logger.error(f"{self.nombre_log_entidad} Error al escalar {clave_asset}: {e}", extra={"categoria_log": "log_entorno"})
                     # Añadir placeholder escalado si falla el escalado de una imagen válida
                     placeholder_escalado = pygame.Surface(self.escala_renderizado)
-                    placeholder_escalado.fill(settings.ROJO_ERROR_ASSET if hasattr(settings, 'ROJO_ERROR_ASSET') else (255,0,0))
+                    placeholder_escalado.fill(settings.ROJO_ERROR_ASSET)
                     pygame.draw.rect(placeholder_escalado, (0,0,0), placeholder_escalado.get_rect(), 1)
                     self.animacion_frames_escalados.append(placeholder_escalado)
             else:
                 placeholder_escalado = pygame.Surface(self.escala_renderizado)
-                placeholder_escalado.fill(settings.ROJO_ERROR_ASSET if hasattr(settings, 'ROJO_ERROR_ASSET') else (255,0,0))
+                placeholder_escalado.fill(settings.ROJO_ERROR_ASSET)
                 pygame.draw.rect(placeholder_escalado, (0,0,0), placeholder_escalado.get_rect(), 1)
                 self.animacion_frames_escalados.append(placeholder_escalado)
 
@@ -91,7 +91,7 @@ class Obstaculo(pygame.sprite.Sprite):
             if settings.MODO_DEBUG_LOGS and settings.LOG_CATEGORIAS.get("log_entorno", False):
                 logger.warning(f"{self.nombre_log_entidad} No se cargaron/escalaron fotogramas para '{self.nombre_asset_base}'.", extra={"categoria_log": "log_entorno"})
             placeholder_escalado = pygame.Surface(self.escala_renderizado)
-            placeholder_escalado.fill(settings.ROJO_ERROR_ASSET if hasattr(settings, 'ROJO_ERROR_ASSET') else (255,0,0))
+            placeholder_escalado.fill(settings.ROJO_ERROR_ASSET)
             pygame.draw.rect(placeholder_escalado, (0,0,0), placeholder_escalado.get_rect(), 1)
             self.animacion_frames_escalados = [placeholder_escalado]
 

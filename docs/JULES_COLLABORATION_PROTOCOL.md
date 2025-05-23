@@ -18,6 +18,7 @@ Antes de asignar una tarea a Jules:
 3.  **Dependencias Claras:** Confirmar que `requirements.txt` está al día.
 4.  **Entorno Limpio:** Asegurar que no haya cambios locales sin commitear que puedan interferir o confundir a Jules, a menos que la tarea sea específicamente sobre esos cambios.
 5.  **`.gitignore` Correcto:** Verificar que archivos y carpetas generados (logs, venv, etc.) estén correctamente ignorados.
+6.  **Logs Específicos para Depuración (Opcional):** Si la tarea para Jules es depurar un bug específico, y si se tienen logs relevantes que muestren el bug, considerar copiar estos logs a una carpeta temporal específica (ej. `temp_logs_for_jules/`) y mencionarla en el prompt para que Jules pueda analizarlos. Asegurarse de que esta carpeta temporal también esté en `.gitignore` o se elimine después.
 
 ## 3. Formulación de Prompts para Jules
 
@@ -37,6 +38,48 @@ La efectividad de Jules depende en gran medida de la calidad del prompt.
 5.  **Contexto Adicional (Opcional):**
     *   Si es relevante, proporcionar un breve contexto del problema o la razón del cambio.
     *   Se puede copiar y pegar fragmentos de código relevantes directamente en el prompt si ayuda a la especificidad.
+
+### 3.1 Plantilla Recomendada para Prompts a Jules (Especialmente para Depuración o Tareas Complejas)
+
+Al formular un prompt para Jules, especialmente para tareas que implican depuración, análisis de comportamiento o implementación de lógica compleja, considera la siguiente estructura para proporcionar un contexto completo:
+
+```text
+**Tarea Principal:** [Descripción clara y concisa de lo que se espera que Jules haga. Ej: Depurar bug de teletransporte del jugador, Implementar nueva habilidad de 'dash', Refactorizar función X.]
+
+**Contexto del Problema/Objetivo:**
+[Explicar brevemente el bug (comportamiento actual vs. esperado) o el objetivo de la nueva funcionalidad. Referenciar IDs de `TODO.md` si aplica. Ej: "El jugador se teletransporta inesperadamente en el eje Y al colisionar con ciertos obstáculos estáticos. Esto se observó en la sesión de logs X. El objetivo es que el jugador solo se desplace la cantidad solicitada por el input y las fuerzas de empuje, resolviendo colisiones sin saltos."]
+
+**Comportamiento Esperado Detallado / Criterios de Éxito:**
+[Describir con más detalle cómo debería funcionar o qué se considera una solución exitosa. Ej: "Tras la corrección, al mover el jugador contra un muro, solo debe detenerse o deslizarse suavemente, sin cambios bruscos de posición no solicitados. El `delta_real` devuelto por `CollisionHandler` debe ser consistente con el movimiento solicitado y las colisiones encontradas."]
+
+**Información y Archivos Clave a Considerar:**
+*   **Documentación Principal:** "Revisa `README.md` para una visión general del proyecto y `DEVELOPMENT_PROTOCOLS.md` para las convenciones de código, logging y flujo de trabajo que DEBES seguir."
+*   **Mapa Conceptual:** "Consulta `mapa_conceptual_modulos.py` para entender la arquitectura general y las interacciones entre módulos."
+*   **Configuraciones Globales:** "Ten en cuenta las configuraciones definidas en `src/config/settings.py`, especialmente [mencionar configuraciones relevantes si las hay, ej. `VELOCIDAD_JUGADOR`, constantes de colisión, etc.]."
+*   **Notas de Desarrollo Actuales:** "El archivo `dev_notes.md` contiene el estado más reciente de la investigación y las prioridades. Presta especial atención a la sección 'PRIORIDAD 0' o la tarea relevante."
+*   **Archivos de Código Fuente Principales Implicados:**
+    *   `[ruta/al/archivo1.py]`: [Breve descripción de por qué es relevante o qué buscar aquí. Ej: Contiene la lógica de `gestionar_movimiento_y_colision`.]
+    *   `[ruta/al/archivo2.py]`: [Ej: Define la clase Jugador y cómo se actualiza su movimiento.]
+    *   ...
+*   **Archivos de Diseño / Visión (si aplica):**
+    *   "Consulta `[ruta/al/DESIGN_VISION.md o similar]` para entender los objetivos de diseño del efecto/mecánica [nombre del efecto/mecánica]." (Este archivo no existe actualmente, adaptar si se crea).
+*   **Logs para Análisis (si se proporcionan para depuración):**
+    *   "He preparado logs relevantes en la carpeta `temp_logs_for_jules/`. Analiza `[nombre_del_log_especifico.log]` para observar el comportamiento X."
+
+**Pasos Sugeridos para el Análisis/Implementación (Opcional):**
+[Si tienes una idea de cómo abordar el problema, puedes sugerir pasos. Ej:
+1.  "Analiza la función `_resolver_solapamientos_estaticos_eje` en `collision_handler.py`."
+2.  "Presta atención a cómo se modifica la posición de la entidad antes y después de cada ajuste por colisión."
+3.  "Considera añadir logs temporales (siguiendo el protocolo de `DEBUG_PRINT_VARIABLES` o categorías de log) para rastrear el valor de `HB_Ent.y` en puntos clave."]
+
+**Entregables Esperados:**
+[Definir qué se espera como resultado. Ej: "Un parche para `collision_handler.py` que corrija el bug. Actualiza los comentarios en el código modificado para explicar los cambios. No modifiques otros archivos a menos que sea estrictamente necesario y lo justifiques."]
+
+**Recordatorio de Protocolos:**
+"Recuerda seguir estrictamente todos los protocolos de `DEVELOPMENT_PROTOCOLS.md`, incluyendo el sistema de logging, manejo de prints de depuración, y la actualización de documentación (aunque para esta tarea específica, yo me encargaré de actualizar `CHANGELOG.md` y `TODO.md` basándome en tu solución)."
+```
+
+Esta plantilla es una guía. Adapta y elimina secciones según la naturaleza y complejidad de la tarea para Jules.
 
 ## 4. Revisión del Plan de Jules
 

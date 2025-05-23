@@ -1,5 +1,16 @@
 # Registro de Cambios (CHANGELOG)
 
+## [UNRELEASED] - Próxima Versión
+
+### Refactorización y Limpieza (2025-05-22)
+- **MotorFisica Mejorado**:
+    - Se refactorizó `MotorFisica.py` para ser una clase instanciable.
+    - Ahora maneja la acumulación de fuerzas, el decaimiento por fricción y el reseteo por umbral mínimo.
+    - `Jugador.py` utiliza una instancia de `MotorFisica` para gestionar las fuerzas de empuje, resultando en un código más limpio y modular para esta mecánica.
+    - Se añadieron constantes `FACTOR_FRICCION_GENERICO` y `UMBRAL_FUERZA_MINIMA_GENERICO` a `settings.py` y la categoría de log `log_motor_fisica_verbose`.
+- **Actualización de Docstrings**: Se actualizaron los docstrings en `Jugador.py` relacionados con el movimiento y la aplicación de empuje para reflejar el uso de `MotorFisica`.
+- **Actualización del Mapa Conceptual**: `mapa_conceptual_modulos.py` actualizado para documentar los cambios en `MotorFisica` y `Jugador`.
+
 ## [20-05-2025] - Mejoras en Procesos de Desarrollo y Colaboración con IA
 
 *   **Refactorización Completa del Sistema de Cursor Rules para la IA:**
@@ -268,4 +279,38 @@
 - No aplica para esta entrada (principalmente adiciones).
 
 ### Solucionado
-- No aplica para esta entrada. 
+- No aplica para esta entrada.
+
+## [0.2.5] - 2025-05-22 (En Progreso)
+### Added
+- Creado `docs/JULES_COLLABORATION_PROTOCOL.md` para guiar la interacción con el asistente IA Jules.
+- Añadida referencia a `JULES_COLLABORATION_PROTOCOL.md` en `DEVELOPMENT_PROTOCOLS.md`.
+- Añadida plantilla de prompt para Jules y preparación de logs específicos al protocolo de Jules.
+
+### Changed
+- **Sistema de Empuje y Colisiones:**
+  - Iniciado análisis detallado del bug de "empuje vertical inconsistente" del jugador por enemigos.
+  - Revisión de logs de `jugador.py` y `enemigo.py` para entender la acumulación de fuerzas y el cálculo de vectores de empuje.
+  - Actualizados `dev_notes.md` y `TODO.md` para enfocar la próxima tarea en añadir logging específico para depurar el empuje vertical.
+- Actualizado `DEVELOPMENT_PROTOCOLS.md` para incluir la verificación de timestamps en `dev_notes.md` como parte de la sincronización.
+- Corregidos múltiples errores de indentación y lógica en `src/sistemas/collision_handler.py` que impedían la ejecución del juego.
+
+### Fixed
+- (Relacionado con `Changed`) El juego ahora se ejecuta después de corregir errores críticos en `collision_handler.py`.
+
+## [UNRELEASED] - 2025-05-22
+### Added
+- Implementada mecánica de **fricción** para las fuerzas de empuje recibidas por el jugador (`jugador.py`). Esto crea un efecto de deslizamiento en lugar de un empuje instantáneo de un solo frame.
+  - Se utilizan las (nuevas/potenciales) constantes de `settings.py`: `FACTOR_FRICCION_EMPUJE_JUGADOR` y `UMBRAL_FUERZA_EMPUJE_MINIMA_JUGADOR`.
+
+### Changed
+- **Mejorado significativamente el sistema de empuje del enemigo al jugador:**
+  - Anteriormente, el empuje era un movimiento de un solo frame.
+  - Ahora, con la fricción, el empuje provoca un deslizamiento que decae, resultando en una sensación mucho más natural y controlable por el jugador.
+- Lógica de `fuerzas_de_empuje_acumuladas_frame` en `jugador.py` modificada para no resetearse bruscamente, sino para decaer con la fricción.
+
+### Fixed
+- (Implícito) Corregido el comportamiento de "empuje en ticks" que era resultado de la falta de persistencia de la fuerza de empuje en el jugador.
+
+### Removed
+- Eliminado el reseteo brusco de `self.fuerzas_de_empuje_acumuladas_frame.xy = (0, 0)` al final de `actualizar_movimiento` en `jugador.py`, reemplazado por la lógica de fricción. 

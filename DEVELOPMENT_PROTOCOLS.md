@@ -100,6 +100,28 @@ Este protocolo cubre la preparación del repositorio, formulación de prompts, r
     *   Durante tareas de refactorización, modificación o revisión de código, si se identifica código obsoleto, redundante o que ya no se utiliza (ej. antiguas variables de control de `print`s que han sido reemplazadas por el sistema de logging, funciones comentadas sin justificación clara para su futura reactivación), este debe ser eliminado para mantener la limpieza y claridad del código base.
     *   Si hay dudas sobre si un código es realmente obsoleto (por ejemplo, si una función comentada podría ser útil en el futuro o está pendiente de una revisión más profunda), se debe investigar su propósito original o consultar antes de su eliminación definitiva. El objetivo es evitar la acumulación de código "muerto" que dificulte la comprensión y el mantenimiento del proyecto.
 
+6.  **Protocolo de Limpieza y Estructura del Código (Revisión Periódica y Post-Implementación Mayor)**:
+    *   **Objetivo**: Mantener la calidad, legibilidad, y mantenibilidad del código a largo plazo. Este protocolo debe aplicarse periódicamente y especialmente después de la implementación de funcionalidades mayores o cambios significativos.
+    *   **Pasos Clave**:
+        1.  **Revisión Estructural General**: Analizar la organización de directorios y módulos. Asegurar que la estructura sigue siendo lógica y coherente con `mapa_conceptual_modulos.py`.
+        2.  **Identificación de Código Reutilizable**: Buscar funciones o clases que puedan ser generalizadas y movidas a módulos de utilidad (ej., `src/utils/utils.py` o un archivo similar si ya existe una convención). Priorizar la reutilización para evitar duplicación.
+        3.  **Uso de Constantes y Configuraciones Centralizadas**: Verificar que todas las constantes, "números mágicos", y configuraciones específicas del juego estén definidas en `src/config/settings.py` y se importen/utilicen desde allí. Evitar valores hardcodeados directamente en la lógica de los módulos.
+        4.  **Gestión de `print()` y Depuración**:
+            *   Reemplazar sentencias `print()` de depuración por el sistema de logging estructurado: `self.logger.debug("Mensaje", extra={"categoria_log": "categoria_apropiada"})`.
+            *   Para prints de depuración que necesiten ser más permanentes pero controlables, utilizar el sistema de flags de depuración en `src/config/settings.py` (ej., `if settings.DEBUG_MODULO_ESPECIFICO: print("...")`).
+            *   Eliminar `print()`s que ya no sean necesarios.
+        5.  **Aplicación Consistente del Sistema de Logging**: Asegurar que todos los módulos utilicen `logging.getLogger("nombre_del_modulo")` y las categorías definidas en `settings.LOG_CATEGORIAS` de manera consistente.
+        6.  **Docstrings y Comentarios**: Revisar y añadir/actualizar docstrings para módulos, clases y funciones importantes. Añadir comentarios donde la lógica no sea inmediatamente obvia. Eliminar comentarios obsoletos.
+        7.  **Refactorizaciones Menores**: Considerar pequeñas refactorizaciones para mejorar la claridad, reducir la complejidad ciclomática, mejorar la cohesión de las clases/módulos y reducir el acoplamiento entre ellos.
+        8.  **Verificación de Conexiones Inter-Módulos**: Confirmar que las interacciones entre módulos son claras, necesarias y siguen los patrones establecidos en la arquitectura del proyecto.
+        9.  **Actualización de Documentación Post-Limpieza**: Una vez finalizada la limpieza, actualizar `mapa_conceptual_modulos.py`, `CHANGELOG.md`, y `dev_notes.md` para reflejar los cambios estructurales o lógicos realizados.
+        10. **Revisión y Actualización del Mapa Conceptual (`mapa_conceptual_modulos.py`)**: Después de aplicar cambios de limpieza o refactorización a un módulo (o grupo de módulos), revisar `mapa_conceptual_modulos.py` para asegurar que sigue reflejando con precisión las responsabilidades, componentes clave e interacciones del módulo modificado. Actualizar según sea necesario para mantener el mapa como un documento vivo y fiel a la estructura actual del código.
+        11. **Verificación Rápida de Ejecución (Post-Limpieza de Módulo/Substancial)**:
+            *   Después de aplicar cambios de limpieza significativos a un módulo o a varios, proponer y (si el USER lo aprueba) ejecutar el juego (`python main.py`) por un corto periodo (ej. 10-15 segundos) para una verificación rápida.
+            *   Observar la consola en busca de errores inmediatos o comportamientos anómalos evidentes.
+            *   Este paso ayuda a capturar regresiones o problemas introducidos durante la limpieza de forma temprana.
+            *   Si se detecta un problema, se debe pausar la limpieza y abordar el nuevo error antes de continuar.
+
 **Mantenimiento de Continuidad de Sesión:**
 
 *   **Propósito:** Para facilitar la transición entre sesiones de trabajo o la colaboración entre diferentes personas (o asistentes IA), se recomienda mantener un breve registro del estado actual del desarrollo.
@@ -785,3 +807,61 @@ Al finalizar una sesión de trabajo significativa o alcanzar un hito importante 
     *   Al inicio de una nueva sesión, si la IA detecta una discrepancia significativa entre la fecha/hora de "Última Actualización" de `dev_notes.md` y la fecha/hora actual, o entre el último `CHANGELOG.md` y las notas, deberá señalarlo proactivamente como un posible indicador de que el contexto puede estar desactualizado y solicitar una aclaración antes de proceder.
 
 El objetivo es mantener estos documentos como fuentes de verdad vivas y actualizadas, facilitando la continuidad y la comprensión del estado del proyecto.
+
+### 2.4. Protocolo de Actualización de Documentos al Inicio de Nueva Tarea / Cambio de Foco
+
+**Propósito:** Asegurar que todos los documentos de seguimiento estén actualizados y reflejen el estado y los planes actuales ANTES de sumergirse en una nueva tarea significativa o cuando el foco de trabajo cambia considerablemente (ej. de un bug a una nueva feature, o de un módulo a otro con implicaciones diferentes).
+
+**Pasos Obligatorios:**
+
+1.  **Obtener Fecha y Hora Actual:**
+    *   Utilizar un medio fiable (ej. búsqueda web "hora actual en [zona horaria relevante]") para obtener la fecha y hora precisas.
+
+2.  **Actualizar `dev_notes.md`:**
+    *   Encabezar el archivo o la sección de notas más reciente con: `Última Actualización: [AAAA-MM-DD HH:MM:SS]` usando la hora obtenida.
+    *   Resumir brevemente la conclusión de la tarea anterior o el motivo del cambio de foco.
+    *   Describir claramente la **nueva tarea** o el **nuevo foco de trabajo**.
+    *   Listar los **objetivos específicos** de esta nueva tarea.
+    *   Detallar los **próximos pasos inmediatos** planeados para abordar la nueva tarea.
+    *   Actualizar o añadir cualquier **hipótesis, observación relevante o dependencia** relacionada con la nueva tarea.
+
+3.  **Revisar y Actualizar `TODO.md`:**
+    *   Asegurarse de que la nueva tarea esté claramente definida en `TODO.md`.
+    *   Si la tarea es nueva, añadirla con la prioridad adecuada.
+    *   Si es una tarea existente que se retoma, actualizar su estado (ej. a "En Progreso") y sus subtareas si es necesario.
+    *   Marcar tareas anteriores como completadas, pausadas u obsoletas según corresponda.
+    *   Revisar prioridades generales si el cambio de foco lo amerita.
+
+4.  **Actualizar `CHANGELOG.md` (si aplica):**
+    *   Si la finalización de la tarea anterior o el inicio de la nueva constituyen un hito registrable (ej. corrección de bug importante, inicio de desarrollo de una feature mayor), añadir una entrada concisa en la sección `[UNRELEASED]` o en la versión actual en progreso.
+    *   La actualización del `CHANGELOG.md` puede ser más frecuente al finalizar bloques de trabajo que al iniciar cada pequeña tarea, pero debe considerarse.
+
+5.  **Comunicación (si aplica):**
+    *   Informar al equipo (o al usuario, en el caso de un asistente IA) sobre la actualización de los documentos y el nuevo plan de trabajo.
+
+**Cuándo Ejecutar:**
+*   Al iniciar una sesión de trabajo después de una pausa considerable.
+*   Al concluir una tarea principal listada en `TODO.md` y antes de comenzar la siguiente.
+*   Cuando se decide cambiar significativamente el enfoque del trabajo actual.
+
+Este protocolo complementa el "Protocolo de Sincronización y Actualización de Documentación al Cierre de Sesión/Hito" (sección 2.5) y está diseñado para mantener la agilidad y la claridad a medida que el proyecto evoluciona.
+
+### 2.5. Protocolo de Sincronización y Actualización de Documentación al Cierre de Sesión/Hito
+
+## XI. Registro de Hitos de Desarrollo y Sincronización de Contexto
+
+Para mejorar la continuidad del trabajo y evitar la repetición de tareas, especialmente tras interrupciones o reinicios (reales o percibidos del entorno de la IA), se seguirán estas pautas:
+
+1.  **Marcado en `dev_notes.md`**: Al finalizar una tarea significativa o una refactorización que afecte múltiples archivos o la lógica central (ej: actualización completa del mapa conceptual, finalización de una fase de limpieza), se registrará explícitamente en `dev_notes.md` con:
+    *   La descripción de la tarea completada.
+    *   La fecha y hora de finalización.
+    *   Una lista de los principales artefactos o módulos que se consideran "consolidados" o "actualizados hasta este punto".
+        *   Ejemplo: "Mapa conceptual (`mapa_conceptual_modulos.py`) completamente revisado y actualizado a fecha YYYY-MM-DD HH:MM."
+
+2.  **Referencia Cruzada en `CHANGELOG.md`**: Los cambios estructurales o funcionales significativos seguirán siendo registrados en `CHANGELOG.md` con su fecha correspondiente.
+
+3.  **Comunicación Explícita de la IA**: Si la IA ha completado una tarea de revisión o actualización extensa (como la del mapa conceptual), lo comunicará explícitamente, indicando la fecha/hora de su última verificación de dicho artefacto. Esto ayudará al usuario a entender qué tan "fresco" es el conocimiento de la IA sobre ese punto.
+
+4.  **Consulta Proactiva por Parte del Usuario**: Si el usuario tiene dudas sobre si una tarea ya fue realizada recientemente (especialmente si hubo interrupciones), puede consultar `dev_notes.md` o preguntar directamente a la IA, haciendo referencia a este protocolo.
+
+Este sistema busca crear "puntos de control" claros en el estado del proyecto, facilitando la reanudación del trabajo y asegurando que tanto el usuario como la IA operen con la información más reciente posible sobre el estado de las tareas y la documentación.

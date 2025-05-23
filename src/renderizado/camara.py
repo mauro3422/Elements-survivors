@@ -1,17 +1,7 @@
 import pygame
-from src.config import settings # MODIFICADO
-import logging # Asegurarse de que logging esté importado
+from src.config import settings
+import logging
 
-# Eliminar loggers antiguos y sus setLevel:
-# # Logger para mensajes de depuración detallados de la cámara.
-# logger_cam_debug = logging.getLogger("log_camara")
-# logger_cam_debug.setLevel(logging.DEBUG)
-# 
-# # Logger para mensajes generales (INFO) de la cámara.
-# logger_cam_general = logging.getLogger("juego.camara.general")
-# logger_cam_general.setLevel(logging.INFO)
-
-# Nuevo logger unificado para el módulo
 logger = logging.getLogger("camara")
 
 class Camara2D:
@@ -169,6 +159,4 @@ class Camara2D:
 # Nota: La clase Camara anterior tenía una `camara_surface` interna y manejaba el zoom y dibujado de tiles.
 # Esta versión Camara2D es más simple: solo maneja el offset de la cámara basado en un objetivo y los límites del mundo.
 # El renderizado (incluyendo fondo y zoom si se reimplementa) se manejaría en la clase Juego o similar.
-# La implementación de `__init__` y `update` en `Juego` refleja este cambio, ya que `Camara2D` toma
-# `ancho_mundo`, `alto_mundo`, `ancho_pantalla`, `alto_pantalla` en su constructor,
-# que coinciden con `config.ANCHO_MUNDO`, `config.ALTO_MUNDO`, `config.ANCHO_PANTALLA`, `config.ALTO_PANTALLA`. 
+# La implementación de `

@@ -47,4 +47,4 @@ def main():
     logger.info("Función main() completada.", extra={"categoria_log": "log_main"})
 
 if __name__ == '__main__':
-    main()
+    main() 
