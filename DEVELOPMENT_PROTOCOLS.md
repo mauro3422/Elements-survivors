@@ -865,3 +865,85 @@ Para mejorar la continuidad del trabajo y evitar la repetición de tareas, espec
 4.  **Consulta Proactiva por Parte del Usuario**: Si el usuario tiene dudas sobre si una tarea ya fue realizada recientemente (especialmente si hubo interrupciones), puede consultar `dev_notes.md` o preguntar directamente a la IA, haciendo referencia a este protocolo.
 
 Este sistema busca crear "puntos de control" claros en el estado del proyecto, facilitando la reanudación del trabajo y asegurando que tanto el usuario como la IA operen con la información más reciente posible sobre el estado de las tareas y la documentación.
+
+## 8. Protocolo de Creación y Desarrollo Incremental de Módulos Complejos (ej. Paneles UI)
+
+Este protocolo debe seguirse para la creación de nuevos módulos complejos (como sistemas de UI, paneles interactivos, etc.) y también puede guiar la refactorización extensiva de módulos existentes si se están reestructurando significativamente o añadiendo funcionalidades complejas de forma incremental. El objetivo es asegurar la estabilidad del proyecto, facilitar la depuración temprana y mantener la calidad del código mediante un desarrollo paso a paso con verificación continua.
+
+**Principios Clave:**
+
+*   **Planificación Detallada Previa:** Entender completamente el propósito, responsabilidades, interacciones y subcomponentes del módulo antes de escribir código.
+*   **Integración Temprana y Continua:** Conectar el módulo al sistema principal lo antes posible, incluso en su forma más esquelética.
+*   **Pasos Mínimos Viables:** Implementar la funcionalidad en incrementos extremadamente pequeños, donde cada incremento sea fácilmente verificable.
+*   **Pruebas Inmediatas y Frecuentes:** Ejecutar el juego y probar la funcionalidad específica después de CADA pequeño incremento.
+*   **Commits Atómicos:** Guardar el progreso con `git commit` después de cada incremento funcional verificado.
+*   **Documentación Progresiva:** Actualizar `dev_notes.md`, `mapa_conceptual_modulos.py` y `CHANGELOG.md` a medida que el módulo toma forma y se completan hitos.
+
+**Pasos del Protocolo:**
+
+1.  **Fase de Diseño y Planificación Detallada:**
+    *   **Definir Propósito y Alcance:** ¿Qué hará el módulo? ¿Cuáles son sus límites?
+    *   **Identificar Responsabilidades Clave:** Desglosar las funciones principales del módulo.
+    *   **Diseñar la API Externa:** ¿Cómo interactuará este módulo con otros sistemas (ej. `GestorEstado`, `Juego`, otros gestores)? ¿Qué métodos públicos ofrecerá? ¿Qué datos necesitará o proporcionará?
+    *   **Esbozar Componentes Internos (si aplica):** Para módulos complejos como paneles UI, identificar subcomponentes visuales (botones, sliders, áreas de texto) y lógicos.
+    *   **Planificar Estructura de Archivos:** Definir el nombre del nuevo archivo `.py` y su ubicación (ej. `src/sistemas/nombre_panel_manager.py`). Si el módulo tendrá subcomponentes en archivos separados, planificar esa estructura también (ej. dentro de `src/sistemas/ui_components/`).
+    *   **Documentar el Diseño:** Registrar este plan en `dev_notes.md` o en una sección dedicada si es un módulo mayor. Actualizar `mapa_conceptual_modulos.py` con la intención del nuevo módulo.
+
+2.  **Preparación del Entorno:**
+    *   Asegurar que el código base actual esté en un estado estable y funcional, verificado por ejecución del juego y pruebas.
+    *   Realizar un `git commit` del estado estable actual antes de iniciar la creación del nuevo módulo.
+
+3.  **Creación del Esqueleto del Módulo:**
+    *   Crear el nuevo archivo `.py` (y las carpetas necesarias) según el plan.
+    *   Implementar la clase principal del módulo con métodos esenciales vacíos o con `pass` (ej. `__init__`, `actualizar()`, `dibujar()`, `manejar_evento()`).
+        *   El `__init__` debe aceptar las dependencias necesarias (ej. `asset_manager`, referencias a otros gestores) pero puede que no las use todas inmediatamente.
+    *   Asegurar que el archivo tenga las importaciones mínimas necesarias para no dar error (ej. `pygame`, `logging`, `settings`).
+
+4.  **Integración Temprana del Esqueleto:**
+    *   En el módulo que usará/coordinará este nuevo módulo (ej. `Juego.py` o un futuro `GestorUI`), importar la nueva clase esqueleto.
+    *   Crear una instancia del nuevo módulo esqueleto (ej. `self.nuevo_panel = NuevoPanelManager(self.asset_manager)`).
+    *   Si el nuevo módulo tiene métodos `actualizar`, `dibujar`, `manejar_evento`, llamarlos desde los bucles correspondientes del módulo coordinador, incluso si aún no hacen nada.
+    *   **PRUEBA DE INTEGRACIÓN MÍNIMA:** Ejecutar el juego (`python main.py`).
+        *   **Verificar:** El juego debe arrancar y funcionar sin errores. No se espera nueva funcionalidad visible aún.
+        *   **Si hay errores:** Corregirlos antes de continuar. El error probablemente estará en la instanciación o en las llamadas a los métodos vacíos.
+    *   **COMMIT:** Hacer un commit con un mensaje como: "Creado esqueleto e integración inicial de [NombreModulo]".
+
+5.  **Desarrollo Incremental (Ciclo Iterativo Pequeñísimo):**
+    *   Para CADA pequeña pieza de funcionalidad a añadir:
+        *   a. **Implementar la Funcionalidad Mínima:**
+            *   Escribir la menor cantidad de código posible para lograr un cambio visible o comprobable.
+            *   Ejemplos para un panel UI:
+                *   Dibujar un rectángulo de fondo simple cuando el panel está "activo".
+                *   Añadir un solo botón (solo visual, sin lógica de clic aún).
+                *   Implementar el cambio de color de un botón al pasar el mouse (hover).
+                *   Hacer que un botón ejecute una acción de `print()` simple al hacer clic.
+        *   b. **PRUEBA INMEDIATA Y ESPECÍFICA:** Ejecutar el juego (`python main.py`).
+            *   **Verificar:** Probar específicamente la pequeña funcionalidad añadida. ¿Se ve el rectángulo? ¿Aparece el botón? ¿Funciona el hover/clic simple? ¿No hay errores nuevos en la consola?
+            *   **Si hay errores o no funciona:** Depurar y corregir esta pequeña pieza ANTES de añadir más código.
+        *   c. **COMMIT ATÓMICO:** Una vez que la pequeña pieza funcione y se haya probado:
+            *   `git add <archivo(s)_modificado(s)>`
+            *   `git commit -m "MóduloX: [Descripción muy breve y específica de la funcionalidad añadida]"`
+            *   Ejemplos: "PanelPrincipal: Dibujado fondo del panel", "PanelPrincipal: Añadido botón \'Aceptar\' (visual)", "PanelPrincipal: Implementado hover para botón \'Aceptar\'".
+        *   d. **Refactorización Interna Oportunista (Opcional):** Si el código añadido, aunque pequeño, puede mejorarse (nombres, claridad), hacerlo antes del commit.
+    *   Repetir este ciclo (a, b, c, d) para cada subsiguiente pieza de funcionalidad.
+
+6.  **Documentación Progresiva:**
+    *   Periódicamente (ej. al final del día, o al completar un subcomponente mayor del módulo), actualizar `dev_notes.md` con el progreso.
+    *   Si la estructura interna del módulo o sus interacciones con otros cambian significativamente, actualizar `mapa_conceptual_modulos.py`.
+    *   Al completar hitos importantes del módulo, considerar una entrada en `CHANGELOG.md`.
+
+7.  **Revisión y Limpieza Final del Módulo:**
+    *   Una vez que toda la funcionalidad planificada para el módulo esté implementada incrementalmente:
+        *   Realizar una revisión general del código del módulo.
+        *   Asegurar la consistencia en estilo, comentarios y docstrings.
+        *   Eliminar código de prueba temporal o `print()`s de depuración que ya no sean necesarios (reemplazándolos con logging si es apropiado).
+
+8.  **Verificación Completa Post-Desarrollo del Módulo:**
+    *   Realizar pruebas más exhaustivas del módulo completo y su integración en el juego para asegurar que no se hayan introducido regresiones o comportamientos inesperados.
+
+**Consideraciones Adicionales (similares al protocolo de refactorización):**
+
+*   **Importaciones Circulares:** Prestar atención para evitar dependencias circulares, especialmente si el nuevo módulo interactúa con muchos otros.
+*   **Módulos Muy Grandes:** Si un módulo planificado sigue siendo demasiado grande incluso con este enfoque, considerar si puede dividirse en varios módulos más pequeños desde la fase de diseño, cada uno siguiendo este protocolo.
+
+Al seguir estas directrices, se espera que el desarrollo del proyecto sea más eficiente, colaborativo y que el producto final sea de mayor calidad.
